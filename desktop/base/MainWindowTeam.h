@@ -11,6 +11,7 @@
 #include "TournamentSerialization.h"
 
 #include <memory>
+#include <QJsonArray>
 
 class QTableView;
 class QPrinter;
@@ -61,6 +62,9 @@ private:
 
 	// specific methods
 	void update_club_views();
+	bool LoadMasterDataCache_();
+	QStringList FighterNamesForTeam_(const QString& teamId) const;
+	void UpdateTeamFighterDelegates_();
 	void UpdateFightNumber_();
 	void UpdateButtonText_();
 	void update_score_screen();
@@ -146,6 +150,10 @@ private:
 	//std::shared_ptr<Ipponboard::FightCategoryMgr> m_pCategoryManager;
 	QStringList m_FighterNamesHome;
 	QStringList m_FighterNamesGuest;
+	QJsonArray m_masterClubs;
+	QJsonArray m_masterTeams;
+	QJsonArray m_masterFighters;
+	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
 	QString GetRoundDataAsHtml(const Ipponboard::Fight& fight, int fightNo);
 };
