@@ -118,6 +118,15 @@ QVariant TournamentModel::data(const QModelIndex& index, int role) const
 	if (!index.isValid())
 		return QVariant();
 
+	if (role == Qt::UserRole && index.row() < m_nRows)
+	{
+		const Ipponboard::Fight& fight = m_pTournamentRound->at(index.row());
+		if (index.column() == eCol_name1)
+			return fight.fighters[0].id;
+		if (index.column() == eCol_name2)
+			return fight.fighters[1].id;
+	}
+
 	switch (role)
 	{
 	case Qt::EditRole:
@@ -288,12 +297,31 @@ bool TournamentModel::setData(const QModelIndex& index,
 							  int role)
 //=========================================================
 {
-	if (!index.isValid() ||
-			(flags(index) & Qt::ItemIsEditable) == 0 ||
-			role != Qt::EditRole)
+	if (!index.isValid() || (flags(index) & Qt::ItemIsEditable) == 0)
 	{
 		return false;
 	}
+
+	if (role == Qt::UserRole && index.row() < m_nRows)
+	{
+		Ipponboard::Fight& fight = m_pTournamentRound->at(index.row());
+		if (index.column() == eCol_name1)
+		{
+			fight.fighters[0].id = value.toString();
+			emit dataChanged(index, index);
+			return true;
+		}
+		if (index.column() == eCol_name2)
+		{
+			fight.fighters[1].id = value.toString();
+			emit dataChanged(index, index);
+			return true;
+		}
+		return false;
+	}
+
+	if (role != Qt::EditRole)
+		return false;
 
 	bool result(false);
 
@@ -313,6 +341,7 @@ bool TournamentModel::setData(const QModelIndex& index,
 			break;
 
 		case eCol_name1:
+			if (fight.fighters[0].name != value.toString()) fight.fighters[0].id.clear();
 			fight.fighters[0].name = value.toString();
 			result = true;
 			break;
@@ -346,6 +375,7 @@ bool TournamentModel::setData(const QModelIndex& index,
 			break;
 
 		case eCol_name2:
+			if (fight.fighters[1].name != value.toString()) fight.fighters[1].id.clear();
 			fight.fighters[1].name = value.toString();
 			result = true;
 			break;
