@@ -7,6 +7,8 @@
 
 ComboBoxDelegate::ComboBoxDelegate(QObject* parent)
 	: QItemDelegate(parent)
+	, m_items()
+	, m_itemIds()
 {
 }
 
@@ -17,7 +19,11 @@ QWidget* ComboBoxDelegate::createEditor(
 {
 	QComboBox* editor = new QComboBox(parent);
 	//editor->setEditable(false);
-	editor->addItems(m_items);
+	for (int i = 0; i < m_items.size(); ++i)
+	{
+		const QVariant id = i < m_itemIds.size() ? QVariant(m_itemIds.at(i)) : QVariant();
+		editor->addItem(m_items.at(i), id);
+	}
 	editor->setParent(parent);
 
 	// set index to currently selected item
@@ -53,6 +59,10 @@ void ComboBoxDelegate::setModelData(
 {
 	QComboBox* comboBox = static_cast<QComboBox*>(editor);
 	model->setData(index, comboBox->currentText(), Qt::EditRole);
+	if (comboBox->currentData().isValid())
+	{
+		model->setData(index, comboBox->currentData(), Qt::UserRole);
+	}
 }
 
 void ComboBoxDelegate::updateEditorGeometry(
@@ -63,7 +73,8 @@ void ComboBoxDelegate::updateEditorGeometry(
 	editor->setGeometry(option.rect);
 }
 
-void ComboBoxDelegate::SetItems(QStringList const& items)
+void ComboBoxDelegate::SetItems(QStringList const& items, QStringList const& itemIds)
 {
 	m_items = items;
+	m_itemIds = itemIds;
 }
