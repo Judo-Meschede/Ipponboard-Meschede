@@ -1,0 +1,34 @@
+VERBINDLICHE PROJEKTREGELN
+
+1. Projektstand
+Wenn Ralf ausdrücklich einen Projektstand anfordert, ist immer eine vollständige ZIP-Datei zu erzeugen.
+Dateiname zwingend:
+JJJJ_MM_TT_Projektstand_Ipponboard.zip
+
+2. Ablage
+Jeder Projektstand ist zusätzlich in Google Drive abzulegen:
+Scoreboard Ipponboard/Projektstände/
+
+3. SSH-Dateien
+Im Google-Drive-Hauptordner "Scoreboard Ipponboard" liegen dauerhaft zwei getrennte Textdateien:
+- 01_SSH_Projektstand_nach_Downloads.txt
+- 02_SSH_TEST_Installieren.txt
+
+Zusätzlich liegen dauerhaft im Google-Drive-Hauptordner:
+- 03_POWERSHELL_WINDOWS_App_bauen.txt
+- 04_POWERSHELL_WINDOWS_Build_Log_anzeigen.txt
+
+01/02 werden per SSH auf dem Linux-Server verwendet. 03/04 werden auf dem Windows-Buildrechner
+in PowerShell verwendet.
+
+Diese Dateien sind bei technischen Änderungen anzupassen, wenn sich Download-, Installations-,
+Build-, Pfad-, Service- oder Deploymentlogik ändert.
+
+4. Neuer Chat
+Der jeweils neueste Projektstand muss so vollständig dokumentiert sein, dass ein neuer Chat
+ohne Kenntnis früherer Gespräche unmittelbar weiterarbeiten kann.
+
+5. Entwicklungsprinzip
+Nach jedem bestätigten Entwicklungsschritt kann ein neuer Chat begonnen werden.
+Deshalb dürfen verbindliche Architekturentscheidungen, Regeln, Pfade, Dateinamen und
+Deployment-Anweisungen nicht nur im Chat stehen, sondern müssen im Projektstand dokumentiert sein.

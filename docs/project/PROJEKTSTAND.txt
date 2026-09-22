@@ -1,0 +1,36 @@
+Stand 22.09.2026 – Ipponboard-Meschede V0.1.3 (Entwicklung)
+
+ARCHITEKTUR
+- Basis für die Wettkampfsoftware bleibt der originale Qt/C++-Source von Ipponboard 2.4.2.
+- Produktname ab jetzt: Ipponboard-Meschede.
+- Entwicklungsstände: V0.x. Erste freigegebene Version: V1.0.
+- Windows-Ziel: portable ZIP, entpacken und starten. Keine Installation auf Zielrechnern.
+- Server ist zentrale Stammdatenquelle. Portable App muss auch vollständig offline mit dem letzten lokalen Stand arbeiten.
+
+DIESER PROJEKTSTAND – SERVER (mit 01 / 02 testbar)
+- Neue schwarz/rote Startseite im Ipponboard-Meschede-Stil.
+- Offizielles SSV-Meschede-Judo-Logo eingebunden.
+- Verwaltungsseite /verwaltung.
+- Funktionale Tabellen für Vereine, Mannschaften, Wettkämpfer, Wettkämpfe und Gewichtsklassen.
+- Anlegen, Bearbeiten, Löschen und Suchen.
+- Vereinslogos können als Bild hinterlegt werden.
+- Mannschaften haben einen Kader aus hinterlegten Wettkämpfern.
+- JSON Import/Export der Stammdaten.
+- Sync-Snapshot für die spätere portable App: /api/sync/snapshot.
+- Stammdaten liegen persistent unter /var/lib/ipponboard-meschede-test und bleiben bei Neuinstallation erhalten.
+- Startseite zeigt Serverstatus und Datenstand.
+
+DESKTOP-SOURCE
+- Desktop-Startseite V0.1.3: freigegebenes schwarz/rotes Mockup ist die verbindliche visuelle Referenz. Die Oberfläche wird als skalierbare Referenzansicht mit echten Klickzonen und dynamischen Statusfeldern umgesetzt, statt als freie Qt-Nachzeichnung.
+- Hero-Bereich, Kacheln, Statusleiste und Footer orientieren sich direkt am freigegebenen Mockup. Keine doppelte Logo-Darstellung.
+- Die ausdrücklich gestrichenen Texte „Respekt / Mut / Disziplin / Freundschaft“ und „Basierend auf Ipponboard v2.4.2“ erscheinen nicht.
+- Drei große Funktionskacheln: Einzelmodus / Mannschaftsmodus / Verwaltung.
+- Viergliedriger Statusbereich für Server, Synchronisation, lokalen Datenstand und Version.
+- Manuelle Synchronisation über „Jetzt aktualisieren“.
+- Verwaltung öffnet die Server-Verwaltung.
+- Alter Begrüßungstext, Donate-Funktion, GitHub-Werbetext und Original-Startseitenoptik entfallen.
+- Der Desktop-Source ist erst nach einem Windows-Build als EXE testbar. Dieser Projektstand behauptet keinen fertigen Desktop-Build.
+
+WICHTIG
+- Der bisherige Electron-Prototyp wird nicht weiterentwickelt.
+- Die Server-Verwaltung dieses Projektstands ist direkt über 01 / 02 installierbar.
