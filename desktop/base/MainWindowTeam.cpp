@@ -77,6 +77,10 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_host()
 	, m_FighterNamesHome()
 	, m_FighterNamesGuest()
+	, m_masterClubs()
+	, m_masterTeams()
+	, m_masterFighters()
+	, m_usingMasterData(false)
 	, m_modes()
 {
 	m_pUi->setupUi(this);
@@ -143,28 +147,21 @@ void MainWindowTeam::Init()
 	// setup data
 	//
 	m_pUi->dateEdit->setDate(QDate::currentDate());
+	LoadMasterDataCache_();
 	update_club_views();
 
 	//m_pUi->comboBox_club_guest->setCurrentIndex(0);
 
-	// set fighter comboboxes
-	//m_FighterNamesHome.push_back(QString::fromUtf8("Florian Münz"));
-	//m_FighterNamesHome.push_back(QString::fromUtf8("Wolfgang Schmalhans"));
-	//m_FighterNamesHome.push_back(QString::fromUtf8("Tino Rucksack"));
-#if 0
-	auto cbxFightersHome = new ComboBoxDelegate(this);
-	cbxFightersHome->SetItems(m_FighterNamesHome);
-
-	//m_FighterNamesGuest.push_back(QString::fromUtf8("Hans Dampf"));
-	//m_FighterNamesGuest.push_back(QString::fromUtf8("Hans Wurst"));
-	//m_FighterNamesGuest.push_back(QString::fromUtf8("Hans Im Glück"));
-	auto cbxFightersGuest = new ComboBoxDelegate(this);
-	cbxFightersGuest->SetItems(m_FighterNamesGuest);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest);
-#endif
+	// Fighter selection is driven by the selected teams' cached rosters.
+	auto cbxFightersHome1 = new ComboBoxDelegate(this);
+	auto cbxFightersHome2 = new ComboBoxDelegate(this);
+	auto cbxFightersGuest1 = new ComboBoxDelegate(this);
+	auto cbxFightersGuest2 = new ComboBoxDelegate(this);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome1);
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome2);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest1);
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest2);
+	UpdateTeamFighterDelegates_();
 	// make name columns auto-resizable
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name1, QHeaderView::Stretch);
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name2, QHeaderView::Stretch);
@@ -391,38 +388,169 @@ void MainWindowTeam::update_views()
 	UpdateButtonText_();
 }
 
+bool MainWindowTeam::LoadMasterDataCache_()
+{
+	QString appDir = QCoreApplication::applicationDirPath();
+	QString cacheFile = QDir(appDir).absoluteFilePath(QStringLiteral("../data/masterdata.json"));
+	if (!QFile::exists(cacheFile))
+	{
+		cacheFile = QDir(appDir).absoluteFilePath(QStringLiteral("data/masterdata.json"));
+	}
+	QFile file(cacheFile);
+	if (!file.open(QIODevice::ReadOnly))
+	{
+		m_usingMasterData = false;
+		return false;
+	}
+	QJsonParseError error;
+	const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
+	if (error.error != QJsonParseError::NoError || !doc.isObject())
+	{
+		m_usingMasterData = false;
+		return false;
+	}
+	const QJsonObject root = doc.object();
+	const QJsonObject master = root.value(QStringLiteral("masterdata")).toObject();
+	if (master.isEmpty())
+	{
+		m_usingMasterData = false;
+		return false;
+	}
+	m_masterClubs = master.value(QStringLiteral("clubs")).toArray();
+	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
+	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
+	m_usingMasterData = !m_masterTeams.isEmpty();
+	return m_usingMasterData;
+}
+
+QStringList MainWindowTeam::FighterNamesForTeam_(const QString& teamId) const
+{
+	QStringList result;
+	QJsonArray fighterIds;
+	for (const QJsonValue& value : m_masterTeams)
+	{
+		const QJsonObject team = value.toObject();
+		if (team.value(QStringLiteral("id")).toString() == teamId)
+		{
+			fighterIds = team.value(QStringLiteral("fighterIds")).toArray();
+			break;
+		}
+	}
+	for (const QJsonValue& idValue : fighterIds)
+	{
+		const QString fighterId = idValue.toString();
+		for (const QJsonValue& value : m_masterFighters)
+		{
+			const QJsonObject fighter = value.toObject();
+			if (fighter.value(QStringLiteral("id")).toString() != fighterId)
+				continue;
+			if (fighter.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+				break;
+			const QString name = (fighter.value(QStringLiteral("firstName")).toString() + QStringLiteral(" ") +
+				fighter.value(QStringLiteral("lastName")).toString()).trimmed();
+			if (!name.isEmpty())
+				result.append(name);
+			break;
+		}
+	}
+	result.removeDuplicates();
+	result.sort(Qt::CaseInsensitive);
+	return result;
+}
+
+void MainWindowTeam::UpdateTeamFighterDelegates_()
+{
+	if (!m_usingMasterData)
+		return;
+	const QString homeId = m_pUi->comboBox_club_home->currentData().toString();
+	const QString guestId = m_pUi->comboBox_club_guest->currentData().toString();
+	m_FighterNamesHome = FighterNamesForTeam_(homeId);
+	m_FighterNamesGuest = FighterNamesForTeam_(guestId);
+
+	const auto updateDelegate = [](QTableView* table, int column, const QStringList& names)
+	{
+		auto delegate = dynamic_cast<ComboBoxDelegate*>(table->itemDelegateForColumn(column));
+		if (delegate)
+			delegate->SetItems(names);
+	};
+	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name1, m_FighterNamesHome);
+	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name1, m_FighterNamesHome);
+	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name2, m_FighterNamesGuest);
+	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name2, m_FighterNamesGuest);
+}
+
 void MainWindowTeam::update_club_views()
 {
 	QString oldHost = m_host;
+	const QString oldHomeId = m_pUi->comboBox_club_home->currentData().toString();
+	const QString oldGuestId = m_pUi->comboBox_club_guest->currentData().toString();
 
 	m_pUi->comboBox_club_host->clear();
 	m_pUi->comboBox_club_home->clear();
 	m_pUi->comboBox_club_guest->clear();
 
-	for (int i = 0; i < m_pClubManager->ClubCount(); ++i)
+	if (m_usingMasterData)
 	{
-		Ipponboard::Club club;
-		m_pClubManager->GetClub(i, club);
-		QIcon icon(club.logoFile);
-		m_pUi->comboBox_club_host->addItem(icon, club.name);
-		m_pUi->comboBox_club_home->addItem(icon, club.name);
-		m_pUi->comboBox_club_guest->addItem(icon, club.name);
+		for (const QJsonValue& value : m_masterClubs)
+		{
+			const QJsonObject club = value.toObject();
+			if (club.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+				continue;
+			m_pUi->comboBox_club_host->addItem(club.value(QStringLiteral("name")).toString(),
+				club.value(QStringLiteral("id")).toString());
+		}
+		for (const QJsonValue& value : m_masterTeams)
+		{
+			const QJsonObject team = value.toObject();
+			if (team.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+				continue;
+			const QString name = team.value(QStringLiteral("name")).toString();
+			const QString id = team.value(QStringLiteral("id")).toString();
+			if (!name.isEmpty() && !id.isEmpty())
+			{
+				m_pUi->comboBox_club_home->addItem(name, id);
+				m_pUi->comboBox_club_guest->addItem(name, id);
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < m_pClubManager->ClubCount(); ++i)
+		{
+			Ipponboard::Club club;
+			m_pClubManager->GetClub(i, club);
+			QIcon icon(club.logoFile);
+			m_pUi->comboBox_club_host->addItem(icon, club.name);
+			m_pUi->comboBox_club_home->addItem(icon, club.name);
+			m_pUi->comboBox_club_guest->addItem(icon, club.name);
+		}
 	}
 
 	m_host = oldHost;
+	int hostIndex = m_pUi->comboBox_club_host->findText(m_host);
+	if (hostIndex < 0)
+		hostIndex = 0;
+	m_pUi->comboBox_club_host->setCurrentIndex(hostIndex);
 
-	int index = m_pUi->comboBox_club_host->findText(m_host);
-
-	if (-1 == index)
+	if (m_usingMasterData)
 	{
-		index = 0;
+		int homeIndex = m_pUi->comboBox_club_home->findData(oldHomeId);
+		if (homeIndex < 0)
+			homeIndex = 0;
+		m_pUi->comboBox_club_home->setCurrentIndex(homeIndex);
+
+		int guestIndex = m_pUi->comboBox_club_guest->findData(oldGuestId);
+		if (guestIndex < 0)
+			guestIndex = m_pUi->comboBox_club_guest->count() > 1 ? 1 : 0;
+		m_pUi->comboBox_club_guest->setCurrentIndex(guestIndex);
+	}
+	else
+	{
+		m_pUi->comboBox_club_home->setCurrentIndex(hostIndex);
 	}
 
-	m_pUi->comboBox_club_host->setCurrentIndex(index);
-	m_pUi->comboBox_club_home->setCurrentIndex(index);
-
-	// set location from host
 	m_pUi->lineEdit_location->setText(m_pClubManager->GetAddress(m_host));
+	UpdateTeamFighterDelegates_();
 }
 
 void MainWindowTeam::UpdateFightNumber_()
@@ -1255,6 +1383,7 @@ void MainWindowTeam::on_comboBox_club_host_currentIndexChanged(const QString& s)
 void MainWindowTeam::on_comboBox_club_home_currentIndexChanged(const QString& s)
 {
 	m_pController->SetClub(Ipponboard::FighterEnum::First, s);
+	UpdateTeamFighterDelegates_();
 
 #if 0
 	ComboBoxDelegate* pCbx = dynamic_cast<ComboBoxDelegate*>
@@ -1273,6 +1402,7 @@ void MainWindowTeam::on_comboBox_club_home_currentIndexChanged(const QString& s)
 void MainWindowTeam::on_comboBox_club_guest_currentIndexChanged(const QString& s)
 {
 	m_pController->SetClub(Ipponboard::FighterEnum::Second, s);
+	UpdateTeamFighterDelegates_();
 #if 0
 	ComboBoxDelegate* pCbx = dynamic_cast<ComboBoxDelegate*>
 							 (m_pUi->tableView_tournament_list1->itemDelegateForColumn(TournamentModel::eCol_name2));
