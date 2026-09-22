@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.6**
+`CURRENT_VERSION.txt`: **0.1.7**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.6
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.7
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.6
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.7
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -221,6 +221,29 @@ Noch nicht durchgeführt:
 - Serverstand V0.1.6 auf `test-liga.paul-meschede.de` ausrollen.
 - NWJV-Testimport dort ausführen.
 - Desktop V0.1.6 unter Windows bauen und mit den importierten Mannschaften praktisch testen.
+
+## 7c. Windows-Sync-Fix V0.1.7
+
+Aus Praxistest V0.1.5:
+- Startseite zeigte trotz erreichbarem Server `Offline - noch kein lokaler Datenstand`.
+- `Jetzt aktualisieren` war optisch ungünstig und lieferte keine verwertbare Fehlermeldung.
+- Ursache im Source: Windows-Portable-Paket hatte Qt5Network, aber keine OpenSSL-Laufzeit. Der HTTPS-Abruf konnte dadurch auf Windows scheitern.
+
+In V0.1.7 geändert:
+- Windows lädt den Masterdata-Snapshot über native Windows-WinHTTP-API statt über Qt/OpenSSL.
+- keine zusätzliche SSL/OpenSSL-Installation erforderlich.
+- Zertifikatsprüfung bleibt über Windows/WinHTTP aktiv.
+- Netzwerkfehler werden auf der Startseite bzw. im Tooltip konkret angezeigt.
+- Sync-Schaltfläche neu gestaltet und größer/sauberer positioniert.
+- Status nach Erfolg: `Server verbunden` und `Daten aktuell`.
+- `winhttp` wird im Windows-Build verlinkt.
+
+Noch nicht durchgeführt:
+- Windows-Build V0.1.7.
+- Praxistest des WinHTTP-Syncs gegen den bereits befüllten Testserver.
+
+Für später vorgemerkt:
+- Subdomain `ipponboard.paul-meschede.de` statt/zusätzlich zu `test-liga.paul-meschede.de` einrichten.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
