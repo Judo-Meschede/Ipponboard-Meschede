@@ -20,6 +20,8 @@
 
 #ifdef _WIN32
 #include "../gamepad/gamepad.h"
+#include <windows.h>
+#include <winhttp.h>
 #endif
 
 #include "../util/path_helpers.h"
@@ -41,6 +43,7 @@
 #include <QPrintPreviewDialog>
 #include <QPrinter>
 #include <QSettings>
+#include <QSaveFile>
 #include <QSplashScreen>
 #include <QTableView>
 #include <QTextEdit>
@@ -49,6 +52,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonParseError>
 #include <algorithm>
 
 
@@ -82,6 +86,7 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
+	, m_masterTournamentModes()
 	, m_usingMasterData(false)
 	, m_modes()
 {
@@ -118,23 +123,6 @@ void MainWindowTeam::LoadModes(Ipponboard::TournamentMode::List modes, QString s
 	}
 }
 
-QString MainWindowTeam::ModeConfigurationFilePath_() const
-{
-	const QString persistentFile = fm::GetAppConfigFilePath(QStringLiteral("TournamentModes.ini"));
-	QFileInfo persistentInfo(persistentFile);
-
-	if (!persistentInfo.exists())
-	{
-		const QString legacyFile = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("TournamentModes.ini"));
-		if (QFile::exists(legacyFile))
-		{
-			QDir().mkpath(persistentInfo.absolutePath());
-			QFile::copy(legacyFile, persistentFile);
-		}
-	}
-
-	return persistentFile;
-}
 
 void MainWindowTeam::Init()
 {
@@ -146,28 +134,27 @@ void MainWindowTeam::Init()
 	// set default background
 	m_pScoreScreen->setStyleSheet(m_pUi->frame_primary_view->styleSheet());
 
-	//
-	// load tournament modes
-	//
+	// Load the last synchronized server snapshot first. Tournament modes are global system data.
+	LoadMasterDataCache_();
+
 	QString errMsg;
 	Ipponboard::TournamentMode::List modes;
-
-	if (!Ipponboard::TournamentMode::ReadModes(ModeConfigurationFilePath_(), modes, errMsg))
+	if (!LoadModesFromMasterData_(modes))
 	{
-        QMessageBox::critical(nullptr,
-							  QCoreApplication::tr("Error reading mode configurations"),
-							  errMsg);
-
-        throw std::runtime_error("Initialization failed!");
+		// Only fallback for a first/offline start before the server has any global modes.
+		if (!Ipponboard::TournamentMode::ReadModes(MainWindowTeam::ModeConfigurationFileName(), modes, errMsg))
+		{
+			QMessageBox::critical(nullptr,
+				QCoreApplication::tr("Error reading mode configurations"), errMsg);
+			throw std::runtime_error("Initialization failed!");
+		}
 	}
-
 	LoadModes(modes, m_currentMode);
 
 	//
 	// setup data
 	//
 	m_pUi->dateEdit->setDate(QDate::currentDate());
-	LoadMasterDataCache_();
 	update_club_views();
 
 	//m_pUi->comboBox_club_guest->setCurrentIndex(0);
@@ -439,8 +426,128 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	m_masterClubs = master.value(QStringLiteral("clubs")).toArray();
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
 	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
+	m_masterTournamentModes = master.value(QStringLiteral("tournamentModes")).toArray();
 	m_usingMasterData = !m_masterTeams.isEmpty();
 	return m_usingMasterData;
+}
+
+bool MainWindowTeam::LoadModesFromMasterData_(Ipponboard::TournamentMode::List& modes) const
+{
+	if (m_masterTournamentModes.isEmpty())
+		return false;
+
+	Ipponboard::TournamentMode::List loaded;
+	for (const QJsonValue& value : m_masterTournamentModes)
+	{
+		const QJsonObject o = value.toObject();
+		Ipponboard::TournamentMode mode;
+		mode.id = o.value(QStringLiteral("id")).toString();
+		mode.title = o.value(QStringLiteral("title")).toString();
+		mode.subTitle = o.value(QStringLiteral("subTitle")).toString();
+		mode.weights = o.value(QStringLiteral("weights")).toString();
+		mode.listTemplate = o.value(QStringLiteral("listTemplate")).toString();
+		mode.options = o.value(QStringLiteral("options")).toString();
+		mode.rules = o.value(QStringLiteral("rules")).toString(mode.rules);
+		mode.nRounds = o.value(QStringLiteral("nRounds")).toInt(1);
+		mode.fightTimeInSeconds = o.value(QStringLiteral("fightTimeInSeconds")).toInt(240);
+		mode.weightsAreDoubled = o.value(QStringLiteral("weightsAreDoubled")).toBool(false);
+		const QString overrides = o.value(QStringLiteral("fightTimeOverrides")).toString();
+		if (!overrides.isEmpty())
+			Ipponboard::TournamentMode::ExtractFightTimeOverrides(overrides, mode.fightTimeOverrides);
+
+		if (!mode.id.isEmpty() && !mode.title.isEmpty() && !mode.weights.isEmpty() && !mode.listTemplate.isEmpty())
+			loaded.push_back(mode);
+	}
+	if (loaded.empty())
+		return false;
+
+	std::sort(begin(loaded), end(loaded));
+	modes.swap(loaded);
+	return true;
+}
+
+static QJsonArray TournamentModesToJson(const Ipponboard::TournamentMode::List& modes)
+{
+	QJsonArray items;
+	for (const auto& mode : modes)
+	{
+		QJsonObject o;
+		o.insert(QStringLiteral("id"), mode.id);
+		o.insert(QStringLiteral("title"), mode.title);
+		o.insert(QStringLiteral("subTitle"), mode.subTitle);
+		o.insert(QStringLiteral("weights"), mode.weights);
+		o.insert(QStringLiteral("listTemplate"), mode.listTemplate);
+		o.insert(QStringLiteral("options"), mode.options);
+		o.insert(QStringLiteral("rules"), mode.rules);
+		o.insert(QStringLiteral("nRounds"), mode.nRounds);
+		o.insert(QStringLiteral("fightTimeInSeconds"), mode.fightTimeInSeconds);
+		o.insert(QStringLiteral("weightsAreDoubled"), mode.weightsAreDoubled);
+		o.insert(QStringLiteral("fightTimeOverrides"), mode.GetFightTimeOverridesString());
+		items.append(o);
+	}
+	return items;
+}
+
+bool MainWindowTeam::UploadTournamentModes_(const Ipponboard::TournamentMode::List& modes, QString& errorMsg)
+{
+	errorMsg.clear();
+	QJsonObject root;
+	root.insert(QStringLiteral("tournamentModes"), TournamentModesToJson(modes));
+	const QByteArray payload = QJsonDocument(root).toJson(QJsonDocument::Compact);
+
+#ifdef _WIN32
+	HINTERNET session = WinHttpOpen(L"Ipponboard-Meschede/0.2.1", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+	if (!session) { errorMsg = QStringLiteral("Server-Sync konnte nicht gestartet werden."); return false; }
+	WinHttpSetTimeouts(session, 3000, 3000, 3000, 5000);
+	HINTERNET connect = WinHttpConnect(session, L"test-liga.paul-meschede.de", INTERNET_DEFAULT_HTTPS_PORT, 0);
+	HINTERNET request = connect ? WinHttpOpenRequest(connect, L"PUT", L"/api/masterdata/tournamentModes",
+		nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE) : nullptr;
+	bool ok = request && WinHttpSendRequest(request, L"Content-Type: application/json\r\n", -1L,
+		(LPVOID)payload.constData(), static_cast<DWORD>(payload.size()), static_cast<DWORD>(payload.size()), 0)
+		&& WinHttpReceiveResponse(request, nullptr);
+	DWORD status = 0, size = sizeof(status);
+	if (ok) ok = WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+		WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX) && status >= 200 && status < 300;
+	if (request) WinHttpCloseHandle(request);
+	if (connect) WinHttpCloseHandle(connect);
+	WinHttpCloseHandle(session);
+	if (!ok) errorMsg = status ? QStringLiteral("Server lehnt die Modusänderung ab (HTTP %1).").arg(status)
+		: QStringLiteral("Server nicht erreichbar. Globale Modi wurden nicht gespeichert.");
+	return ok;
+#else
+	errorMsg = QStringLiteral("Globale Modus-Synchronisation ist auf dieser Plattform noch nicht implementiert.");
+	return false;
+#endif
+}
+
+void MainWindowTeam::SaveTournamentModesToCache_(const Ipponboard::TournamentMode::List& modes)
+{
+	QString appDir = QCoreApplication::applicationDirPath();
+	QString cacheFile = QDir(appDir).absoluteFilePath(QStringLiteral("../data/masterdata.json"));
+	if (!QFile::exists(cacheFile))
+		cacheFile = QDir(appDir).absoluteFilePath(QStringLiteral("data/masterdata.json"));
+
+	QFile file(cacheFile);
+	if (!file.open(QIODevice::ReadOnly))
+		return;
+	QJsonParseError error;
+	QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
+	file.close();
+	if (error.error != QJsonParseError::NoError || !doc.isObject())
+		return;
+
+	QJsonObject root = doc.object();
+	QJsonObject master = root.value(QStringLiteral("masterdata")).toObject();
+	master.insert(QStringLiteral("tournamentModes"), TournamentModesToJson(modes));
+	root.insert(QStringLiteral("masterdata"), master);
+
+	QSaveFile out(cacheFile);
+	if (out.open(QIODevice::WriteOnly))
+	{
+		out.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+		out.commit();
+	}
 }
 
 QStringList MainWindowTeam::FighterNamesForTeam_(const QString& teamId) const
@@ -1266,16 +1373,17 @@ void MainWindowTeam::on_actionManageModes_triggered()
 	{
 		QString errMsg;
 
-		if (!Ipponboard::TournamentMode::WriteModes(ModeConfigurationFilePath_(), dlg.Result(), errMsg))
+		if (!UploadTournamentModes_(dlg.Result(), errMsg))
 		{
 			QMessageBox::critical(this,
-								  QCoreApplication::tr("Error writing mode configurations"),
-								  errMsg);
-
+				QStringLiteral("Globale Wettkampfmodi"),
+				errMsg + QStringLiteral("\n\nDie Änderung wurde nicht als globale Systemeinstellung übernommen."));
 			return;
 		}
 
-		LoadModes(dlg.Result(), m_currentMode); // will trigger re-initialization of all mode data!
+		m_masterTournamentModes = TournamentModesToJson(dlg.Result());
+		SaveTournamentModesToCache_(dlg.Result());
+		LoadModes(dlg.Result(), m_currentMode); // global server state accepted
 	}
 }
 
