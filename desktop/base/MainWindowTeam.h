@@ -64,6 +64,7 @@ private:
 	void update_club_views();
 	bool LoadMasterDataCache_();
 	QStringList FighterNamesForTeam_(const QString& teamId) const;
+	QStringList FighterIdsForTeam_(const QString& teamId) const;
 	void UpdateTeamFighterDelegates_();
 	void UpdateFightNumber_();
 	void UpdateButtonText_();
@@ -150,6 +151,8 @@ private:
 	//std::shared_ptr<Ipponboard::FightCategoryMgr> m_pCategoryManager;
 	QStringList m_FighterNamesHome;
 	QStringList m_FighterNamesGuest;
+	QStringList m_FighterIdsHome;
+	QStringList m_FighterIdsGuest;
 	QJsonArray m_masterClubs;
 	QJsonArray m_masterTeams;
 	QJsonArray m_masterFighters;
