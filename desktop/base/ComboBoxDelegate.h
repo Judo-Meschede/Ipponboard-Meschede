@@ -38,10 +38,11 @@ public:
 		const QStyleOptionViewItem& option,
 		const QModelIndex& /* index */) const override;
 
-	void SetItems(QStringList const& items);
+	void SetItems(QStringList const& items, QStringList const& itemIds = QStringList());
 
 private:
 	QStringList m_items;
+	QStringList m_itemIds;
 };
 
 #endif // __BASE_COMBOBOXDELEGATE_H
