@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.0**
+`CURRENT_VERSION.txt`: **0.2.1**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.0
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.1
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.0
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.1
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -283,26 +283,32 @@ Noch nicht durchgeführt:
 - Windows-Build V0.1.9.
 - Praxistest der editierbaren Kaderauswahl.
 
-## 7f. Persistente Modusverwaltung V0.2.0
+## 7f. Globale serverseitige Modusverwaltung – V0.2.1
 
-Problem aus Praxistest:
-- `TournamentModes.ini` lag bisher direkt neben der EXE.
-- Jeder neue Build kopierte die Repository-Datei erneut in den Versionsordner.
-- Manuell angepasste Modi konnten dadurch beim Versionswechsel verloren gehen.
+Fachliche Korrektur:
+- Wettkampfmodi sind **keine persönlichen Benutzereinstellungen**, sondern globale Systemeinstellungen.
+- Der in V0.2.0 kurzzeitig eingebaute benutzerspezifische AppConfig-Ansatz wurde wieder entfernt.
 
-Ab V0.2.0:
-- persönliche Moduskonfiguration wird über `QStandardPaths::AppConfigLocation` außerhalb des Versionsordners gespeichert.
-- Lesen und Schreiben der Modusverwaltung erfolgt ausschließlich über diese persistente Datei.
-- Beim ersten Start wird, falls noch keine persistente Datei existiert, die bisherige `TournamentModes.ini` neben der EXE einmalig dorthin kopiert.
-- spätere Builds/ZIPs überschreiben die persönliche Modusdatei nicht mehr.
-- die im Repository enthaltene `TournamentModes.ini` bleibt nur Start-/Fallbackbestand.
+Ab V0.2.1:
+- Server-Masterdata enthält die globale Sammlung `tournamentModes`.
+- Server-Endpunkt `PUT /api/masterdata/tournamentModes` ersetzt die komplette globale Modusliste atomar.
+- Der Sync-Snapshot enthält die globalen Modi automatisch als Teil von `masterdata`.
+- Desktop lädt beim Start zuerst den synchronisierten Masterdata-Cache und verwendet daraus die globalen Modi.
+- Nur wenn der Server/Cache noch gar keine globalen Modi enthält, dient die mitgelieferte `TournamentModes.ini` als Erststart-/Notfall-Fallback.
+- Änderungen unter `Modi verwalten` werden erst übernommen, wenn der Server sie erfolgreich gespeichert hat.
+- Nach erfolgreichem Serverspeichern aktualisiert die App zusätzlich ihren lokalen Masterdata-Cache. Damit bleibt der zuletzt synchronisierte globale Stand offline verwendbar.
+- Ein neuer Portable-Build über `03` kann die globalen Modi nicht überschreiben, weil der produktive Stand vom Server bzw. dessen lokalem Sync-Cache kommt.
+- Neue Rechner/Nutzer erhalten beim Synchronisieren dieselben Modi.
 
-Wiederherstellung alter Änderungen:
-- Falls ein früher entpackter Versionsordner mit der angepassten `TournamentModes.ini` noch vorhanden ist, diese Datei kann einmalig als persönliche Modusdatei übernommen werden.
+Wichtig:
+- Server V0.2.1 muss vor der Nutzung dieser globalen Modusverwaltung ausgerollt werden.
+- Bereits verlorene, ausschließlich lokal vorhandene Modusanpassungen können dadurch nicht rückwirkend rekonstruiert werden.
+- Nach dem Rollout müssen die gewünschten Modi einmal korrekt angelegt/angepasst und gespeichert werden. Danach sind sie global.
 
 Noch nicht durchgeführt:
-- Windows-Build V0.2.0.
-- Praxistest der Migration und Persistenz über einen weiteren Versionswechsel.
+- Server V0.2.1 auf dem Testserver ausgerollt.
+- Windows-Build V0.2.1.
+- Praxistest: Modus auf Rechner A ändern → Server speichern → frischer Build/Rechner B synchronisiert denselben Stand.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
