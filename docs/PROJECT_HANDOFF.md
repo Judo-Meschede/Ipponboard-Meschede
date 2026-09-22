@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.8**
+`CURRENT_VERSION.txt`: **0.1.9**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.8
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.9
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.8
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.9
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -264,6 +264,24 @@ Wichtig:
 - Die beiden Excel-Originaldateien wurden nicht verändert.
 - Noch kein Windows-Build/Praxistest der HTML-Druckvorschau durchgeführt.
 - Die smarte Kader-/Freitextauswahl direkt in den Kämpferzellen ist weiterhin der nächste offene Funktionsschritt.
+
+## 7e. Smarte Kämpferauswahl V0.1.9
+
+Umgesetzt:
+- Kämpferzellen in beiden Runden sind editierbare Dropdowns.
+- Heimseite erhält ausschließlich den Kader der aktuell gewählten Heimmannschaft.
+- Gastseite erhält ausschließlich den Kader der aktuell gewählten Gastmannschaft.
+- Tippen filtert die Vorschläge unabhängig von Groß-/Kleinschreibung und auch innerhalb des Namens.
+- Auswahl eines exakten Kadernamens speichert zusätzlich die stabile `fighter.id`.
+- beliebiger Freitext bleibt erlaubt.
+- bei Freitext wird eine eventuell alte `fighter.id` ausdrücklich geleert, damit keine falsche Person verknüpft bleibt.
+- gilt identisch für Hin- und Rückrunde.
+- Wechsel der Mannschaft ändert die bereits eingetragenen Namen nicht automatisch; lediglich die Vorschlagsliste wird auf den neuen Kader umgestellt.
+- Modusauswahl/Gewichtsklassen werden bewusst nicht automatisch verändert. Der Nutzer pflegt die Modi manuell in der Anwendung.
+
+Noch nicht durchgeführt:
+- Windows-Build V0.1.9.
+- Praxistest der editierbaren Kaderauswahl.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
