@@ -14,8 +14,9 @@ QLabel { background:transparent; }
 #cardTeam:hover { background:rgba(255,255,255,8); border:2px solid rgba(255,65,70,225); }
 #label_serverStatus { color:#39df69; font-size:16px; font-weight:700; }
 #label_lastUpdate, #label_cacheStatus, #label_info { color:#aeb0b3; font-size:14px; }
-#btnSync { color:#f4f4f4; font-size:13px; background:rgba(0,0,0,0); border:0; }
-#btnSync:hover { color:white; background:rgba(224,32,39,35); border-radius:7px; }
+#btnSync { color:#ffffff; font-size:13px; font-weight:600; background:rgba(110,16,19,210); border:1px solid rgba(225,48,54,210); border-radius:8px; padding:0 12px; }
+#btnSync:hover { background:rgba(155,20,25,225); border-color:rgba(255,72,78,235); }
+#btnSync:disabled { color:#b9b9b9; background:rgba(55,55,55,180); border-color:rgba(100,100,100,150); }
 #btnSettings, #btnHelp, #btnAbout { background:rgba(0,0,0,0); border:0; }
   </string></property>
   <widget class="QLabel" name="backgroundLabel">
@@ -56,7 +57,7 @@ QLabel { background:transparent; }
    <property name="text"><string>Letzte Aktualisierung: -</string></property>
   </widget>
   <widget class="QPushButton" name="btnSync">
-   <property name="geometry"><rect><x>551</x><y>850</y><width>184</width><height>34</height></rect></property>
+   <property name="geometry"><rect><x>551</x><y>846</y><width>214</width><height>42</height></rect></property>
    <property name="cursor"><cursorShape>PointingHandCursor</cursorShape></property>
    <property name="text"><string>Jetzt aktualisieren</string></property>
   </widget>
