@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.3**
+`CURRENT_VERSION.txt`: **0.1.4**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.3
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.4
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -177,6 +177,23 @@ Servercode:
 Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
+
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.4
+
+Neu umgesetzt:
+- Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
+- Heim-/Gastmannschaften werden aus `teams` geladen und intern über `team.id` referenziert.
+- Mannschaftskader werden über `team.fighterIds` aufgelöst.
+- Die Kämpferauswahl in beiden Runden schlägt ausschließlich den Kader der gewählten Mannschaft vor.
+- Ausgewählte Kämpfer erhalten zusätzlich zur Anzeige den stabilen `fighter.id`.
+- Turnier-/Autosave speichert zusätzlich `HostClubId`, `HomeTeamId`, `GuestTeamId` und `FighterId`.
+- Alte Turnierdateien ohne diese Felder bleiben lesbar.
+- Ohne gültigen Masterdata-Cache fällt der Teammodus auf die bisherige lokale Club-Verwaltung zurück.
+
+Noch offen:
+- Windows-Build von V0.1.4 ausführen und praktisch testen.
+- Bedienung der Mannschafts-/Kaderauswahl nach Praxistest ggf. verfeinern.
+- Danach Synchronisation/Offline-Änderungskonflikte weiter ausbauen.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
