@@ -22,6 +22,7 @@ namespace Ipponboard::TournamentSerialization
 	constexpr auto str_IsGoldenScore = "IsGoldenScore";
 	constexpr auto str_IsSaved = "IsSaved";
 	constexpr auto str_Name = "Name";
+	constexpr auto str_FighterId = "FighterId";
 	constexpr auto str_Club = "Club";
 	constexpr auto str_Ippon = "Ippon";
 	constexpr auto str_Wazaari = "Wazaari";
@@ -36,10 +37,13 @@ namespace Ipponboard::TournamentSerialization
 	constexpr auto str_ID = "ID";
 	constexpr auto str_FileVersion = "FileVersion";
 	constexpr auto str_Host = "Host";
+	constexpr auto str_HostClubId = "HostClubId";
 	constexpr auto str_Date = "Date";
 	constexpr auto str_Location = "Location";
 	constexpr auto str_Home = "Home";
+	constexpr auto str_HomeTeamId = "HomeTeamId";
 	constexpr auto str_Guest = "Guest";
+	constexpr auto str_GuestTeamId = "GuestTeamId";
 	constexpr auto str_CurrentRound = "CurrentRound";
 	constexpr auto str_CurrentFight = "CurrentFight";
 	constexpr auto str_FgColorInfoText = "FgColorInfoText";
@@ -54,10 +58,13 @@ QJsonDocument ToJson(const TournamentSaveData& data)
 	QJsonObject saveObject;
 	saveObject.insert(str_FileVersion, data.fileVersion);
 	saveObject.insert(str_Host, data.host);
+	saveObject.insert(str_HostClubId, data.hostClubId);
 	saveObject.insert(str_Date, data.date);
 	saveObject.insert(str_Location, data.location);
 	saveObject.insert(str_Home, data.home);
+	saveObject.insert(str_HomeTeamId, data.homeTeamId);
 	saveObject.insert(str_Guest, data.guest);
+	saveObject.insert(str_GuestTeamId, data.guestTeamId);
 	saveObject.insert(str_CurrentRound, data.currentRound);
 	saveObject.insert(str_CurrentFight, data.currentFight);
 	saveObject.insert(str_FgColorInfoText, static_cast<int>(data.infoTextFg));
@@ -97,6 +104,7 @@ QJsonDocument ToJson(const TournamentSaveData& data)
 			fightObject.insert(str_IsSaved, fight.is_saved);
 
 			QJsonObject firstFighter;
+			firstFighter.insert(str_FighterId, fight.GetFighter(FighterEnum::First).id);
 			firstFighter.insert(str_Name, fight.GetFighter(FighterEnum::First).name);
 			firstFighter.insert(str_Club, fight.GetFighter(FighterEnum::First).club);
 			firstFighter.insert(str_Ippon, fight.GetScore1().Value(Score::Point::Ippon));
@@ -107,6 +115,7 @@ QJsonDocument ToJson(const TournamentSaveData& data)
 			fightObject.insert(str_FirstFighter, firstFighter);
 
 			QJsonObject secondFighter;
+			secondFighter.insert(str_FighterId, fight.GetFighter(FighterEnum::Second).id);
 			secondFighter.insert(str_Name, fight.GetFighter(FighterEnum::Second).name);
 			secondFighter.insert(str_Club, fight.GetFighter(FighterEnum::Second).club);
 			secondFighter.insert(str_Ippon, fight.GetScore2().Value(Score::Point::Ippon));
@@ -141,10 +150,13 @@ int CreateFromJson(const QJsonDocument& doc,
 	TournamentSaveData parsed;
 	parsed.fileVersion = fileVersion;
 	parsed.host = saveObject[str_Host].toString();
+	parsed.hostClubId = saveObject[str_HostClubId].toString();
 	parsed.date = saveObject[str_Date].toString();
 	parsed.location = saveObject[str_Location].toString();
 	parsed.home = saveObject[str_Home].toString();
+	parsed.homeTeamId = saveObject[str_HomeTeamId].toString();
 	parsed.guest = saveObject[str_Guest].toString();
+	parsed.guestTeamId = saveObject[str_GuestTeamId].toString();
 	parsed.currentRound = qBound(0, saveObject[str_CurrentRound].toInt(), 100);
 	parsed.currentFight = qBound(0, saveObject[str_CurrentFight].toInt(), 100);
 	parsed.infoTextFg = static_cast<QRgb>(saveObject[str_FgColorInfoText].toInt());
@@ -187,6 +199,7 @@ int CreateFromJson(const QJsonDocument& doc,
 			fight.is_saved = fightObject[str_IsSaved].toBool();
 
 			const QJsonObject firstFighter = fightObject[str_FirstFighter].toObject();
+			fight.fighters[0].id = firstFighter[str_FighterId].toString();
 			fight.fighters[0].name = firstFighter[str_Name].toString();
 			fight.fighters[0].club = firstFighter[str_Club].toString();
 			fight.GetScore1().SetValue(Score::Point::Ippon, qBound(0, firstFighter[str_Ippon].toInt(), 1));
@@ -196,6 +209,7 @@ int CreateFromJson(const QJsonDocument& doc,
 			fight.GetScore1().SetValue(Score::Point::Hansokumake, qBound(0, firstFighter[str_Hansokumake].toInt(), 1));
 
 			const QJsonObject secondFighter = fightObject[str_SecondFighter].toObject();
+			fight.fighters[1].id = secondFighter[str_FighterId].toString();
 			fight.fighters[1].name = secondFighter[str_Name].toString();
 			fight.fighters[1].club = secondFighter[str_Club].toString();
 			fight.GetScore2().SetValue(Score::Point::Ippon, qBound(0, secondFighter[str_Ippon].toInt(), 1));
