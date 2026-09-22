@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.9**
+`CURRENT_VERSION.txt`: **0.2.0**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.9
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.0
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.9
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.0
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -282,6 +282,27 @@ Umgesetzt:
 Noch nicht durchgeführt:
 - Windows-Build V0.1.9.
 - Praxistest der editierbaren Kaderauswahl.
+
+## 7f. Persistente Modusverwaltung V0.2.0
+
+Problem aus Praxistest:
+- `TournamentModes.ini` lag bisher direkt neben der EXE.
+- Jeder neue Build kopierte die Repository-Datei erneut in den Versionsordner.
+- Manuell angepasste Modi konnten dadurch beim Versionswechsel verloren gehen.
+
+Ab V0.2.0:
+- persönliche Moduskonfiguration wird über `QStandardPaths::AppConfigLocation` außerhalb des Versionsordners gespeichert.
+- Lesen und Schreiben der Modusverwaltung erfolgt ausschließlich über diese persistente Datei.
+- Beim ersten Start wird, falls noch keine persistente Datei existiert, die bisherige `TournamentModes.ini` neben der EXE einmalig dorthin kopiert.
+- spätere Builds/ZIPs überschreiben die persönliche Modusdatei nicht mehr.
+- die im Repository enthaltene `TournamentModes.ini` bleibt nur Start-/Fallbackbestand.
+
+Wiederherstellung alter Änderungen:
+- Falls ein früher entpackter Versionsordner mit der angepassten `TournamentModes.ini` noch vorhanden ist, diese Datei kann einmalig als persönliche Modusdatei übernommen werden.
+
+Noch nicht durchgeführt:
+- Windows-Build V0.2.0.
+- Praxistest der Migration und Persistenz über einen weiteren Versionswechsel.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
