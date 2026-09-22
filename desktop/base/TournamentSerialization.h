@@ -29,10 +29,13 @@ struct TournamentSaveData
 {
 	QString fileVersion { QString::fromLatin1(TournamentSaveFileVersion) };
 	QString host;
+	QString hostClubId;
 	QString date;
 	QString location;
 	QString home;
+	QString homeTeamId;
 	QString guest;
+	QString guestTeamId;
 	int currentRound { 0 };
 	int currentFight { 0 };
 	QRgb infoTextFg { 0 };
