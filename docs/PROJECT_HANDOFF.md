@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.1**
+`CURRENT_VERSION.txt`: **0.2.2**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.1
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.2
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.1
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.2
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -309,6 +309,30 @@ Noch nicht durchgeführt:
 - Server V0.2.1 auf dem Testserver ausgerollt.
 - Windows-Build V0.2.1.
 - Praxistest: Modus auf Rechner A ändern → Server speichern → frischer Build/Rechner B synchronisiert denselben Stand.
+
+## 7g. Server-Verwaltung Wettkampfmodi – V0.2.2
+
+Umgesetzt:
+- neuer Reiter `Wettkampfmodi` unter `/verwaltung`.
+- globale Modi können serverseitig angelegt, bearbeitet und gelöscht werden.
+- Felder: Titel, Untertitel, Gewichtsklassen, Vorlage, Rundenzahl, Kampfzeit, doppelte Gewichtsklassen, Regelwerk, abweichende Kampfzeiten und Optionen.
+- Vorlagenauswahl enthält auch die beiden offiziellen NWJV-Vorlagen.
+- Webverwaltung arbeitet direkt auf `masterdata.tournamentModes`.
+- Änderungen erhöhen die Masterdata-Revision und landen damit automatisch im Sync-Snapshot.
+- Desktop V0.2.2 lädt diese Modi beim Start aus dem synchronisierten Masterdata-Cache.
+- Desktop-`Modi verwalten` kann weiterhin die komplette globale Modusliste an den Server zurückschreiben.
+
+Erforderliche Schritte nach diesem Stand:
+1. Linux-Server: Schritt 01 ausführen.
+2. Linux-Server: Schritt 02 ausführen.
+3. Windows: `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+4. Browser: `https://test-liga.paul-meschede.de/verwaltung` → `Wettkampfmodi` prüfen/anlegen.
+5. Desktop V0.2.2 starten und Synchronisation prüfen.
+
+Noch nicht durchgeführt:
+- Server V0.2.2 ausgerollt.
+- Windows-Build V0.2.2.
+- End-to-End-Praxistest Servermodus → Sync → Desktop.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
