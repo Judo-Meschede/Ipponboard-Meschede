@@ -118,6 +118,24 @@ void MainWindowTeam::LoadModes(Ipponboard::TournamentMode::List modes, QString s
 	}
 }
 
+QString MainWindowTeam::ModeConfigurationFilePath_() const
+{
+	const QString persistentFile = fm::GetAppConfigFilePath(QStringLiteral("TournamentModes.ini"));
+	QFileInfo persistentInfo(persistentFile);
+
+	if (!persistentInfo.exists())
+	{
+		const QString legacyFile = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("TournamentModes.ini"));
+		if (QFile::exists(legacyFile))
+		{
+			QDir().mkpath(persistentInfo.absolutePath());
+			QFile::copy(legacyFile, persistentFile);
+		}
+	}
+
+	return persistentFile;
+}
+
 void MainWindowTeam::Init()
 {
 	m_pClubManager.reset(new Ipponboard::ClubManager());
@@ -134,7 +152,7 @@ void MainWindowTeam::Init()
 	QString errMsg;
 	Ipponboard::TournamentMode::List modes;
 
-	if (!Ipponboard::TournamentMode::ReadModes(MainWindowTeam::ModeConfigurationFileName(), modes, errMsg))
+	if (!Ipponboard::TournamentMode::ReadModes(ModeConfigurationFilePath_(), modes, errMsg))
 	{
         QMessageBox::critical(nullptr,
 							  QCoreApplication::tr("Error reading mode configurations"),
@@ -1248,7 +1266,7 @@ void MainWindowTeam::on_actionManageModes_triggered()
 	{
 		QString errMsg;
 
-		if (!Ipponboard::TournamentMode::WriteModes(MainWindowTeam::ModeConfigurationFileName(), dlg.Result(), errMsg))
+		if (!Ipponboard::TournamentMode::WriteModes(ModeConfigurationFilePath_(), dlg.Result(), errMsg))
 		{
 			QMessageBox::critical(this,
 								  QCoreApplication::tr("Error writing mode configurations"),
