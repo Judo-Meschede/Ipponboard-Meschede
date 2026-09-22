@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.7**
+`CURRENT_VERSION.txt`: **0.1.8**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.7
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.8
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.7
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.8
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -244,6 +244,26 @@ Noch nicht durchgeführt:
 
 Für später vorgemerkt:
 - Subdomain `ipponboard.paul-meschede.de` statt/zusätzlich zu `test-liga.paul-meschede.de` einrichten.
+
+## 7d. Offizielle NWJV-Wettkampflisten – V0.1.8
+
+Vom Nutzer bereitgestellte offizielle Excel-Vordrucke:
+- Mannschaftswettkampfliste 5 Kämpfe Hin-/Rückrunde
+- Mannschaftswettkampfliste 7 Kämpfe Hin-/Rückrunde
+
+Umgesetzt:
+- `desktop/base/templates/list_output_nwjv_5_hinundrueck.html`
+- `desktop/base/templates/list_output_nwjv_7_hinundrueck.html`
+- beide erscheinen automatisch in der Modusverwaltung unter `Vorlage`.
+- offizieller Aufbau, Beschriftungen, Blau/Weiß-Darstellung, Hin-/Rückrunde, Unterbewertung, Summenfelder, Unterschriftsfelder und NWJV-Logo wurden übernommen.
+- Für diese Vorlagen gibt es einen eigenen HTML-Zeilenexport in der offiziellen Wertungsreihenfolge `Yuko – Waza-ari – Ippon – Shido – Hansoku-make – Sieg – Unterbewertung`.
+- bisherige Ipponboard-Druckvorlagen und deren Reihenfolge bleiben unverändert.
+- zusätzliche Platzhalter für Rückrundensummen: `SECOND_WINS_*` und `SECOND_SCORE_*`.
+
+Wichtig:
+- Die beiden Excel-Originaldateien wurden nicht verändert.
+- Noch kein Windows-Build/Praxistest der HTML-Druckvorschau durchgeführt.
+- Die smarte Kader-/Freitextauswahl direkt in den Kämpferzellen ist weiterhin der nächste offene Funktionsschritt.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
