@@ -159,6 +159,7 @@ private:
 	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
 	QString GetRoundDataAsHtml(const Ipponboard::Fight& fight, int fightNo);
+	QString GetRoundDataAsNwjvHtml(const Ipponboard::Fight& fight);
 };
 
 #endif  // TEAM_EDITION_MAINWINDOW_H_
