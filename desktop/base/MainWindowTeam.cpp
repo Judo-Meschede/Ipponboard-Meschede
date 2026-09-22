@@ -728,6 +728,45 @@ QString MainWindowTeam::GetRoundDataAsHtml(const Fight& fight, int fightNo)
 	return roundData;
 }
 
+QString MainWindowTeam::GetRoundDataAsNwjvHtml(const Fight& fight)
+{
+	auto getNum = [&](int val)
+	{
+		return (!fight.is_saved && val == 0) ? QString() : QString::number(val);
+	};
+	auto getTime = [&](QString const& timeStr)
+	{
+		return !fight.is_saved ? QString() : timeStr;
+	};
+
+	auto first = FighterEnum::First;
+	auto second = FighterEnum::Second;
+	auto const& score_first = fight.GetScore1();
+	auto const& score_second = fight.GetScore2();
+
+	QString row("<tr>");
+	row.append("<td><center>" + fight.weight + "</center></td>");
+	row.append("<td class=\"namecell\"><center>" + fight.fighters[first].name + "</center></td>");
+	row.append("<td><center>" + getNum(score_first.Yuko()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_first.Wazaari()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_first.Ippon()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_first.Shido()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_first.Hansokumake()) + "</center></td>");
+	row.append("<td><center>" + getNum(fight.HasWon(first)) + "</center></td>");
+	row.append("<td><center>" + getNum(fight.GetScorePoints(first)) + "</center></td>");
+	row.append("<td class=\"namecell\"><center>" + fight.fighters[second].name + "</center></td>");
+	row.append("<td><center>" + getNum(score_second.Yuko()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_second.Wazaari()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_second.Ippon()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_second.Shido()) + "</center></td>");
+	row.append("<td><center>" + getNum(score_second.Hansokumake()) + "</center></td>");
+	row.append("<td><center>" + getNum(fight.HasWon(second)) + "</center></td>");
+	row.append("<td><center>" + getNum(fight.GetScorePoints(second)) + "</center></td>");
+	row.append("<td><center>" + getTime(fight.GetTotalTimeElapsedString()) + "</center></td>");
+	row.append("</tr>\n");
+	return row;
+}
+
 void MainWindowTeam::WriteScoreToHtml_()
 {
 	QString modeText = get_full_mode_title(m_currentMode);
@@ -769,6 +808,10 @@ void MainWindowTeam::WriteScoreToHtml_()
                        m_pController->GetTournamentScoreModel(1)->GetTotalWins() : std::make_pair<unsigned int, unsigned int>(0, 0);
 	auto score2nd = m_pController->GetRoundCount() > 1 ?
                     m_pController->GetTournamentScoreModel(1)->GetTotalScore() : std::make_pair<unsigned int, unsigned int>(0, 0);
+	m_htmlScore.replace("%SECOND_WINS_HOME%", QString::number(wins2nd.first));
+	m_htmlScore.replace("%SECOND_WINS_GUEST%", QString::number(wins2nd.second));
+	m_htmlScore.replace("%SECOND_SCORE_HOME%", QString::number(score2nd.first));
+	m_htmlScore.replace("%SECOND_SCORE_GUEST%", QString::number(score2nd.second));
 	auto totalWins = std::make_pair(wins1st.first + wins2nd.first, wins1st.second + wins2nd.second);
 	auto totalScore = std::make_pair(score1st.first + score2nd.first, score1st.second + score2nd.second);
 
@@ -814,6 +857,23 @@ void MainWindowTeam::WriteScoreToHtml_()
 	}
 
 	m_htmlScore.replace("%SECOND_ROUND%", scoreData);
+
+	QString nwjvFirstRound;
+	for (int fightNo(0); fightNo < m_pController->GetFightCount(); ++fightNo)
+	{
+		nwjvFirstRound.append(GetRoundDataAsNwjvHtml(m_pController->GetFight(0, fightNo)));
+	}
+	m_htmlScore.replace("%NWJV_FIRST_ROUND%", nwjvFirstRound);
+
+	QString nwjvSecondRound;
+	for (int roundNo(1); roundNo < m_pController->GetRoundCount(); ++roundNo)
+	{
+		for (int fightNo(0); fightNo < m_pController->GetFightCount(); ++fightNo)
+		{
+			nwjvSecondRound.append(GetRoundDataAsNwjvHtml(m_pController->GetFight(roundNo, fightNo)));
+		}
+	}
+	m_htmlScore.replace("%NWJV_SECOND_ROUND%", nwjvSecondRound);
 
 const QString copyright = tr("List generated with Ipponboard v") +
 							  QApplication::applicationVersion() +
