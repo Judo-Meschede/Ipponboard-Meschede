@@ -16,6 +16,7 @@ namespace Ipponboard
 {
 struct SimpleFighter
 {
+	QString id;
 	QString name;
 	QString club;
 };
