@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.5**
+`CURRENT_VERSION.txt`: **0.1.6**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.5
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.6
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.5
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.6
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -199,6 +199,28 @@ Noch offen:
 - Windows-Build von V0.1.5 ausführen und praktisch testen.
 - Bedienung der Mannschafts-/Kaderauswahl nach Praxistest ggf. verfeinern.
 - Danach Synchronisation/Offline-Änderungskonflikte weiter ausbauen.
+
+## 7b. NWJV-Testdaten – Bezirksliga Männer Arnsberg 2026
+
+Neu in V0.1.6:
+- Verwaltung unterstützt bei Wettkämpfern zusätzlich `Pass-Nr.` und `Lizenz-Nr.`.
+- Ligakader dürfen Fremdstarter aus anderen Stammvereinen enthalten.
+- Stammverein bleibt am Kämpfer gespeichert; Ligazugehörigkeit erfolgt ausschließlich über `team.fighterIds`.
+- neuer sicherer Merge-Import `POST /api/masterdata/merge`, der vorhandene andere Stammdaten nicht komplett ersetzt.
+- Import-Schaltfläche `NWJV Bezirksliga Arnsberg 2026 laden` unter Import / Export.
+- Testdatensatz: `server/public/data/nwjv-bezirksliga-arnsberg-2026.json`.
+- enthalten: 32 Vereine, 9 Ligamannschaften, 261 Kämpfer/Kaderzuordnungen, 4 Kampftage, 36 Begegnungen.
+- Kampfplan basiert auf der offiziellen NWJV-Seite Bezirksliga Männer Arnsberg 2026.
+- Vereinswebseiten wurden für die neun Ligavereine recherchiert.
+- eindeutig zuordenbare offizielle Logos sind aktuell für VfL Gevelsberg, 1. JJJC Hattingen und DSC Wanne-Eickel hinterlegt; unsichere Logo-Treffer wurden nicht übernommen.
+- Gevelsberg ist als unvollständig markiert: hochgeladen wurden nur Seiten 1 und 2, obwohl Seite 2 als „Seite 2 von 3“ gekennzeichnet ist.
+- einzelne in den Ausgangslisten leere Passnummern bleiben bewusst leer.
+- eine nicht als Staatsangehörigkeit interpretierbare Quellenangabe wurde nicht als Nationalität übernommen.
+
+Noch nicht durchgeführt:
+- Serverstand V0.1.6 auf `test-liga.paul-meschede.de` ausrollen.
+- NWJV-Testimport dort ausführen.
+- Desktop V0.1.6 unter Windows bauen und mit den importierten Mannschaften praktisch testen.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
