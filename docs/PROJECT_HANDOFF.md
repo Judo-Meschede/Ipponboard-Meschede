@@ -250,6 +250,12 @@ Wichtig aus der Analyse:
 
 ## 11. Arbeitsregeln
 
+- Nach dem Einlesen des Projektstands **nicht automatisch mit der nächsten Umsetzung beginnen**.
+- Zuerst den aktuellen Stand und den im Handoff genannten nächsten sinnvollen Schritt kurz zusammenfassen.
+- Danach den Nutzer fragen, **was als Nächstes gemacht werden soll**.
+- Änderungen an Code, Server, Buildskripten oder Daten erst nach ausdrücklicher Freigabe des Nutzers beginnen.
+
+
 - Keine Kosten.
 - Aussagen realistisch einordnen.
 - Nie behaupten, etwas sei getestet, wenn nur Source geändert wurde.
@@ -267,6 +273,6 @@ Wichtig aus der Analyse:
 
 Im neuen Chat reicht dieser Satz:
 
-> Arbeite am Projekt Ipponboard-Meschede weiter. Lies zuerst im GitHub-Repository Judo-Meschede/Ipponboard-Meschede die Datei docs/PROJECT_HANDOFF.md und prüfe CURRENT_VERSION.txt sowie den aktuellen main-Stand. Danach direkt beim dort dokumentierten nächsten Schritt weitermachen. Keine alten Google-Drive-Projektstände als Quellcodebasis verwenden.
+> Arbeite am Projekt Ipponboard-Meschede weiter. Lies zuerst im GitHub-Repository Judo-Meschede/Ipponboard-Meschede die Datei docs/PROJECT_HANDOFF.md und prüfe CURRENT_VERSION.txt sowie den aktuellen main-Stand. Fasse mir danach den aktuellen Stand und den dort dokumentierten nächsten sinnvollen Schritt kurz zusammen. **Noch nichts umsetzen oder ändern. Frage mich anschließend, was ich als Nächstes machen möchte.** Keine alten Google-Drive-Projektstände als Quellcodebasis verwenden.
 
 Danach sollte der neue Chat zuerst GitHub lesen und erst dann Änderungen vornehmen.
