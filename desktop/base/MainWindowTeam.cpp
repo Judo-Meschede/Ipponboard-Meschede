@@ -77,6 +77,8 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_host()
 	, m_FighterNamesHome()
 	, m_FighterNamesGuest()
+	, m_FighterIdsHome()
+	, m_FighterIdsGuest()
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
@@ -426,6 +428,26 @@ bool MainWindowTeam::LoadMasterDataCache_()
 QStringList MainWindowTeam::FighterNamesForTeam_(const QString& teamId) const
 {
 	QStringList result;
+	const QStringList ids = FighterIdsForTeam_(teamId);
+	for (const QString& fighterId : ids)
+	{
+		for (const QJsonValue& value : m_masterFighters)
+		{
+			const QJsonObject fighter = value.toObject();
+			if (fighter.value(QStringLiteral("id")).toString() != fighterId)
+				continue;
+			const QString name = (fighter.value(QStringLiteral("firstName")).toString() + QStringLiteral(" ") +
+				fighter.value(QStringLiteral("lastName")).toString()).trimmed();
+			result.append(name);
+			break;
+		}
+	}
+	return result;
+}
+
+QStringList MainWindowTeam::FighterIdsForTeam_(const QString& teamId) const
+{
+	QStringList result;
 	QJsonArray fighterIds;
 	for (const QJsonValue& value : m_masterTeams)
 	{
@@ -444,17 +466,11 @@ QStringList MainWindowTeam::FighterNamesForTeam_(const QString& teamId) const
 			const QJsonObject fighter = value.toObject();
 			if (fighter.value(QStringLiteral("id")).toString() != fighterId)
 				continue;
-			if (fighter.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
-				break;
-			const QString name = (fighter.value(QStringLiteral("firstName")).toString() + QStringLiteral(" ") +
-				fighter.value(QStringLiteral("lastName")).toString()).trimmed();
-			if (!name.isEmpty())
-				result.append(name);
+			if (fighter.value(QStringLiteral("status")).toString() != QStringLiteral("inactive"))
+				result.append(fighterId);
 			break;
 		}
 	}
-	result.removeDuplicates();
-	result.sort(Qt::CaseInsensitive);
 	return result;
 }
 
@@ -464,19 +480,21 @@ void MainWindowTeam::UpdateTeamFighterDelegates_()
 		return;
 	const QString homeId = m_pUi->comboBox_club_home->currentData().toString();
 	const QString guestId = m_pUi->comboBox_club_guest->currentData().toString();
+	m_FighterIdsHome = FighterIdsForTeam_(homeId);
+	m_FighterIdsGuest = FighterIdsForTeam_(guestId);
 	m_FighterNamesHome = FighterNamesForTeam_(homeId);
 	m_FighterNamesGuest = FighterNamesForTeam_(guestId);
 
-	const auto updateDelegate = [](QTableView* table, int column, const QStringList& names)
+	const auto updateDelegate = [](QTableView* table, int column, const QStringList& names, const QStringList& ids)
 	{
 		auto delegate = dynamic_cast<ComboBoxDelegate*>(table->itemDelegateForColumn(column));
 		if (delegate)
-			delegate->SetItems(names);
+			delegate->SetItems(names, ids);
 	};
-	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name1, m_FighterNamesHome);
-	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name1, m_FighterNamesHome);
-	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name2, m_FighterNamesGuest);
-	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name2, m_FighterNamesGuest);
+	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name1, m_FighterNamesHome, m_FighterIdsHome);
+	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name1, m_FighterNamesHome, m_FighterIdsHome);
+	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name2, m_FighterNamesGuest, m_FighterIdsGuest);
+	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name2, m_FighterNamesGuest, m_FighterIdsGuest);
 }
 
 void MainWindowTeam::update_club_views()
@@ -808,10 +826,13 @@ TournamentSerialization::TournamentSaveData MainWindowTeam::CollectTournamentSav
 	TournamentSerialization::TournamentSaveData saveData;
 	saveData.fileVersion = QString::fromLatin1(TournamentSerialization::TournamentSaveFileVersion);
 	saveData.host = m_pUi->comboBox_club_host->currentText();
+	saveData.hostClubId = m_pUi->comboBox_club_host->currentData().toString();
 	saveData.date = m_pUi->dateEdit->text();
 	saveData.location = m_pUi->lineEdit_location->text();
 	saveData.home = m_pUi->comboBox_club_home->currentText();
+	saveData.homeTeamId = m_pUi->comboBox_club_home->currentData().toString();
 	saveData.guest = m_pUi->comboBox_club_guest->currentText();
+	saveData.guestTeamId = m_pUi->comboBox_club_guest->currentData().toString();
 	saveData.currentRound = m_pController->GetCurrentRound();
 	saveData.currentFight = m_pController->GetCurrentFight();
 	saveData.infoTextFg = MainWindowBase::m_pPrimaryView->GetInfoTextColor().rgb();
@@ -865,28 +886,34 @@ int MainWindowTeam::LoadTournamentFromJson_(QJsonDocument& doc, bool loadWithInc
 		return result;
 	}
 
-	if (m_pUi->comboBox_club_host->findText(saveData.host) == -1)
+	if (!m_usingMasterData)
 	{
-		m_pClubManager->AddClub(Club(saveData.host, "clubs\\default.png"));
-	}
-
-	if (m_pUi->comboBox_club_home->findText(saveData.home) == -1)
-	{
-		m_pClubManager->AddClub(Club(saveData.home, "clubs\\default.png"));
-	}
-
-	if (m_pUi->comboBox_club_guest->findText(saveData.guest) == -1)
-	{
-		m_pClubManager->AddClub(Club(saveData.guest, "clubs\\default.png"));
+		if (m_pUi->comboBox_club_host->findText(saveData.host) == -1)
+			m_pClubManager->AddClub(Club(saveData.host, "clubs\\default.png"));
+		if (m_pUi->comboBox_club_home->findText(saveData.home) == -1)
+			m_pClubManager->AddClub(Club(saveData.home, "clubs\\default.png"));
+		if (m_pUi->comboBox_club_guest->findText(saveData.guest) == -1)
+			m_pClubManager->AddClub(Club(saveData.guest, "clubs\\default.png"));
 	}
 
 	update_club_views();
 
-	m_pUi->comboBox_club_host->setCurrentText(saveData.host);
+	int hostIndex = !saveData.hostClubId.isEmpty() ? m_pUi->comboBox_club_host->findData(saveData.hostClubId) : -1;
+	if (hostIndex < 0) hostIndex = m_pUi->comboBox_club_host->findText(saveData.host);
+	if (hostIndex >= 0) m_pUi->comboBox_club_host->setCurrentIndex(hostIndex);
+
 	m_pUi->dateEdit->setDate(QDate::fromString(saveData.date, SaveDateFormat));
 	m_pUi->lineEdit_location->setText(saveData.location);
-	m_pUi->comboBox_club_home->setCurrentText(saveData.home);
-	m_pUi->comboBox_club_guest->setCurrentText(saveData.guest);
+
+	int homeIndex = !saveData.homeTeamId.isEmpty() ? m_pUi->comboBox_club_home->findData(saveData.homeTeamId) : -1;
+	if (homeIndex < 0) homeIndex = m_pUi->comboBox_club_home->findText(saveData.home);
+	if (homeIndex >= 0) m_pUi->comboBox_club_home->setCurrentIndex(homeIndex);
+
+	int guestIndex = !saveData.guestTeamId.isEmpty() ? m_pUi->comboBox_club_guest->findData(saveData.guestTeamId) : -1;
+	if (guestIndex < 0) guestIndex = m_pUi->comboBox_club_guest->findText(saveData.guest);
+	if (guestIndex >= 0) m_pUi->comboBox_club_guest->setCurrentIndex(guestIndex);
+
+	UpdateTeamFighterDelegates_();
 
 	const auto existingMode = std::find_if(
 		m_modes.begin(),
