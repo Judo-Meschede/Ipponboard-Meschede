@@ -4,7 +4,7 @@ const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROO
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
-const APP_VERSION='0.1.0';
+const APP_VERSION='0.1.6';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -20,6 +20,20 @@ let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
 let master=readJson(MASTER_FILE,newMaster); if(!master.schema)master=newMaster();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
 function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,master)}catch(e){console.error('Masterdata save failed',e)}}
+function mergeMasterData(incoming){
+ if(!incoming||!Array.isArray(incoming.clubs))throw new Error('invalid masterdata');
+ const names=['clubs','teams','fighters','competitions','weightClasses'];
+ for(const name of names){
+  const source=Array.isArray(incoming[name])?incoming[name]:[];
+  if(!Array.isArray(master[name]))master[name]=[];
+  for(const raw of source){
+   const item=cleanRecord(name,raw),idx=master[name].findIndex(x=>x.id===item.id);
+   if(idx>=0)master[name][idx]={...master[name][idx],...item};else master[name].push(item);
+  }
+ }
+ saveMaster('Stammdaten zusammengeführt');
+ return master;
+}
 let lastTick=Date.now();const sockets=new Set();
 const ctype=f=>({'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.zip':'application/zip','.json':'application/json; charset=utf-8'}[path.extname(f).toLowerCase()]||'application/octet-stream');
 function sendFile(res,f){fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':ctype(f),'Cache-Control':'no-store'});res.end(d)})}
@@ -56,6 +70,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{masterdata:master,modes});
  if(u.pathname==='/api/sync/snapshot'&&req.method==='GET')return json(res,{ok:true,schema:master.schema,revision:master.revision,updatedAt:master.updatedAt,masterdata:master});
  if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
+ if(u.pathname==='/api/masterdata/merge'&&req.method==='POST'){try{const b=await readBody(req);const incoming=b&&b.masterdata?b.masterdata:b;return json(res,{ok:true,masterdata:mergeMasterData(incoming)})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses)$/);
  if(saveMatch&&req.method==='POST'){try{const b=await readBody(req);const item=saveRecord(saveMatch[1],b);return json(res,{ok:true,item,masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
  const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses)\/([^/]+)$/);
