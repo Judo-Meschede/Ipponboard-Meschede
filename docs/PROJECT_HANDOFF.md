@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.1.4**
+`CURRENT_VERSION.txt`: **0.1.5**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.4
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.1.5
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.1.4
+## 7a. Desktop-Mannschaftsmodus – Stand V0.1.5
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -190,8 +190,13 @@ Neu umgesetzt:
 - Alte Turnierdateien ohne diese Felder bleiben lesbar.
 - Ohne gültigen Masterdata-Cache fällt der Teammodus auf die bisherige lokale Club-Verwaltung zurück.
 
+Zusätzlich in V0.1.5:
+- Die mit dem Original-Ipponboard ausgelieferten Beispielvereine/-mannschaften aus `clubs.config` wurden entfernt.
+- Ohne Masterdata-Cache startet die Mannschaftsauswahl leer statt mit den alten süddeutschen Beispieldaten.
+- Eigene Vereine/Mannschaften kommen aus der Server-Verwaltung bzw. dem synchronisierten lokalen Masterdata-Cache.
+
 Noch offen:
-- Windows-Build von V0.1.4 ausführen und praktisch testen.
+- Windows-Build von V0.1.5 ausführen und praktisch testen.
 - Bedienung der Mannschafts-/Kaderauswahl nach Praxistest ggf. verfeinern.
 - Danach Synchronisation/Offline-Änderungskonflikte weiter ausbauen.
 
