@@ -62,6 +62,7 @@ private:
 
 	// specific methods
 	void update_club_views();
+	QString ModeConfigurationFilePath_() const;
 	bool LoadMasterDataCache_();
 	QStringList FighterNamesForTeam_(const QString& teamId) const;
 	QStringList FighterIdsForTeam_(const QString& teamId) const;
