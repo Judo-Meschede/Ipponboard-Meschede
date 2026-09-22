@@ -33,7 +33,7 @@ bool FetchSnapshotWindows(QByteArray& payload, QString& error)
     payload.clear();
     error.clear();
 
-    HINTERNET session = WinHttpOpen(L"Ipponboard-Meschede/0.2.1",
+    HINTERNET session = WinHttpOpen(L"Ipponboard-Meschede/0.2.2",
                                     WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                     WINHTTP_NO_PROXY_NAME,
                                     WINHTTP_NO_PROXY_BYPASS, 0);
