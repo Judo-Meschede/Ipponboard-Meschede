@@ -2,23 +2,34 @@
 
 Weiterentwicklung von Ipponboard für den Wettkampfbetrieb des SSV Meschede Judo.
 
-## Status
+## Aktueller Stand
 
-Aktuelle Entwicklungsreihe: **V0.x**  
-Erste freigegebene Version wird **V1.0**.
+Entwicklungsreihe: **V0.x**  
+Aktueller Stand: **V0.1.3**  
+Erste freigegebene Version: **V1.0**
 
-Schwerpunkte:
+## Repository-Struktur
+
+- `desktop/` – portable Qt/C++-Windows-App
+- `server/` – Server-App, Web-Verwaltung und API
+- `docs/` – Projektdokumentation
+- `CURRENT_VERSION.txt` – aktueller Entwicklungsstand
+
+## Architektur
+
+- **GitHub** ist die zentrale Quelle für Quellcode und Versionen.
+- **Server-Datenbank** enthält Vereine, Mannschaften, Kämpfer, Wettkämpfe und vorbereitete Aufstellungen.
+- **Portable App** lädt bei vorhandener Verbindung aktuelle Daten vom Server und arbeitet offline mit dem letzten lokalen Stand weiter.
+- **Google Drive** bleibt nur Archiv/Referenzmaterial und ist nicht mehr die primäre Entwicklungsquelle.
+
+## Ziel
+
 - Einzel- und Mannschaftswettkämpfe
 - vorbereitete Vereine, Mannschaften und Mannschaftskader
 - vollständig nutzbarer Offline-/USB-Betrieb
-- optionale Synchronisation mit dem Vereinsserver
+- Synchronisation mit dem Vereinsserver
 - Windows 10/11 als erstes Zielsystem
 - später Linux und macOS
-
-## Arbeitsweise
-
-Der Quellcode in diesem Repository ist die zentrale Entwicklungsquelle.  
-Fertige Teststände und Projektarchive werden zusätzlich außerhalb des Repositories gesichert.
 
 ## Ursprung und Lizenz
 
@@ -26,9 +37,4 @@ Ipponboard-Meschede basiert auf **Ipponboard 2.4.2** von Florian Mücke:
 
 https://github.com/fmuecke/Ipponboard
 
-Der ursprüngliche Quellcode steht unter der BSD-2-Clause-Lizenz.  
-Die ursprünglichen Copyright- und Lizenzhinweise bleiben erhalten. Siehe [LICENSE.txt](LICENSE.txt).
-
-## Entwicklungsstand
-
-Der aktuelle lokale Entwicklungsstand ist **V0.1.3**. Der vollständige Quellcode wird im nächsten Schritt in dieses Repository übernommen.
+Der ursprüngliche Quellcode steht unter der BSD-2-Clause-Lizenz. Die ursprünglichen Copyright- und Lizenzhinweise bleiben erhalten. Siehe [LICENSE.txt](LICENSE.txt).
