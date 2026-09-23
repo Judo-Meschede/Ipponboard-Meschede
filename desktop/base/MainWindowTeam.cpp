@@ -85,6 +85,8 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_FighterIdsGuest()
 	, m_fighterDelegateHomeRound1(nullptr)
 	, m_fighterDelegateHomeRound2(nullptr)
+	, m_fighterDelegateGuestRound1(nullptr)
+	, m_fighterDelegateGuestRound2(nullptr)
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
@@ -164,26 +166,32 @@ void MainWindowTeam::Init()
 	//m_pUi->comboBox_club_guest->setCurrentIndex(0);
 
 	// Fighter selection is driven by the selected teams' cached rosters.
-	// Each name cell resolves its roster live from the currently selected team.
-	// The column is the single source of truth: name1 = Home, name2 = Guest.
+	// Four completely independent live editors. Each editor has one fixed side.
 	m_fighterDelegateHomeRound1 = new ComboBoxDelegate(this);
 	m_fighterDelegateHomeRound2 = new ComboBoxDelegate(this);
+	m_fighterDelegateGuestRound1 = new ComboBoxDelegate(this);
+	m_fighterDelegateGuestRound2 = new ComboBoxDelegate(this);
 
-	const auto liveRosterProvider = [this](const QModelIndex& index)
+	const auto homeRosterProvider = [this](const QModelIndex&)
 	{
-		const bool isGuest = index.column() == TournamentModel::eCol_name2;
-		const QComboBox* teamBox = isGuest ? m_pUi->comboBox_club_guest : m_pUi->comboBox_club_home;
-		const QString teamId = teamBox->currentData().toString();
+		const QString teamId = m_pUi->comboBox_club_home->currentData().toString();
+		return std::make_pair(FighterNamesForTeam_(teamId), FighterIdsForTeam_(teamId));
+	};
+	const auto guestRosterProvider = [this](const QModelIndex&)
+	{
+		const QString teamId = m_pUi->comboBox_club_guest->currentData().toString();
 		return std::make_pair(FighterNamesForTeam_(teamId), FighterIdsForTeam_(teamId));
 	};
 
-	m_fighterDelegateHomeRound1->SetItemProvider(liveRosterProvider);
-	m_fighterDelegateHomeRound2->SetItemProvider(liveRosterProvider);
+	m_fighterDelegateHomeRound1->SetItemProvider(homeRosterProvider);
+	m_fighterDelegateHomeRound2->SetItemProvider(homeRosterProvider);
+	m_fighterDelegateGuestRound1->SetItemProvider(guestRosterProvider);
+	m_fighterDelegateGuestRound2->SetItemProvider(guestRosterProvider);
 
 	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound1);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateHomeRound1);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound1);
 	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound2);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateHomeRound2);
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound2);
 
 	const auto enableOneClickFighterSelection = [this](QTableView* table)
 	{
