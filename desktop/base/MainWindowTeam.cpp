@@ -87,6 +87,7 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_masterTeams()
 	, m_masterFighters()
 	, m_masterTournamentModes()
+	, m_masterRuleSets()
 	, m_usingMasterData(false)
 	, m_modes()
 {
@@ -136,6 +137,7 @@ void MainWindowTeam::Init()
 
 	// Load the last synchronized server snapshot first. Tournament modes are global system data.
 	LoadMasterDataCache_();
+	RegisterRuleSetsFromMasterData_();
 
 	QString errMsg;
 	Ipponboard::TournamentMode::List modes;
@@ -427,8 +429,44 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
 	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
 	m_masterTournamentModes = master.value(QStringLiteral("tournamentModes")).toArray();
+	m_masterRuleSets = master.value(QStringLiteral("ruleSets")).toArray();
 	m_usingMasterData = !m_masterTeams.isEmpty();
 	return m_usingMasterData;
+}
+
+void MainWindowTeam::RegisterRuleSetsFromMasterData_()
+{
+	RulesFactory::ClearDefinitions();
+	for (const QJsonValue& value : m_masterRuleSets)
+	{
+		const QJsonObject o = value.toObject();
+		if (o.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+			continue;
+
+		RulesDefinition d;
+		d.name = o.value(QStringLiteral("name")).toString();
+		if (d.name.isEmpty()) continue;
+		d.hasYuko = o.value(QStringLiteral("hasYuko")).toBool(true);
+		d.awaseteIppon = o.value(QStringLiteral("awaseteIppon")).toBool(true);
+		d.openEndGoldenScore = o.value(QStringLiteral("openEndGoldenScore")).toBool(true);
+		d.shidoAddsPoint = o.value(QStringLiteral("shidoAddsPoint")).toBool(false);
+		d.shidoScoreCounts = o.value(QStringLiteral("shidoScoreCounts")).toBool(false);
+		d.maxShidoCount = o.value(QStringLiteral("maxShidoCount")).toInt(2);
+		d.maxWazaariCount = o.value(QStringLiteral("maxWazaariCount")).toInt(2);
+		d.osaekomiYukoSeconds = o.value(QStringLiteral("osaekomiYukoSeconds")).toInt(5);
+		d.osaekomiWazaariSeconds = o.value(QStringLiteral("osaekomiWazaariSeconds")).toInt(10);
+		d.osaekomiIpponSeconds = o.value(QStringLiteral("osaekomiIpponSeconds")).toInt(20);
+		d.ipponTeamPoints = o.value(QStringLiteral("ipponTeamPoints")).toInt(10);
+		d.wazaariTeamPoints = o.value(QStringLiteral("wazaariTeamPoints")).toInt(7);
+		d.yukoTeamPoints = o.value(QStringLiteral("yukoTeamPoints")).toInt(5);
+		d.shidoTeamPoints = o.value(QStringLiteral("shidoTeamPoints")).toInt(1);
+		d.ipponLabel = o.value(QStringLiteral("ipponLabel")).toString(QStringLiteral("Ippon"));
+		d.wazaariLabel = o.value(QStringLiteral("wazaariLabel")).toString(QStringLiteral("Waza-ari"));
+		d.yukoLabel = o.value(QStringLiteral("yukoLabel")).toString(QStringLiteral("Yuko"));
+		d.shidoLabel = o.value(QStringLiteral("shidoLabel")).toString(QStringLiteral("Shido"));
+		d.hansokumakeLabel = o.value(QStringLiteral("hansokumakeLabel")).toString(QStringLiteral("Hansoku-make"));
+		RulesFactory::RegisterDefinition(d);
+	}
 }
 
 bool MainWindowTeam::LoadModesFromMasterData_(Ipponboard::TournamentMode::List& modes) const
