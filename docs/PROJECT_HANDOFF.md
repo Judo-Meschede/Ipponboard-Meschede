@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.3**
+`CURRENT_VERSION.txt`: **0.2.4**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.3
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.4
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.3
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.4
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -359,6 +359,28 @@ Noch nicht durchgeführt:
 - Server V0.2.3 ausgerollt.
 - Windows-Build V0.2.3.
 - End-to-End-Praxistest der dynamischen Regeln.
+
+## 7i. Kämpferauswahl-Fix – V0.2.4
+
+Praxistest V0.2.3:
+- Kämpfer-Dropdown erschien erst nach Doppelklick.
+- Gastspalten boten fälschlich den Heimkader an.
+
+In V0.2.4 geändert:
+- jede der vier Kämpfer-Spalten besitzt einen dauerhaft eindeutig zugeordneten Delegate: Heim Hinrunde, Heim Rückrunde, Gast Hinrunde, Gast Rückrunde.
+- Heim-Delegates erhalten ausschließlich `m_FighterNamesHome/m_FighterIdsHome`.
+- Gast-Delegates erhalten ausschließlich `m_FighterNamesGuest/m_FighterIdsGuest`.
+- vor jedem Öffnen einer Kämpferzelle werden die Kader aus den aktuell ausgewählten Mannschaften nochmals frisch zugeordnet.
+- einfacher Klick auf eine Kämpferzelle startet direkt den Editor und öffnet das Dropdown.
+- Freitext und Suchfilter bleiben erhalten.
+
+Erforderliche Schritte:
+1. Kein Serverupdate erforderlich.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.4 starten und synchronisieren.
+4. unterschiedliche Heim-/Gastmannschaften auswählen und beide Kader in Hin- und Rückrunde prüfen.
+
+Noch nicht unter Windows gebaut/getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
