@@ -19,10 +19,6 @@ class QSettings;
 class QString;
 class QPoint;
 class ComboBoxDelegate;
-class QWidget;
-class QPushButton;
-class QLabel;
-class QTableWidget;
 
 namespace Ui { class MainWindowTeam; }
 
@@ -75,14 +71,6 @@ private:
 	QStringList FighterNamesForTeam_(const QString& teamId) const;
 	QStringList FighterIdsForTeam_(const QString& teamId) const;
 	void UpdateTeamFighterDelegates_();
-	void BuildModernTeamSetupUi_();
-	void RefreshModernTeamSetupUi_();
-	void PopulateModernLineupTable_(QTableWidget* table, int round, Ipponboard::FighterEnum side);
-	void CopyModernLineup_(Ipponboard::FighterEnum side);
-	void ClearModernLineup_(Ipponboard::FighterEnum side);
-	void ShowModernRoster_(Ipponboard::FighterEnum side);
-	void UpdateModernResults_();
-	QString FighterYear_(const QString& fighterId) const;
 	void UpdateFightNumber_();
 	void UpdateButtonText_();
 	void update_score_screen();
@@ -172,8 +160,6 @@ private:
 	QStringList m_FighterIdsGuest;
 	ComboBoxDelegate* m_fighterDelegateHomeRound1;
 	ComboBoxDelegate* m_fighterDelegateHomeRound2;
-	ComboBoxDelegate* m_fighterDelegateGuestRound1;
-	ComboBoxDelegate* m_fighterDelegateGuestRound2;
 	QJsonArray m_masterClubs;
 	QJsonArray m_masterTeams;
 	QJsonArray m_masterFighters;
@@ -181,23 +167,6 @@ private:
 	QJsonArray m_masterRuleSets;
 	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
-	QWidget* m_modernSetupRoot;
-	QTableWidget* m_modernHomeRound1;
-	QTableWidget* m_modernGuestRound1;
-	QTableWidget* m_modernHomeRound2;
-	QTableWidget* m_modernGuestRound2;
-	QLabel* m_modernHomeTeamLabel;
-	QLabel* m_modernGuestTeamLabel;
-	QLabel* m_modernResultHomeHeader;
-	QLabel* m_modernResultGuestHeader;
-	QLabel* m_modernResultR1Home;
-	QLabel* m_modernResultR1Guest;
-	QLabel* m_modernResultR2Home;
-	QLabel* m_modernResultR2Guest;
-	QLabel* m_modernResultTotalHome;
-	QLabel* m_modernResultTotalGuest;
-	QLabel* m_modernResultWinner;
-	QLabel* m_modernStatusLabel;
 	QString GetRoundDataAsHtml(const Ipponboard::Fight& fight, int fightNo);
 	QString GetRoundDataAsNwjvHtml(const Ipponboard::Fight& fight);
 };
