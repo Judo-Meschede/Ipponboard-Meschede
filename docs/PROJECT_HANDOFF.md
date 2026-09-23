@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.3.0**
+`CURRENT_VERSION.txt`: **0.2.6**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.3.0
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.6
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.3.0
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.6
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -405,62 +405,24 @@ Erforderliche Schritte:
 
 Noch nicht unter Windows praktisch getestet.
 
-## 7k. Harte Heim-/Gast-Trennung – V0.2.6
+## 7k. Nicht aufgestellt – V0.2.6
 
-Praxistest V0.2.5 zeigte weiterhin denselben Heimkader auf Heim- und Gastseite.
+Ausgangspunkt ist ausdrücklich der praktisch geprüfte und vom Nutzer freigegebene Stand V0.2.5.
 
-V0.2.6:
-- vier vollständig getrennte ComboBoxDelegates.
-- Heim Hinrunde/Rückrunde besitzen einen Provider, der ausschließlich `comboBox_club_home.currentData()` liest.
-- Gast Hinrunde/Rückrunde besitzen einen Provider, der ausschließlich `comboBox_club_guest.currentData()` liest.
-- keine Seitenermittlung mehr über Tabellen-Spaltenindex.
-- kein gemeinsamer Delegate mehr zwischen Heim und Gast.
-- Ein-Klick-Editor bleibt bestehen.
-- Fighter-ID bleibt an den konkret ausgewählten ComboBox-Eintrag gebunden.
+Neu:
+- In jeder Kämpferauswahl steht `_n.A.` als erster Eintrag.
+- `_n.A.` bedeutet „nicht aufgestellt“.
+- Die Auswahl ist für Heim und Gast sowie getrennt je Hin-/Rückrunde und Gewichtsklasse möglich.
+- Für `_n.A.` wird bewusst keine `fighter.id` gespeichert.
+- Die Wertungslogik für Fälle mit einem oder zwei nicht aufgestellten Kämpfern ist noch nicht festgelegt und wurde bewusst nicht verändert.
 
 Erforderliche Schritte:
 1. Kein Serverupdate.
 2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
 3. V0.2.6 starten.
-4. TV Wickede gegen JC Samurai Schwelm prüfen.
-5. Heim muss u.a. Hussein Alasaad zeigen.
-6. Gast muss u.a. Sean-Philip Baltzer zeigen.
+4. Prüfen, ob `_n.A.` in jeder Kämpferauswahl ganz oben erscheint und unabhängig für Heim/Gast gewählt werden kann.
 
 Noch nicht unter Windows praktisch getestet.
-
-## 7l. Neue Mannschaftskampf-Maske – V0.3.0
-
-Auf ausdrückliche Freigabe des Nutzers wurde die bisherige Listenmaske im Mannschaftsmodus durch eine neue Setup-Maske nach dem freigegebenen Mockup ersetzt.
-
-Verbindliche Darstellung:
-- Grundgestaltung hell/weiß mit Navy-Rahmen und bestehender Meschede-Designsprache.
-- Heimseite immer WEISS.
-- Gastseite immer BLAU.
-- Begegnungsdaten als eigener Kopfbereich.
-- je Mannschaft eigener Aufstellungsbereich.
-- Hinrunde und Rückrunde vollständig getrennt.
-- Rückrunde kann unabhängig von der Hinrunde besetzt werden.
-- Komfortfunktion `Hinrunde in Rückrunde übernehmen` je Mannschaft.
-- `Aufstellung leeren` je Mannschaft.
-- Kämpferauswahl als direkt sichtbares Dropdown in jeder Gewichtsklasse.
-- erster Eintrag jedes Dropdowns: `– nicht aufgestellt –`.
-- `nicht aufgestellt` ist ausdrücklich gültig und erzeugt keine Pflicht-/Validierungswarnung.
-- Freitext bleibt möglich.
-- Jahrgang wird angezeigt, sofern `birthDate` in den Stammdaten vorhanden ist; andernfalls `–`.
-- gemeinsamer Ergebnisblock: Hinrunde, Rückrunde, Gesamtergebnis und Sieger.
-- Ergebnisblock bezieht seine Werte aus den bestehenden Turniermodellen, nicht aus einer zweiten Ergebnislogik.
-- Aktionen: Speichern und Wettkampf starten.
-- bestehende Controller-/Wertungs-/Autosave-/Anzeigetafel-Logik bleibt unter der neuen Maske erhalten.
-- alte QTableView-Listen bleiben technisch als Backend vorhanden, werden in der Setup-Ansicht jedoch ausgeblendet.
-
-Erforderliche Schritte:
-1. Kein Serverupdate erforderlich.
-2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
-3. V0.3.0 starten.
-4. Mannschaftsmodus öffnen und neue Maske gegen das freigegebene Mockup prüfen.
-5. Heim/Gast-Kader, getrennte Hin-/Rückrunde, `nicht aufgestellt`, Übernahmefunktion und Ergebnisblock praktisch testen.
-
-Noch nicht unter Windows gebaut oder praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
