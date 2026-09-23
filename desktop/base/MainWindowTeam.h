@@ -106,6 +106,8 @@ private slots:
 	void slot_clear_cell_content_list1();
 	void slot_clear_cell_content_list2();
 	void Print(QPrinter* p);
+	bool IsExactNwjv5Template_() const;
+	void PrintExactNwjv5_(QPrinter* p);
 	void on_tabWidget_currentChanged(int index);
 	void on_actionManageModes_triggered();
 	void on_actionManage_Clubs_triggered();
