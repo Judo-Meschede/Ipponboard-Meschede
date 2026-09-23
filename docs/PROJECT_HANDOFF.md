@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.6**
+`CURRENT_VERSION.txt`: **0.2.7**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.6
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.7
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.6
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.7
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -423,6 +423,36 @@ Erforderliche Schritte:
 4. Prüfen, ob `_n.A.` in jeder Kämpferauswahl ganz oben erscheint und unabhängig für Heim/Gast gewählt werden kann.
 
 Noch nicht unter Windows praktisch getestet.
+
+## 7l. Pixelgenaue NWJV-5er-Druckliste – V0.2.7
+
+Auf ausdrückliche Vorgabe des Nutzers wurde die Druckausgabe für die offizielle
+NWJV-Mannschaftswettkampfliste mit 5 Kämpfen Hin-/Rückrunde neu umgesetzt.
+
+Verbindliche Referenz:
+- vom Nutzer bereitgestelltes offizielles PDF
+  `mannschaftswettkampfliste_5_hinundrueck (1).pdf`
+- A4 quer
+- Originalgeometrie 842 x 595 PDF-Punkte
+- keine freie Gestaltung und keine HTML-Tabellen-Nachbildung
+
+Technische Umsetzung:
+- nur die 5er-Vorlage `list_output_nwjv_5_hinundrueck.html` wird beim Drucken/PDF-Export erkannt.
+- Druck erfolgt direkt per QPainter in dem festen Koordinatensystem der offiziellen Vorlage.
+- Linien, Spalten, Überschriften, WEISS/BLAU, Summenbereiche, Unterschriftslinien und Hinweis sind fest positioniert.
+- NWJV-Logo wird aus der bereits vorhandenen offiziellen Vorlagengrafik übernommen.
+- variable Daten werden positionsgenau eingetragen: Art, Ort, Datum, Mannschaften, Gewichtsklassen, Judoka, Einzelwertungen, Sieg, Unterbewertung, Kampfzeit und Summen.
+- Druckvorschau und PDF-Export verwenden für diese Vorlage Full-Page-A4-Querformat ohne HTML-Skalierung.
+- der zusätzliche Ipponboard-Copyright-Footer wird bei dieser exakten Druckausgabe nicht ergänzt.
+- die 7er-Vorlage bleibt vollständig unverändert.
+
+Erforderliche Schritte:
+1. Kein Serverupdate.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.7 starten.
+4. 5er-Wettkampfmodus auswählen.
+5. Druckvorschau/PDF-Export öffnen und direkt gegen das offizielle Referenz-PDF vergleichen.
+6. Noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
