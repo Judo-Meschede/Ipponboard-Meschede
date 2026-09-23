@@ -41,6 +41,9 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPrintPreviewDialog>
+#include <QRegularExpression>
+#include <QImage>
+#include <QPainter>
 #include <QPrinter>
 #include <QSettings>
 #include <QSaveFile>
@@ -1697,14 +1700,15 @@ void MainWindowTeam::on_comboBox_club_guest_currentIndexChanged(const QString& s
 
 void MainWindowTeam::on_actionPrint_triggered()
 {
-	WriteScoreToHtml_();
+	if (!IsExactNwjv5Template_())
+		WriteScoreToHtml_();
 
 	QPrinter printer(QPrinter::HighResolution);
     //TODO: fix margins (actual header margin is too big)
     printer.setPageSize(QPageSize(QPageSize::A4));
     printer.setPageOrientation(QPageLayout::Landscape);
     printer.setPageMargins(QMarginsF(0,0,0,0), QPageLayout::Millimeter);
-    //printer.setFullPage(true);
+    printer.setFullPage(IsExactNwjv5Template_());
 	QPrintPreviewDialog preview(&printer, this);
 	connect(&preview, SIGNAL(paintRequested(QPrinter*)), SLOT(Print(QPrinter*)));
 	preview.exec();
@@ -1712,7 +1716,10 @@ void MainWindowTeam::on_actionPrint_triggered()
 
 void MainWindowTeam::on_actionExport_triggered()
 {
-	WriteScoreToHtml_();
+	// The exact 5er PDF is painted directly from measured PDF coordinates.
+	// HTML is still generated for HTML export and all other templates.
+	if (!IsExactNwjv5Template_())
+		WriteScoreToHtml_();
 
 	// save file to...
 	QString selectedFilter;
@@ -1731,6 +1738,8 @@ void MainWindowTeam::on_actionExport_triggered()
 
 		if (fileName.endsWith(".html"))
 		{
+			if (IsExactNwjv5Template_())
+				WriteScoreToHtml_();
 			QFile html(fileName);
 
 			if (html.open(QFile::WriteOnly))
@@ -1744,16 +1753,21 @@ void MainWindowTeam::on_actionExport_triggered()
 		else
 		{
             QPrinter printer(QPrinter::HighResolution);
-            //TODO: fix margins? (printable area is somehow smaller than with Qt4...)
-            //TODO: use QPdfWriter?
             printer.setFullPage(true);
             printer.setPageOrientation(QPageLayout::Landscape);
             printer.setOutputFormat(QPrinter::PdfFormat);
             printer.setPageSize(QPageSize(QPageSize::A4));
             printer.setPageMargins(QMarginsF(0,0,0,0), QPageLayout::Millimeter);
 			printer.setOutputFileName(fileName);
-			QTextEdit edit(m_htmlScore, this);
-			edit.document()->print(&printer);
+			if (IsExactNwjv5Template_())
+			{
+				PrintExactNwjv5_(&printer);
+			}
+			else
+			{
+				QTextEdit edit(m_htmlScore, this);
+				edit.document()->print(&printer);
+			}
 		}
 
 		QApplication::restoreOverrideCursor();
@@ -2105,8 +2119,308 @@ void MainWindowTeam::slot_clear_cell_content_list2()
 	clear_cell_content(m_pUi->tableView_tournament_list2);
 }
 
+
+bool MainWindowTeam::IsExactNwjv5Template_() const
+{
+	const QString templateFile = get_template_file(m_currentMode);
+	return templateFile.endsWith(QStringLiteral("list_output_nwjv_5_hinundrueck.html"), Qt::CaseInsensitive);
+}
+
+void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
+{
+	if (!p)
+		return;
+
+	QPainter painter;
+	if (!painter.begin(p))
+		return;
+
+	// The official NWJV source is A4 landscape, 842 x 595 PDF points.
+	// Everything below uses this exact coordinate system. The viewport maps it
+	// to the physical A4 page without HTML layout or browser scaling.
+	const QRect page = p->pageRect(QPrinter::DevicePixel);
+	painter.setViewport(page);
+	painter.setWindow(QRect(0, 0, 842, 595));
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+	const QColor black(0, 0, 0);
+	const QColor blue(79, 134, 207);
+	const QColor dotted(90, 90, 90);
+	const QPen majorPen(black, 1.8, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+	const QPen thinPen(black, 1.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+	const QPen dottedPen(dotted, 0.65, Qt::DotLine, Qt::SquareCap, Qt::MiterJoin);
+
+	auto font = [](int px, bool bold = false)
+	{
+		QFont f(QStringLiteral("Arial"));
+		f.setPixelSize(px);
+		f.setBold(bold);
+		return f;
+	};
+	auto drawCentered = [&](const QRectF& r, const QString& text, int px, bool bold = false, const QColor& color = QColor(0,0,0))
+	{
+		painter.save();
+		painter.setPen(color);
+		painter.setFont(font(px, bold));
+		painter.drawText(r, Qt::AlignCenter | Qt::TextSingleLine, text);
+		painter.restore();
+	};
+	auto drawLeft = [&](const QRectF& r, const QString& text, int px, bool bold = false, const QColor& color = QColor(0,0,0))
+	{
+		painter.save();
+		painter.setPen(color);
+		painter.setFont(font(px, bold));
+		painter.drawText(r, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, text);
+		painter.restore();
+	};
+	auto drawVertical = [&](const QRectF& r, const QString& text, int px, bool bold, const QColor& color)
+	{
+		painter.save();
+		painter.setPen(color);
+		painter.setFont(font(px, bold));
+		const QPointF c = r.center();
+		painter.translate(c);
+		painter.rotate(-90.0);
+		const QRectF rr(-r.height()/2.0, -r.width()/2.0, r.height(), r.width());
+		painter.drawText(rr, Qt::AlignCenter | Qt::TextSingleLine, text);
+		painter.restore();
+	};
+
+	// --- fixed official NWJV form geometry ---
+	painter.fillRect(QRectF(0,0,842,595), Qt::white);
+
+	// NWJV logo: reuse the embedded official logo from the existing NWJV template.
+	{
+		const QString htmlPath = fm::GetSettingsFilePath("templates/list_output_nwjv_5_hinundrueck.html");
+		QFile logoSource(htmlPath);
+		if (logoSource.open(QFile::ReadOnly))
+		{
+			const QString html = QString::fromUtf8(logoSource.readAll());
+			const QRegularExpression rx(QStringLiteral("data:image/jpeg;base64,([^\\\"]+)"));
+			const QRegularExpressionMatch m = rx.match(html);
+			if (m.hasMatch())
+			{
+				const QImage logo = QImage::fromData(QByteArray::fromBase64(m.captured(1).toLatin1()), "JPG");
+				if (!logo.isNull())
+					painter.drawImage(QRectF(14.0, 39.0, 97.0, 45.0), logo);
+			}
+		}
+	}
+
+	// Header texts exactly on the official form.
+	drawLeft(QRectF(133, 14, 190, 17), QStringLiteral("Mannschaftsliste mit Unterbewertung"), 10, true);
+	drawLeft(QRectF(357, 14, 28, 17), QStringLiteral("Art:"), 10, true);
+	drawLeft(QRectF(585, 14, 28, 17), QStringLiteral("Ort:"), 10, true);
+	drawLeft(QRectF(725, 14, 25, 17), QStringLiteral("am"), 10, true);
+
+	// Upper WEISS / NWJV / BLAU frame.
+	painter.setPen(majorPen);
+	painter.drawRect(QRectF(129.5, 40.5, 656.5, 51.5));
+	painter.drawLine(QPointF(422.0,40.5), QPointF(422.0,92.0));
+	painter.drawLine(QPointF(498.0,40.5), QPointF(498.0,92.0));
+	drawCentered(QRectF(330, 53, 91, 28), QStringLiteral("WEISS"), 17, true, black);
+	drawCentered(QRectF(700, 53, 84, 28), QStringLiteral("BLAU"), 17, true, blue);
+	drawCentered(QRectF(422, 44, 76, 15), QStringLiteral("Nordrhein-"), 9, false, black);
+	drawCentered(QRectF(422, 60, 76, 15), QStringLiteral("Westfälischer"), 9, false, black);
+	drawCentered(QRectF(422, 76, 76, 15), QStringLiteral("Judo-Verband"), 9, false, black);
+
+	// Exact column coordinates measured from the supplied official PDF.
+	const QVector<qreal> x = {14,54,214,242,270,298,326,354,388,422,582,610,638,666,694,722,756,786,826};
+	const qreal yTeamTop=92, yTeamBottom=110, yHeaderBottom=167;
+	const QVector<qreal> rowBottom1 = {197,227,257,287,317};
+	const qreal yHinSumBottom=332;
+	const QVector<qreal> rowBottom2 = {362,392,422,452,482};
+
+	// Team header row and main grid.
+	painter.setPen(majorPen);
+	painter.drawLine(QPointF(54,yTeamTop), QPointF(786,yTeamTop));
+	painter.drawLine(QPointF(54,yTeamBottom), QPointF(786,yTeamBottom));
+	painter.drawLine(QPointF(14,yTeamBottom), QPointF(826,yTeamBottom));
+	for (qreal xv : x)
+		painter.drawLine(QPointF(xv, yTeamBottom), QPointF(xv, 317));
+
+	// Team-row vertical boundaries/operators.
+	for(qreal xv : QVector<qreal>{54,214,242,270,298,326,354,388,422,582,610,638,666,694,722,756,786})
+		painter.drawLine(QPointF(xv,yTeamTop), QPointF(xv,yTeamBottom));
+
+	// Header bottom and first-round rows.
+	painter.drawLine(QPointF(14,yHeaderBottom), QPointF(826,yHeaderBottom));
+	for(qreal yv : rowBottom1)
+		painter.drawLine(QPointF(14,yv), QPointF(826,yv));
+
+	// Dotted score separators (official form).
+	painter.setPen(dottedPen);
+	for(qreal xv : QVector<qreal>{242,270,298,326,610,638,666,694})
+	{
+		painter.drawLine(QPointF(xv,yHeaderBottom), QPointF(xv,317));
+	}
+
+	// Re-draw major score boundaries over dotted grid.
+	painter.setPen(majorPen);
+	for(qreal xv : QVector<qreal>{14,54,214,354,388,422,582,722,756,786,826})
+		painter.drawLine(QPointF(xv,yTeamBottom), QPointF(xv,317));
+
+	// First-round summary line and second round.
+	painter.drawLine(QPointF(14,332), QPointF(826,332));
+	for(qreal xv : x)
+		painter.drawLine(QPointF(xv,332), QPointF(xv,482));
+	for(qreal yv : rowBottom2)
+		painter.drawLine(QPointF(14,yv), QPointF(826,yv));
+	painter.setPen(dottedPen);
+	for(qreal xv : QVector<qreal>{242,270,298,326,610,638,666,694})
+		painter.drawLine(QPointF(xv,332), QPointF(xv,482));
+	painter.setPen(majorPen);
+	for(qreal xv : QVector<qreal>{14,54,214,354,388,422,582,722,756,786,826})
+		painter.drawLine(QPointF(xv,332), QPointF(xv,482));
+
+	// Team/operator labels.
+	drawCentered(QRectF(54,92,160,18), QStringLiteral("TEAM"), 13, true, black);
+	drawCentered(QRectF(214,92,84,18), QStringLiteral("+"), 17, true, black);
+	drawCentered(QRectF(298,92,56,18), QStringLiteral("-"), 17, true, black);
+	drawCentered(QRectF(354,92,68,18), QStringLiteral("="), 17, true, black);
+	drawCentered(QRectF(422,92,160,18), QStringLiteral("TEAM"), 13, true, blue);
+	drawCentered(QRectF(582,92,84,18), QStringLiteral("+"), 17, true, blue);
+	drawCentered(QRectF(666,92,56,18), QStringLiteral("-"), 17, true, blue);
+	drawCentered(QRectF(722,92,64,18), QStringLiteral("="), 17, true, blue);
+
+	// Column headings.
+	drawCentered(QRectF(14,145,40,22), QStringLiteral("kg"), 15, true, black);
+	drawCentered(QRectF(54,145,160,22), QStringLiteral("Judoka"), 15, true, black);
+	drawVertical(QRectF(214,111,28,56), QStringLiteral("Yuko"), 9, false, black);
+	drawVertical(QRectF(242,111,28,56), QStringLiteral("Waza-ari"), 9, false, black);
+	drawVertical(QRectF(270,111,28,56), QStringLiteral("Ippon"), 9, false, black);
+	drawVertical(QRectF(298,111,28,56), QStringLiteral("Shido"), 9, false, black);
+	drawVertical(QRectF(326,111,28,56), QStringLiteral("Hansoku-make"), 8, false, black);
+	drawVertical(QRectF(354,111,34,56), QStringLiteral("SIEG"), 9, false, black);
+	drawVertical(QRectF(388,111,34,56), QStringLiteral("Unterbewertung"), 8, false, black);
+
+	drawCentered(QRectF(422,145,160,22), QStringLiteral("Judoka"), 15, true, blue);
+	drawVertical(QRectF(582,111,28,56), QStringLiteral("Yuko"), 9, false, blue);
+	drawVertical(QRectF(610,111,28,56), QStringLiteral("Waza-ari"), 9, false, blue);
+	drawVertical(QRectF(638,111,28,56), QStringLiteral("Ippon"), 9, false, blue);
+	drawVertical(QRectF(666,111,28,56), QStringLiteral("Shido"), 9, false, blue);
+	drawVertical(QRectF(694,111,28,56), QStringLiteral("Hansoku-make"), 8, false, blue);
+	drawVertical(QRectF(722,111,34,56), QStringLiteral("SIEG"), 9, false, blue);
+	drawVertical(QRectF(756,111,30,56), QStringLiteral("Unterbewertung"), 8, false, blue);
+	drawVertical(QRectF(786,111,40,56), QStringLiteral("Wettkampfzeit"), 8, false, black);
+
+	// Summary fields and footer fixed labels.
+	drawLeft(QRectF(302,316,52,16), QStringLiteral("Hinrunde"), 9, false, black);
+	drawLeft(QRectF(302,482,52,15), QStringLiteral("Rückrunde"), 9, false, black);
+	drawLeft(QRectF(310,497,44,15), QStringLiteral("Hinrunde"), 9, false, black);
+	drawLeft(QRectF(329,512,25,15), QStringLiteral("Total"), 9, false, black);
+
+	// Summary boxes.
+	painter.setPen(majorPen);
+	for(const QRectF& r : QVector<QRectF>{
+		QRectF(354,317,34,15),QRectF(388,317,34,15),QRectF(722,317,34,15),QRectF(756,317,30,15),
+		QRectF(354,482,34,15),QRectF(388,482,34,15),QRectF(722,482,34,15),QRectF(756,482,30,15),
+		QRectF(354,497,34,15),QRectF(388,497,34,15),QRectF(722,497,34,15),QRectF(756,497,30,15),
+		QRectF(354,512,34,15),QRectF(388,512,34,15),QRectF(722,512,34,15),QRectF(756,512,30,15)})
+		painter.drawRect(r);
+
+	// Signature lines and note.
+	painter.setPen(thinPen);
+	painter.drawLine(QPointF(35,543), QPointF(167,543));
+	painter.drawLine(QPointF(191,543), QPointF(323,543));
+	painter.drawLine(QPointF(504,543), QPointF(690,543));
+	drawCentered(QRectF(35,545,132,16), QStringLiteral("Listenführung"), 9, false, black);
+	drawCentered(QRectF(191,545,132,16), QStringLiteral("Kampfrichter"), 9, false, black);
+	drawCentered(QRectF(504,545,186,16), QStringLiteral("Sportl. Leitung"), 9, false, black);
+	drawLeft(QRectF(17,564,390,18), QStringLiteral("Anmerkung: Ein Tausch von Judoka bei der Rückrunde ist möglich, aber kein Muss!"), 9, false, black);
+
+	// --- variable content ---
+	const QString modeText = get_full_mode_title(m_currentMode);
+	drawLeft(QRectF(380,14,198,17), modeText, 9, false, black);
+	drawLeft(QRectF(610,14,108,17), m_pUi->lineEdit_location->text(), 9, false, black);
+	drawLeft(QRectF(744,14,80,17), m_pUi->dateEdit->text(), 9, false, black);
+
+	// Cover the literal TEAM placeholders, preserving the cell borders.
+	painter.fillRect(QRectF(55,94,158,14), Qt::white);
+	painter.fillRect(QRectF(423,94,158,14), Qt::white);
+	drawCentered(QRectF(55,93,158,16), m_pUi->comboBox_club_home->currentText(), 10, true, black);
+	drawCentered(QRectF(423,93,158,16), m_pUi->comboBox_club_guest->currentText(), 10, true, blue);
+
+	auto scoreText = [](const Fight& fight, int value)
+	{
+		return (!fight.is_saved && value == 0) ? QString() : QString::number(value);
+	};
+	auto timeText = [](const Fight& fight)
+	{
+		return !fight.is_saved ? QString() : fight.GetTotalTimeElapsedString();
+	};
+
+	const QVector<qreal> rowTopFirst = {167,197,227,257,287};
+	const QVector<qreal> rowTopSecond = {332,362,392,422,452};
+
+	auto drawFight = [&](const Fight& fight, qreal y)
+	{
+		const qreal h=30.0;
+		drawCentered(QRectF(14,y,40,h), fight.weight, 8, false, black);
+		drawLeft(QRectF(58,y,152,h), fight.fighters[static_cast<int>(FighterEnum::First)].name, 8, false, black);
+		const auto& s1=fight.GetScore1();
+		drawCentered(QRectF(214,y,28,h), scoreText(fight,s1.Yuko()), 8, false, black);
+		drawCentered(QRectF(242,y,28,h), scoreText(fight,s1.Wazaari()), 8, false, black);
+		drawCentered(QRectF(270,y,28,h), scoreText(fight,s1.Ippon()), 8, false, black);
+		drawCentered(QRectF(298,y,28,h), scoreText(fight,s1.Shido()), 8, false, black);
+		drawCentered(QRectF(326,y,28,h), scoreText(fight,s1.Hansokumake()), 8, false, black);
+		drawCentered(QRectF(354,y,34,h), scoreText(fight,fight.HasWon(FighterEnum::First)), 8, false, black);
+		drawCentered(QRectF(388,y,34,h), scoreText(fight,fight.GetScorePoints(FighterEnum::First)), 8, false, black);
+
+		drawLeft(QRectF(426,y,152,h), fight.fighters[static_cast<int>(FighterEnum::Second)].name, 8, false, blue);
+		const auto& s2=fight.GetScore2();
+		drawCentered(QRectF(582,y,28,h), scoreText(fight,s2.Yuko()), 8, false, blue);
+		drawCentered(QRectF(610,y,28,h), scoreText(fight,s2.Wazaari()), 8, false, blue);
+		drawCentered(QRectF(638,y,28,h), scoreText(fight,s2.Ippon()), 8, false, blue);
+		drawCentered(QRectF(666,y,28,h), scoreText(fight,s2.Shido()), 8, false, blue);
+		drawCentered(QRectF(694,y,28,h), scoreText(fight,s2.Hansokumake()), 8, false, blue);
+		drawCentered(QRectF(722,y,34,h), scoreText(fight,fight.HasWon(FighterEnum::Second)), 8, false, blue);
+		drawCentered(QRectF(756,y,30,h), scoreText(fight,fight.GetScorePoints(FighterEnum::Second)), 8, false, blue);
+		drawCentered(QRectF(786,y,40,h), timeText(fight), 8, false, black);
+	};
+
+	const int fights = std::min(5, m_pController->GetFightCount());
+	for(int i=0;i<fights;++i)
+		drawFight(m_pController->GetFight(0,i), rowTopFirst.at(i));
+	if(m_pController->GetRoundCount()>1)
+		for(int i=0;i<fights;++i)
+			drawFight(m_pController->GetFight(1,i), rowTopSecond.at(i));
+
+	const auto wins1=m_pController->GetTournamentScoreModel(0)->GetTotalWins();
+	const auto score1=m_pController->GetTournamentScoreModel(0)->GetTotalScore();
+	const auto wins2=m_pController->GetRoundCount()>1?m_pController->GetTournamentScoreModel(1)->GetTotalWins():std::make_pair<unsigned,unsigned>(0,0);
+	const auto score2=m_pController->GetRoundCount()>1?m_pController->GetTournamentScoreModel(1)->GetTotalScore():std::make_pair<unsigned,unsigned>(0,0);
+	const auto totalWins=std::make_pair(wins1.first+wins2.first,wins1.second+wins2.second);
+	const auto totalScore=std::make_pair(score1.first+score2.first,score1.second+score2.second);
+
+	auto summary = [&](qreal y, const std::pair<unsigned,unsigned>& wins, const std::pair<unsigned,unsigned>& score)
+	{
+		painter.fillRect(QRectF(355,y+1,32,13),Qt::white);
+		painter.fillRect(QRectF(389,y+1,32,13),Qt::white);
+		painter.fillRect(QRectF(723,y+1,32,13),Qt::white);
+		painter.fillRect(QRectF(757,y+1,28,13),Qt::white);
+		drawCentered(QRectF(354,y,34,15),QString::number(wins.first),9,true,black);
+		drawCentered(QRectF(388,y,34,15),QString::number(score.first),9,true,black);
+		drawCentered(QRectF(722,y,34,15),QString::number(wins.second),9,true,blue);
+		drawCentered(QRectF(756,y,30,15),QString::number(score.second),9,true,blue);
+	};
+	summary(317,wins1,score1);
+	summary(482,wins2,score2);
+	summary(497,wins1,score1);
+	summary(512,totalWins,totalScore);
+
+	painter.end();
+}
+
 void MainWindowTeam::Print(QPrinter* p)
 {
+	if (IsExactNwjv5Template_())
+	{
+		PrintExactNwjv5_(p);
+		return;
+	}
+
 	QTextEdit e(m_htmlScore, this);
 	e.document()->print(p);
 }
