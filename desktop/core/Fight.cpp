@@ -137,23 +137,23 @@ int Fight::GetScorePoints(FighterEnum who) const
 	{
 		if (GetScore(who).Ippon() || rules->IsAwaseteIppon(GetScore(who)))
 		{
-			return eScore_Ippon;
+			return rules->GetIpponTeamPoints();
 		}
 
 		// Only the fight deciding point is taken into account!
 		if (GetScore(who).Wazaari() > 0 && GetScore(who).Wazaari() > GetScore(other).Wazaari())
 		{
-			return eScore_Wazaari;
+			return rules->GetWazaariTeamPoints();
 		}
 
 		if (GetScore(who).Yuko() > GetScore(other).Yuko())
 		{
-			return eScore_Yuko;
+			return rules->GetYukoTeamPoints();
 		}
 
 		if ((!rules->IsOption_ShidoAddsPoint() || IsGoldenScore()) && GetScore(who).Shido() < GetScore(other).Shido())
 		{
-			return eScore_Shido;
+			return rules->GetShidoTeamPoints();
 		}
 
 		//TODO: Hantei!
