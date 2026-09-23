@@ -85,8 +85,6 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_FighterIdsGuest()
 	, m_fighterDelegateHomeRound1(nullptr)
 	, m_fighterDelegateHomeRound2(nullptr)
-	, m_fighterDelegateGuestRound1(nullptr)
-	, m_fighterDelegateGuestRound2(nullptr)
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
@@ -166,29 +164,35 @@ void MainWindowTeam::Init()
 	//m_pUi->comboBox_club_guest->setCurrentIndex(0);
 
 	// Fighter selection is driven by the selected teams' cached rosters.
+	// Each name cell resolves its roster live from the currently selected team.
+	// The column is the single source of truth: name1 = Home, name2 = Guest.
 	m_fighterDelegateHomeRound1 = new ComboBoxDelegate(this);
 	m_fighterDelegateHomeRound2 = new ComboBoxDelegate(this);
-	m_fighterDelegateGuestRound1 = new ComboBoxDelegate(this);
-	m_fighterDelegateGuestRound2 = new ComboBoxDelegate(this);
+
+	const auto liveRosterProvider = [this](const QModelIndex& index)
+	{
+		const bool isGuest = index.column() == TournamentModel::eCol_name2;
+		const QComboBox* teamBox = isGuest ? m_pUi->comboBox_club_guest : m_pUi->comboBox_club_home;
+		const QString teamId = teamBox->currentData().toString();
+		return std::make_pair(FighterNamesForTeam_(teamId), FighterIdsForTeam_(teamId));
+	};
+
+	m_fighterDelegateHomeRound1->SetItemProvider(liveRosterProvider);
+	m_fighterDelegateHomeRound2->SetItemProvider(liveRosterProvider);
+
 	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound1);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateHomeRound1);
 	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound2);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound1);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound2);
-	UpdateTeamFighterDelegates_();
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateHomeRound2);
 
 	const auto enableOneClickFighterSelection = [this](QTableView* table)
 	{
-		connect(table, &QTableView::clicked, this, [this, table](const QModelIndex& index)
+		connect(table, &QTableView::clicked, this, [table](const QModelIndex& index)
 		{
 			if (index.column() != TournamentModel::eCol_name1 &&
 				index.column() != TournamentModel::eCol_name2)
 				return;
-
-			// Always refresh immediately before opening the editor so Home and Guest
-			// use the currently selected teams, never a stale roster.
-			UpdateTeamFighterDelegates_();
 			table->edit(index);
-
 			QTimer::singleShot(0, table, [table]()
 			{
 				QComboBox* combo = qobject_cast<QComboBox*>(QApplication::focusWidget());
@@ -675,15 +679,7 @@ void MainWindowTeam::UpdateTeamFighterDelegates_()
 	m_FighterIdsGuest = FighterIdsForTeam_(guestId);
 	m_FighterNamesHome = FighterNamesForTeam_(homeId);
 	m_FighterNamesGuest = FighterNamesForTeam_(guestId);
-
-	if (m_fighterDelegateHomeRound1)
-		m_fighterDelegateHomeRound1->SetItems(m_FighterNamesHome, m_FighterIdsHome);
-	if (m_fighterDelegateHomeRound2)
-		m_fighterDelegateHomeRound2->SetItems(m_FighterNamesHome, m_FighterIdsHome);
-	if (m_fighterDelegateGuestRound1)
-		m_fighterDelegateGuestRound1->SetItems(m_FighterNamesGuest, m_FighterIdsGuest);
-	if (m_fighterDelegateGuestRound2)
-		m_fighterDelegateGuestRound2->SetItems(m_FighterNamesGuest, m_FighterIdsGuest);
+	// Editors resolve their list live when opened. No cached list is pushed into delegates here.
 }
 
 void MainWindowTeam::update_club_views()
