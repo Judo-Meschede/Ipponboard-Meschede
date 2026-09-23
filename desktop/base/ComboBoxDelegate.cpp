@@ -11,6 +11,7 @@ ComboBoxDelegate::ComboBoxDelegate(QObject* parent)
 	: QItemDelegate(parent)
 	, m_items()
 	, m_itemIds()
+	, m_itemProvider()
 {
 }
 
@@ -24,10 +25,19 @@ QWidget* ComboBoxDelegate::createEditor(
 	editor->setInsertPolicy(QComboBox::NoInsert);
 	editor->setMaxVisibleItems(18);
 
-	for (int i = 0; i < m_items.size(); ++i)
+	QStringList liveItems = m_items;
+	QStringList liveIds = m_itemIds;
+	if (m_itemProvider)
 	{
-		const QVariant id = i < m_itemIds.size() ? QVariant(m_itemIds.at(i)) : QVariant();
-		editor->addItem(m_items.at(i), id);
+		const auto provided = m_itemProvider(index);
+		liveItems = provided.first;
+		liveIds = provided.second;
+	}
+
+	for (int i = 0; i < liveItems.size(); ++i)
+	{
+		const QVariant id = i < liveIds.size() ? QVariant(liveIds.at(i)) : QVariant();
+		editor->addItem(liveItems.at(i), id);
 	}
 
 	if (QCompleter* completer = editor->completer())
@@ -68,9 +78,10 @@ void ComboBoxDelegate::setModelData(
 	model->setData(index, text, Qt::EditRole);
 
 	const int exactIndex = comboBox->findText(text, Qt::MatchExactly);
-	if (exactIndex >= 0 && exactIndex < m_itemIds.size() && !m_itemIds.at(exactIndex).isEmpty())
+	const QVariant selectedId = exactIndex >= 0 ? comboBox->itemData(exactIndex) : QVariant();
+	if (selectedId.isValid() && !selectedId.toString().isEmpty())
 	{
-		model->setData(index, m_itemIds.at(exactIndex), Qt::UserRole);
+		model->setData(index, selectedId.toString(), Qt::UserRole);
 	}
 	else
 	{
@@ -90,4 +101,9 @@ void ComboBoxDelegate::SetItems(QStringList const& items, QStringList const& ite
 {
 	m_items = items;
 	m_itemIds = itemIds;
+}
+
+void ComboBoxDelegate::SetItemProvider(ItemProvider provider)
+{
+	m_itemProvider = std::move(provider);
 }
