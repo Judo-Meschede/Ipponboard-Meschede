@@ -83,6 +83,10 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_FighterNamesGuest()
 	, m_FighterIdsHome()
 	, m_FighterIdsGuest()
+	, m_fighterDelegateHomeRound1(nullptr)
+	, m_fighterDelegateHomeRound2(nullptr)
+	, m_fighterDelegateGuestRound1(nullptr)
+	, m_fighterDelegateGuestRound2(nullptr)
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
@@ -162,15 +166,39 @@ void MainWindowTeam::Init()
 	//m_pUi->comboBox_club_guest->setCurrentIndex(0);
 
 	// Fighter selection is driven by the selected teams' cached rosters.
-	auto cbxFightersHome1 = new ComboBoxDelegate(this);
-	auto cbxFightersHome2 = new ComboBoxDelegate(this);
-	auto cbxFightersGuest1 = new ComboBoxDelegate(this);
-	auto cbxFightersGuest2 = new ComboBoxDelegate(this);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome1);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, cbxFightersHome2);
-	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest1);
-	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, cbxFightersGuest2);
+	m_fighterDelegateHomeRound1 = new ComboBoxDelegate(this);
+	m_fighterDelegateHomeRound2 = new ComboBoxDelegate(this);
+	m_fighterDelegateGuestRound1 = new ComboBoxDelegate(this);
+	m_fighterDelegateGuestRound2 = new ComboBoxDelegate(this);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound1);
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name1, m_fighterDelegateHomeRound2);
+	m_pUi->tableView_tournament_list1->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound1);
+	m_pUi->tableView_tournament_list2->setItemDelegateForColumn(TournamentModel::eCol_name2, m_fighterDelegateGuestRound2);
 	UpdateTeamFighterDelegates_();
+
+	const auto enableOneClickFighterSelection = [this](QTableView* table)
+	{
+		connect(table, &QTableView::clicked, this, [this, table](const QModelIndex& index)
+		{
+			if (index.column() != TournamentModel::eCol_name1 &&
+				index.column() != TournamentModel::eCol_name2)
+				return;
+
+			// Always refresh immediately before opening the editor so Home and Guest
+			// use the currently selected teams, never a stale roster.
+			UpdateTeamFighterDelegates_();
+			table->edit(index);
+
+			QTimer::singleShot(0, table, [table]()
+			{
+				QComboBox* combo = qobject_cast<QComboBox*>(QApplication::focusWidget());
+				if (combo && table->isAncestorOf(combo))
+					combo->showPopup();
+			});
+		});
+	};
+	enableOneClickFighterSelection(m_pUi->tableView_tournament_list1);
+	enableOneClickFighterSelection(m_pUi->tableView_tournament_list2);
 	// make name columns auto-resizable
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name1, QHeaderView::Stretch);
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name2, QHeaderView::Stretch);
@@ -648,16 +676,14 @@ void MainWindowTeam::UpdateTeamFighterDelegates_()
 	m_FighterNamesHome = FighterNamesForTeam_(homeId);
 	m_FighterNamesGuest = FighterNamesForTeam_(guestId);
 
-	const auto updateDelegate = [](QTableView* table, int column, const QStringList& names, const QStringList& ids)
-	{
-		auto delegate = dynamic_cast<ComboBoxDelegate*>(table->itemDelegateForColumn(column));
-		if (delegate)
-			delegate->SetItems(names, ids);
-	};
-	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name1, m_FighterNamesHome, m_FighterIdsHome);
-	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name1, m_FighterNamesHome, m_FighterIdsHome);
-	updateDelegate(m_pUi->tableView_tournament_list1, TournamentModel::eCol_name2, m_FighterNamesGuest, m_FighterIdsGuest);
-	updateDelegate(m_pUi->tableView_tournament_list2, TournamentModel::eCol_name2, m_FighterNamesGuest, m_FighterIdsGuest);
+	if (m_fighterDelegateHomeRound1)
+		m_fighterDelegateHomeRound1->SetItems(m_FighterNamesHome, m_FighterIdsHome);
+	if (m_fighterDelegateHomeRound2)
+		m_fighterDelegateHomeRound2->SetItems(m_FighterNamesHome, m_FighterIdsHome);
+	if (m_fighterDelegateGuestRound1)
+		m_fighterDelegateGuestRound1->SetItems(m_FighterNamesGuest, m_FighterIdsGuest);
+	if (m_fighterDelegateGuestRound2)
+		m_fighterDelegateGuestRound2->SetItems(m_FighterNamesGuest, m_FighterIdsGuest);
 }
 
 void MainWindowTeam::update_club_views()
