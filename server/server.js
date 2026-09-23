@@ -4,7 +4,7 @@ const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROO
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
-const APP_VERSION='0.2.2';
+const APP_VERSION='0.2.3';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -12,18 +12,27 @@ const modes={
  'VMM-FU18':{title:'VMM FU18',weights:['-44kg','-48kg','-52kg','-57kg','-63kg','+63kg'],rounds:1,fightSeconds:240}
 };
 const mkFight=(weight,secs)=>({weight,whiteName:'',blueName:'',white:{i:0,w:0,y:0,s:0,h:0},blue:{i:0,w:0,y:0,s:0,h:0},timeMs:secs*1000,running:false,hold:{active:false,side:null,timeMs:0},saved:false});
+function defaultRuleSets(){return [
+ {id:'IJF-2025',name:'IJF 2025',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:false,maxShidoCount:2,maxWazaariCount:2,osaekomiYukoSeconds:5,osaekomiWazaariSeconds:10,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''},
+ {id:'IJF-2018',name:'IJF 2018',status:'active',hasYuko:false,awaseteIppon:true,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:false,maxShidoCount:2,maxWazaariCount:2,osaekomiYukoSeconds:0,osaekomiWazaariSeconds:10,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''},
+ {id:'IJF-2017',name:'IJF 2017',status:'active',hasYuko:false,awaseteIppon:false,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:false,maxShidoCount:2,maxWazaariCount:999,maxWazaariCountUnlimited:true,osaekomiYukoSeconds:0,osaekomiWazaariSeconds:10,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''},
+ {id:'IJF-2017 U15',name:'IJF 2017 U15',status:'active',hasYuko:false,awaseteIppon:false,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:false,maxShidoCount:3,maxWazaariCount:999,maxWazaariCountUnlimited:true,osaekomiYukoSeconds:0,osaekomiWazaariSeconds:10,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''},
+ {id:'IJF-2013',name:'IJF 2013',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:true,maxShidoCount:3,maxWazaariCount:2,osaekomiYukoSeconds:10,osaekomiWazaariSeconds:15,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''},
+ {id:'Classic',name:'Classic',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:false,shidoAddsPoint:true,shidoScoreCounts:true,maxShidoCount:3,maxWazaariCount:2,osaekomiYukoSeconds:15,osaekomiWazaariSeconds:20,osaekomiIpponSeconds:25,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''}
+];}
 function newState(){const mode='BL-M',cfg=modes[mode];return {version:APP_VERSION,revision:0,mode,teams:[{id:'A',name:'Team A'},{id:'B',name:'Team B'},{id:'C',name:'Team C'}],matches:[{id:'AB',home:'A',guest:'B'},{id:'BC',home:'B',guest:'C'},{id:'CA',home:'C',guest:'A'}],matchIndex:0,fightIndex:0,fights:cfg.weights.map(w=>mkFight(w,cfg.fightSeconds)),teamScore:{A:0,B:0,C:0},lastAction:'Systemstart',updatedAt:new Date().toISOString()};}
-function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitions:[],weightClasses:[],tournamentModes:[]};}
+function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitions:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets()};}
 function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return fallback()}}
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
 let master=readJson(MASTER_FILE,newMaster); if(!master.schema)master=newMaster();
 if(!Array.isArray(master.tournamentModes))master.tournamentModes=[];
+if(!Array.isArray(master.ruleSets)||master.ruleSets.length===0)master.ruleSets=defaultRuleSets();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
 function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,master)}catch(e){console.error('Masterdata save failed',e)}}
 function mergeMasterData(incoming){
  if(!incoming||!Array.isArray(incoming.clubs))throw new Error('invalid masterdata');
- const names=['clubs','teams','fighters','competitions','weightClasses','tournamentModes'];
+ const names=['clubs','teams','fighters','competitions','weightClasses','tournamentModes','ruleSets'];
  for(const name of names){
   const source=Array.isArray(incoming[name])?incoming[name]:[];
   if(!Array.isArray(master[name]))master[name]=[];
@@ -58,7 +67,7 @@ case 'next-fight': if(state.fightIndex<state.fights.length-1){state.fightIndex++
 case 'prev-fight': if(state.fightIndex>0){state.fightIndex--;touch('Vorheriger Kampf')} break;
 case 'team-point': if(Object.prototype.hasOwnProperty.call(state.teamScore,a.team)){state.teamScore[a.team]=Math.max(0,state.teamScore[a.team]+Number(a.delta||1));touch('Mannschaftswertung geändert')} break;
 }}
-function collectionName(raw){return ({clubs:'clubs',teams:'teams',fighters:'fighters',competitions:'competitions',weightClasses:'weightClasses',tournamentModes:'tournamentModes'})[raw]||null}
+function collectionName(raw){return ({clubs:'clubs',teams:'teams',fighters:'fighters',competitions:'competitions',weightClasses:'weightClasses',tournamentModes:'tournamentModes',ruleSets:'ruleSets'})[raw]||null}
 function cleanRecord(type,r){const out={...(r||{})};out.id=String(out.id||`${type.slice(0,-1)}-${crypto.randomUUID()}`);out.updatedAt=new Date().toISOString();if(type==='teams'&&!Array.isArray(out.fighterIds))out.fighterIds=[];return out}
 function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);saveMaster(`${name} gespeichert`);return item}
 function deleteRecord(type,id){const name=collectionName(type);if(!name)throw new Error('invalid collection');const arr=master[name],before=arr.length;master[name]=arr.filter(x=>x.id!==id);if(name==='fighters')master.teams.forEach(t=>t.fighterIds=Array.isArray(t.fighterIds)?t.fighterIds.filter(fid=>fid!==id):[]);if(name==='clubs'){master.teams=master.teams.filter(t=>t.clubId!==id);master.fighters=master.fighters.filter(f=>f.clubId!==id)}if(master[name].length!==before)saveMaster(`${name} gelöscht`);return before!==master[name].length}
@@ -79,9 +88,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   saveMaster('Wettkampfmodi gespeichert');
   return json(res,{ok:true,tournamentModes:master.tournamentModes,revision:master.revision,updatedAt:master.updatedAt});
  }catch(e){return json(res,{error:e.message||'bad request'},400)}}
- const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses|tournamentModes)$/);
+ const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses|tournamentModes|ruleSets)$/);
  if(saveMatch&&req.method==='POST'){try{const b=await readBody(req);const item=saveRecord(saveMatch[1],b);return json(res,{ok:true,item,masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
- const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses|tournamentModes)\/([^/]+)$/);
+ const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitions|weightClasses|tournamentModes|ruleSets)\/([^/]+)$/);
  if(delMatch&&req.method==='DELETE'){try{return json(res,{ok:deleteRecord(delMatch[1],decodeURIComponent(delMatch[2])),masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
  if(u.pathname==='/api/export'&&req.method==='GET')return json(res,{format:'ipponboard-meschede-1',exportedAt:new Date().toISOString(),state,masterdata:master});
  if(u.pathname==='/api/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.state||!Array.isArray(b.state.teams))return json(res,{error:'invalid import'},400);state=b.state;touch('Lokaler Datenimport');return json(res,{ok:true,state})}catch{return json(res,{error:'bad request'},400)}}
