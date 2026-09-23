@@ -463,6 +463,7 @@ void MainWindowTeam::update_views()
 
 	UpdateFightNumber_();
 	UpdateButtonText_();
+	UpdateModernResults_();
 }
 
 bool MainWindowTeam::LoadMasterDataCache_()
@@ -1223,19 +1224,29 @@ void MainWindowTeam::ShowModernRoster_(Ipponboard::FighterEnum side)
 
 void MainWindowTeam::UpdateModernResults_()
 {
-	if(!m_modernResultR1Home)return;
-	const auto parse=[](const QString&s){QStringList p=s.split(':');return p.size()==2?QPair<int,int>(p[0].trimmed().toInt(),p[1].trimmed().toInt()):QPair<int,int>(0,0);};
-	const auto r1=parse(m_pUi->lineEdit_wins_intermediate->text());
-	const auto total=parse(m_pUi->lineEdit_wins->text());
-	const int r2h=std::max(0,total.first-r1.first), r2g=std::max(0,total.second-r1.second);
+	if(!m_modernResultR1Home || m_pController->GetRoundCount() < 1) return;
+
+	auto* r1Model = m_pController->GetTournamentScoreModel(0).get();
+	const auto r1 = r1Model ? r1Model->GetTotalWins() : std::make_pair(0u,0u);
+	std::pair<unsigned,unsigned> r2(0u,0u);
+	if(m_pController->GetRoundCount() > 1)
+	{
+		auto* r2Model = m_pController->GetTournamentScoreModel(1).get();
+		if(r2Model) r2 = r2Model->GetTotalWins();
+	}
+	const unsigned totalHome = r1.first + r2.first;
+	const unsigned totalGuest = r1.second + r2.second;
+
 	m_modernResultR1Home->setText(QString::number(r1.first));
 	m_modernResultR1Guest->setText(QString::number(r1.second));
-	m_modernResultR2Home->setText(QString::number(r2h));
-	m_modernResultR2Guest->setText(QString::number(r2g));
-	m_modernResultTotalHome->setText(QString::number(total.first));
-	m_modernResultTotalGuest->setText(QString::number(total.second));
-	const QString home=m_pUi->comboBox_club_home->currentText(), guest=m_pUi->comboBox_club_guest->currentText();
-	m_modernResultWinner->setText(total.first==total.second?QStringLiteral("–"):(total.first>total.second?home:guest));
+	m_modernResultR2Home->setText(QString::number(r2.first));
+	m_modernResultR2Guest->setText(QString::number(r2.second));
+	m_modernResultTotalHome->setText(QString::number(totalHome));
+	m_modernResultTotalGuest->setText(QString::number(totalGuest));
+
+	const QString home=m_pUi->comboBox_club_home->currentText();
+	const QString guest=m_pUi->comboBox_club_guest->currentText();
+	m_modernResultWinner->setText(totalHome==totalGuest?QStringLiteral("–"):(totalHome>totalGuest?home:guest));
 }
 
 void MainWindowTeam::UpdateFightNumber_()
