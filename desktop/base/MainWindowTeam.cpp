@@ -37,6 +37,16 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFontDialog>
+#include <QSignalBlocker>
+#include <QHeaderView>
+#include <QVBoxLayout>
+#include <QTableWidget>
+#include <QScrollArea>
+#include <QPushButton>
+#include <QLabel>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QFrame>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
@@ -94,6 +104,23 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_masterRuleSets()
 	, m_usingMasterData(false)
 	, m_modes()
+	, m_modernSetupRoot(nullptr)
+	, m_modernHomeRound1(nullptr)
+	, m_modernGuestRound1(nullptr)
+	, m_modernHomeRound2(nullptr)
+	, m_modernGuestRound2(nullptr)
+	, m_modernHomeTeamLabel(nullptr)
+	, m_modernGuestTeamLabel(nullptr)
+	, m_modernResultHomeHeader(nullptr)
+	, m_modernResultGuestHeader(nullptr)
+	, m_modernResultR1Home(nullptr)
+	, m_modernResultR1Guest(nullptr)
+	, m_modernResultR2Home(nullptr)
+	, m_modernResultR2Guest(nullptr)
+	, m_modernResultTotalHome(nullptr)
+	, m_modernResultTotalGuest(nullptr)
+	, m_modernResultWinner(nullptr)
+	, m_modernStatusLabel(nullptr)
 {
 	m_pUi->setupUi(this);
 }
@@ -211,6 +238,7 @@ void MainWindowTeam::Init()
 	};
 	enableOneClickFighterSelection(m_pUi->tableView_tournament_list1);
 	enableOneClickFighterSelection(m_pUi->tableView_tournament_list2);
+	BuildModernTeamSetupUi_();
 	// make name columns auto-resizable
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name1, QHeaderView::Stretch);
     m_pUi->tableView_tournament_list1->horizontalHeader()->setSectionResizeMode(TournamentModel::eCol_name2, QHeaderView::Stretch);
@@ -762,6 +790,452 @@ void MainWindowTeam::update_club_views()
 
 	m_pUi->lineEdit_location->setText(m_pClubManager->GetAddress(m_host));
 	UpdateTeamFighterDelegates_();
+}
+
+
+void MainWindowTeam::BuildModernTeamSetupUi_()
+{
+	if (m_modernSetupRoot)
+		return;
+
+	// Hide the legacy list UI. The underlying models/controllers remain active.
+	const QList<QWidget*> legacyWidgets = {
+		m_pUi->tableView_tournament_list1, m_pUi->tableView_tournament_list2,
+		m_pUi->label_intermediate_result, m_pUi->lineEdit_wins_intermediate,
+		m_pUi->lineEdit_score_intermediate, m_pUi->label_2, m_pUi->label_3,
+		m_pUi->pushButton_copySwitched, m_pUi->label_final_score,
+		m_pUi->lineEdit_wins, m_pUi->lineEdit_score, m_pUi->label_final_wins,
+		m_pUi->label_final_sub_score, m_pUi->toolButton_weights,
+		m_pUi->toolButton_team_home, m_pUi->toolButton_team_guest,
+		m_pUi->label_home, m_pUi->label_guest, m_pUi->label_date,
+		m_pUi->label_location, m_pUi->label_host, m_pUi->label_mode, m_pUi->line
+	};
+	for (QWidget* w : legacyWidgets) if (w) w->hide();
+
+	m_pUi->gridLayout_main->setContentsMargins(0,0,0,0);
+	m_pUi->gridLayout_main->setSpacing(0);
+
+	m_modernSetupRoot = new QWidget(m_pUi->tab_score_table);
+	m_modernSetupRoot->setObjectName(QStringLiteral("modernTeamSetupRoot"));
+	auto* outer = new QVBoxLayout(m_modernSetupRoot);
+	outer->setContentsMargins(12, 10, 12, 10);
+	outer->setSpacing(10);
+
+	auto* scroll = new QScrollArea(m_modernSetupRoot);
+	scroll->setWidgetResizable(true);
+	scroll->setFrameShape(QFrame::NoFrame);
+	auto* content = new QWidget(scroll);
+	content->setObjectName(QStringLiteral("modernContent"));
+	auto* contentLayout = new QVBoxLayout(content);
+	contentLayout->setContentsMargins(0,0,0,0);
+	contentLayout->setSpacing(10);
+
+	auto* titleRow = new QHBoxLayout();
+	auto* back = new QLabel(QStringLiteral("‹  Zur Übersicht"), content);
+	back->setObjectName(QStringLiteral("modernBack"));
+	auto* title = new QLabel(QStringLiteral("Mannschaftskampf bearbeiten"), content);
+	title->setObjectName(QStringLiteral("modernTitle"));
+	titleRow->addWidget(back);
+	titleRow->addSpacing(18);
+	titleRow->addWidget(title);
+	titleRow->addStretch();
+	contentLayout->addLayout(titleRow);
+
+	auto* details = new QFrame(content);
+	details->setObjectName(QStringLiteral("detailsCard"));
+	auto* dg = new QGridLayout(details);
+	dg->setContentsMargins(14,12,14,12);
+	dg->setHorizontalSpacing(12);
+	dg->setVerticalSpacing(9);
+
+	auto addField = [dg](int row, int col, const QString& label, QWidget* widget)
+	{
+		auto* l = new QLabel(label);
+		l->setObjectName(QStringLiteral("fieldLabel"));
+		dg->addWidget(l,row,col);
+		dg->addWidget(widget,row,col+1);
+	};
+
+	addField(0,0,QStringLiteral("Wettkampf / Liga"),m_pUi->comboBox_mode);
+	addField(1,0,QStringLiteral("Datum"),m_pUi->dateEdit);
+	addField(0,2,QStringLiteral("Ort"),m_pUi->lineEdit_location);
+	addField(1,2,QStringLiteral("Ausrichter"),m_pUi->comboBox_club_host);
+	addField(0,4,QStringLiteral("Heimmannschaft"),m_pUi->comboBox_club_home);
+	addField(1,4,QStringLiteral("Gastmannschaft"),m_pUi->comboBox_club_guest);
+	for(int c=1;c<=5;c+=2) dg->setColumnStretch(c,1);
+	contentLayout->addWidget(details);
+
+	auto buildLineupTable = [this](QWidget* parent, bool guest)->QTableWidget*
+	{
+		auto* t = new QTableWidget(parent);
+		t->setColumnCount(4);
+		t->setHorizontalHeaderLabels({QStringLiteral("#"),QStringLiteral("Gewicht"),QStringLiteral("Kämpfer"),QStringLiteral("Jahrgang")});
+		t->verticalHeader()->hide();
+		t->horizontalHeader()->setStretchLastSection(false);
+		t->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+		t->horizontalHeader()->setSectionResizeMode(1,QHeaderView::ResizeToContents);
+		t->horizontalHeader()->setSectionResizeMode(2,QHeaderView::Stretch);
+		t->horizontalHeader()->setSectionResizeMode(3,QHeaderView::ResizeToContents);
+		t->setSelectionMode(QAbstractItemView::NoSelection);
+		t->setEditTriggers(QAbstractItemView::NoEditTriggers);
+		t->setFocusPolicy(Qt::NoFocus);
+		t->setShowGrid(true);
+		t->setAlternatingRowColors(false);
+		t->setObjectName(guest ? QStringLiteral("guestLineupTable") : QStringLiteral("homeLineupTable"));
+		return t;
+	};
+
+	auto buildTeamCard = [&](bool guest)->QFrame*
+	{
+		auto* card = new QFrame(content);
+		card->setObjectName(guest ? QStringLiteral("guestCard") : QStringLiteral("homeCard"));
+		auto* vl = new QVBoxLayout(card);
+		vl->setContentsMargins(10,10,10,10);
+		vl->setSpacing(7);
+
+		auto* head = new QHBoxLayout();
+		auto* badge = new QLabel(guest ? QStringLiteral("BLAU") : QStringLiteral("WEISS"), card);
+		badge->setObjectName(guest ? QStringLiteral("guestBadge") : QStringLiteral("homeBadge"));
+		auto* names = new QVBoxLayout();
+		QLabel*& nameLabel = guest ? m_modernGuestTeamLabel : m_modernHomeTeamLabel;
+		nameLabel = new QLabel(card);
+		nameLabel->setObjectName(QStringLiteral("teamName"));
+		auto* role = new QLabel(guest ? QStringLiteral("Gastmannschaft") : QStringLiteral("Heimmannschaft"), card);
+		role->setObjectName(QStringLiteral("teamRole"));
+		names->addWidget(nameLabel);
+		names->addWidget(role);
+		auto* rosterBtn = new QPushButton(QStringLiteral("Kader anzeigen"),card);
+		rosterBtn->setObjectName(QStringLiteral("secondaryButton"));
+		connect(rosterBtn,&QPushButton::clicked,this,[this,guest](){ShowModernRoster_(guest?FighterEnum::Second:FighterEnum::First);});
+		head->addWidget(badge);
+		head->addLayout(names);
+		head->addStretch();
+		head->addWidget(rosterBtn);
+		vl->addLayout(head);
+
+		auto addRound = [&](const QString& titleText, int round)
+		{
+			auto* roundTitle = new QLabel(titleText,card);
+			roundTitle->setObjectName(guest ? QStringLiteral("guestRoundTitle") : QStringLiteral("homeRoundTitle"));
+			vl->addWidget(roundTitle);
+			QTableWidget* table = buildLineupTable(card,guest);
+			if(!guest && round==0) m_modernHomeRound1=table;
+			if(!guest && round==1) m_modernHomeRound2=table;
+			if(guest && round==0) m_modernGuestRound1=table;
+			if(guest && round==1) m_modernGuestRound2=table;
+			vl->addWidget(table);
+		};
+		addRound(QStringLiteral("⌄  Hinrunde (1. Durchgang)"),0);
+		addRound(QStringLiteral("⌄  Rückrunde (2. Durchgang)"),1);
+
+		auto* buttons = new QHBoxLayout();
+		auto* copyBtn = new QPushButton(QStringLiteral("Hinrunde in Rückrunde übernehmen"),card);
+		auto* clearBtn = new QPushButton(QStringLiteral("Aufstellung leeren"),card);
+		copyBtn->setObjectName(QStringLiteral("secondaryButton"));
+		clearBtn->setObjectName(QStringLiteral("secondaryButton"));
+		connect(copyBtn,&QPushButton::clicked,this,[this,guest](){CopyModernLineup_(guest?FighterEnum::Second:FighterEnum::First);});
+		connect(clearBtn,&QPushButton::clicked,this,[this,guest](){ClearModernLineup_(guest?FighterEnum::Second:FighterEnum::First);});
+		buttons->addWidget(copyBtn);
+		buttons->addWidget(clearBtn);
+		vl->addLayout(buttons);
+		return card;
+	};
+
+	auto* teams = new QHBoxLayout();
+	teams->setSpacing(10);
+	teams->addWidget(buildTeamCard(false),1);
+	teams->addWidget(buildTeamCard(true),1);
+	contentLayout->addLayout(teams);
+
+	auto* result = new QFrame(content);
+	result->setObjectName(QStringLiteral("resultCard"));
+	auto* rg = new QGridLayout(result);
+	rg->setContentsMargins(14,10,14,12);
+	rg->setHorizontalSpacing(12);
+	rg->setVerticalSpacing(7);
+	auto* rt = new QLabel(QStringLiteral("3. Ergebnis"),result);
+	rt->setObjectName(QStringLiteral("sectionTitle"));
+	rg->addWidget(rt,0,0,1,5);
+
+	m_modernResultHomeHeader = new QLabel(result);
+	m_modernResultGuestHeader = new QLabel(result);
+	m_modernResultHomeHeader->setAlignment(Qt::AlignCenter);
+	m_modernResultGuestHeader->setAlignment(Qt::AlignCenter);
+	rg->addWidget(new QLabel(QStringLiteral("Durchgang"),result),1,0);
+	rg->addWidget(m_modernResultHomeHeader,1,1);
+	rg->addWidget(new QLabel(QStringLiteral(":"),result),1,2);
+	rg->addWidget(m_modernResultGuestHeader,1,3);
+	rg->addWidget(new QLabel(QStringLiteral("Sieger Durchgang"),result),1,4);
+
+	auto makeScore = [result](){ auto* l=new QLabel(QStringLiteral("0"),result); l->setAlignment(Qt::AlignCenter); l->setObjectName(QStringLiteral("scoreBox")); return l; };
+	m_modernResultR1Home=makeScore(); m_modernResultR1Guest=makeScore();
+	m_modernResultR2Home=makeScore(); m_modernResultR2Guest=makeScore();
+	m_modernResultTotalHome=makeScore(); m_modernResultTotalGuest=makeScore();
+	auto* winnerR1=new QLabel(QStringLiteral("–"),result);
+	auto* winnerR2=new QLabel(QStringLiteral("–"),result);
+	m_modernResultWinner=new QLabel(QStringLiteral("–"),result);
+	m_modernResultWinner->setObjectName(QStringLiteral("winnerLabel"));
+
+	rg->addWidget(new QLabel(QStringLiteral("Hinrunde (1. Durchgang)"),result),2,0);
+	rg->addWidget(m_modernResultR1Home,2,1); rg->addWidget(new QLabel(QStringLiteral(":"),result),2,2); rg->addWidget(m_modernResultR1Guest,2,3); rg->addWidget(winnerR1,2,4);
+	rg->addWidget(new QLabel(QStringLiteral("Rückrunde (2. Durchgang)"),result),3,0);
+	rg->addWidget(m_modernResultR2Home,3,1); rg->addWidget(new QLabel(QStringLiteral(":"),result),3,2); rg->addWidget(m_modernResultR2Guest,3,3); rg->addWidget(winnerR2,3,4);
+	auto* totalLabel = new QLabel(QStringLiteral("Gesamtergebnis"),result); totalLabel->setObjectName(QStringLiteral("totalLabel"));
+	rg->addWidget(totalLabel,4,0); rg->addWidget(m_modernResultTotalHome,4,1); rg->addWidget(new QLabel(QStringLiteral(":"),result),4,2); rg->addWidget(m_modernResultTotalGuest,4,3); rg->addWidget(m_modernResultWinner,4,4);
+
+	// Round winner labels follow the same score sources.
+	connect(m_pUi->lineEdit_wins_intermediate,&QLineEdit::textChanged,this,[this,winnerR1,winnerR2](){
+		UpdateModernResults_();
+		const auto parse=[](const QString&s){QStringList p=s.split(':');return p.size()==2?QPair<int,int>(p[0].trimmed().toInt(),p[1].trimmed().toInt()):QPair<int,int>(0,0);};
+		auto r1=parse(m_pUi->lineEdit_wins_intermediate->text()), total=parse(m_pUi->lineEdit_wins->text());
+		auto setWinner=[this](QLabel* l,int a,int b){l->setText(a==b?QStringLiteral("–"):(a>b?m_pUi->comboBox_club_home->currentText():m_pUi->comboBox_club_guest->currentText()));};
+		setWinner(winnerR1,r1.first,r1.second);
+		setWinner(winnerR2,total.first-r1.first,total.second-r1.second);
+	});
+	connect(m_pUi->lineEdit_wins,&QLineEdit::textChanged,this,[this,winnerR1,winnerR2](){
+		UpdateModernResults_();
+		const auto parse=[](const QString&s){QStringList p=s.split(':');return p.size()==2?QPair<int,int>(p[0].trimmed().toInt(),p[1].trimmed().toInt()):QPair<int,int>(0,0);};
+		auto r1=parse(m_pUi->lineEdit_wins_intermediate->text()), total=parse(m_pUi->lineEdit_wins->text());
+		auto setWinner=[this](QLabel* l,int a,int b){l->setText(a==b?QStringLiteral("–"):(a>b?m_pUi->comboBox_club_home->currentText():m_pUi->comboBox_club_guest->currentText()));};
+		setWinner(winnerR1,r1.first,r1.second);
+		setWinner(winnerR2,total.first-r1.first,total.second-r1.second);
+	});
+	contentLayout->addWidget(result);
+
+	auto* bottom = new QHBoxLayout();
+	auto* statusCard = new QFrame(content);
+	statusCard->setObjectName(QStringLiteral("statusCard"));
+	auto* sl = new QHBoxLayout(statusCard);
+	sl->setContentsMargins(12,8,12,8);
+	auto* st = new QLabel(QStringLiteral("4. Status"),statusCard); st->setObjectName(QStringLiteral("sectionTitle"));
+	m_modernStatusLabel = new QLabel(QStringLiteral("●  In Bearbeitung"),statusCard); m_modernStatusLabel->setObjectName(QStringLiteral("statusPill"));
+	sl->addWidget(st); sl->addWidget(m_modernStatusLabel); sl->addStretch();
+
+	auto* actionCard = new QFrame(content);
+	actionCard->setObjectName(QStringLiteral("statusCard"));
+	auto* al = new QHBoxLayout(actionCard);
+	al->setContentsMargins(12,8,12,8);
+	auto* at = new QLabel(QStringLiteral("5. Aktionen"),actionCard); at->setObjectName(QStringLiteral("sectionTitle"));
+	auto* save = new QPushButton(QStringLiteral("Speichern"),actionCard); save->setObjectName(QStringLiteral("secondaryButton"));
+	auto* start = new QPushButton(QStringLiteral("▶  Wettkampf starten"),actionCard); start->setObjectName(QStringLiteral("startButton"));
+	connect(save,&QPushButton::clicked,this,[this](){
+		SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
+		if(m_modernStatusLabel)m_modernStatusLabel->setText(QStringLiteral("●  Gespeichert"));
+	});
+	connect(start,&QPushButton::clicked,this,[this](){m_pUi->tabWidget->setCurrentWidget(m_pUi->tab_view);});
+	al->addWidget(at); al->addStretch(); al->addWidget(save); al->addWidget(start);
+	bottom->addWidget(statusCard,1);
+	bottom->addWidget(actionCard,1);
+	contentLayout->addLayout(bottom);
+	contentLayout->addStretch();
+
+	scroll->setWidget(content);
+	outer->addWidget(scroll);
+	m_pUi->verticalLayout_7->insertWidget(0,m_modernSetupRoot,1);
+
+	m_pUi->menuBar->setStyleSheet(QStringLiteral(
+		"QMenuBar{background:#102d49;color:white;padding:4px 8px;} QMenuBar::item{padding:6px 12px;background:transparent;} QMenuBar::item:selected{background:#1d4669;}"));
+	m_pUi->tabWidget->setStyleSheet(QStringLiteral(
+		"QTabBar::tab{padding:10px 8px;} QTabBar::tab:selected{font-weight:700;}"));
+
+	m_modernSetupRoot->setStyleSheet(QStringLiteral(
+		"#modernContent{background:#f4f7fb;color:#10243b;}"
+		"#modernTitle{font-size:20px;font-weight:800;color:#10243b;} #modernBack{color:#234c75;font-weight:600;}"
+		"#detailsCard,#resultCard,#statusCard{background:white;border:1px solid #d8e0e8;border-radius:7px;}"
+		"#fieldLabel{font-weight:700;color:#1c3046;} QComboBox,QDateEdit,QLineEdit{min-height:30px;border:1px solid #c7d1dc;border-radius:4px;background:white;padding:0 8px;}"
+		"#homeCard{background:white;border:1px solid #d8e0e8;border-radius:8px;} #guestCard{background:#eaf4ff;border:1px solid #4c9be8;border-radius:8px;}"
+		"#homeBadge{background:white;border:2px solid #d6dce3;border-radius:5px;padding:10px 8px;font-weight:900;color:#1b2c42;}"
+		"#guestBadge{background:#0b5da8;border:2px solid #0b5da8;border-radius:5px;padding:10px 8px;font-weight:900;color:white;}"
+		"#teamName{font-size:17px;font-weight:800;} #teamRole{color:#53677d;} #homeRoundTitle{font-weight:800;padding:6px;background:#f7f8fa;border:1px solid #e0e4e9;}"
+		"#guestRoundTitle{font-weight:800;padding:6px;background:#0b5da8;color:white;border:1px solid #0b5da8;}"
+		"QTableWidget{background:white;border:1px solid #d9e0e7;gridline-color:#e1e6eb;} QHeaderView::section{background:#f1f4f7;color:#18304a;font-weight:800;border:0;border-right:1px solid #d9e0e7;padding:5px;}"
+		"#guestLineupTable QHeaderView::section{background:#0b5da8;color:white;border-right:1px solid #3a7db9;} #guestLineupTable{border:1px solid #5a9bd5;}"
+		"#secondaryButton{min-height:30px;border:1px solid #aebdcb;border-radius:4px;background:#f8fafc;color:#173653;padding:0 12px;} #secondaryButton:hover{background:#edf3f8;}"
+		"#sectionTitle{font-size:16px;font-weight:800;} #scoreBox{border:1px solid #b8c9d8;border-radius:4px;background:#f5f9fd;padding:5px 16px;font-weight:800;font-size:16px;}"
+		"#totalLabel,#winnerLabel{font-weight:900;} #statusPill{background:#fff1c9;border:1px solid #efc45c;border-radius:12px;padding:4px 10px;color:#8a5a00;font-weight:700;}"
+		"#startButton{min-height:34px;border:0;border-radius:4px;background:#149447;color:white;font-weight:800;padding:0 18px;} #startButton:hover{background:#117c3d;}"
+	));
+
+	RefreshModernTeamSetupUi_();
+}
+
+QString MainWindowTeam::FighterYear_(const QString& fighterId) const
+{
+	for (const QJsonValue& value : m_masterFighters)
+	{
+		const QJsonObject f = value.toObject();
+		if (f.value(QStringLiteral("id")).toString() != fighterId) continue;
+		const QString birth = f.value(QStringLiteral("birthDate")).toString();
+		if (birth.size() >= 4) return birth.left(4);
+		break;
+	}
+	return QStringLiteral("–");
+}
+
+void MainWindowTeam::PopulateModernLineupTable_(QTableWidget* table, int round, Ipponboard::FighterEnum side)
+{
+	if (!table || round < 0 || round >= m_pController->GetRoundCount()) return;
+	auto* model = m_pController->GetTournamentScoreModel(round).get();
+	if (!model) return;
+
+	QSignalBlocker blocker(table);
+	const int rows = model->rowCount(QModelIndex());
+	table->setRowCount(rows);
+	table->setMinimumHeight(35 + rows * 34);
+	table->setMaximumHeight(35 + rows * 34);
+
+	const bool guest = side == FighterEnum::Second;
+	const int nameColumn = guest ? TournamentModel::eCol_name2 : TournamentModel::eCol_name1;
+	const QComboBox* teamBox = guest ? m_pUi->comboBox_club_guest : m_pUi->comboBox_club_home;
+	const QString teamId = teamBox->currentData().toString();
+	const QStringList names = FighterNamesForTeam_(teamId);
+	const QStringList ids = FighterIdsForTeam_(teamId);
+
+	for (int row=0; row<rows; ++row)
+	{
+		auto* no = new QTableWidgetItem(QString::number(row+1)); no->setTextAlignment(Qt::AlignCenter);
+		auto* weight = new QTableWidgetItem(model->data(model->index(row,TournamentModel::eCol_weight),Qt::DisplayRole).toString()); weight->setTextAlignment(Qt::AlignCenter);
+		table->setItem(row,0,no);
+		table->setItem(row,1,weight);
+
+		auto* combo = new QComboBox(table);
+		combo->setEditable(true);
+		combo->setInsertPolicy(QComboBox::NoInsert);
+		combo->addItem(QStringLiteral("– nicht aufgestellt –"),QStringLiteral("__NOT_SET__"));
+		for(int i=0;i<names.size();++i) combo->addItem(names.at(i), i<ids.size()?ids.at(i):QString());
+		if(QCompleter* completer=combo->completer())
+		{
+			completer->setCaseSensitivity(Qt::CaseInsensitive);
+			completer->setFilterMode(Qt::MatchContains);
+			completer->setCompletionMode(QCompleter::PopupCompletion);
+		}
+
+		const QModelIndex mi = model->index(row,nameColumn);
+		const QString currentName = model->data(mi,Qt::DisplayRole).toString().trimmed();
+		const QString currentId = model->data(mi,Qt::UserRole).toString();
+		int pos = currentId.isEmpty() ? -1 : combo->findData(currentId);
+		if(pos>=0) combo->setCurrentIndex(pos);
+		else if(currentName.isEmpty() || currentName==QStringLiteral("--")) combo->setCurrentIndex(0);
+		else {combo->setCurrentIndex(-1);combo->setEditText(currentName);}
+		table->setCellWidget(row,2,combo);
+
+		auto* year = new QTableWidgetItem(currentId.isEmpty()?QStringLiteral("–"):FighterYear_(currentId));
+		year->setTextAlignment(Qt::AlignCenter);
+		table->setItem(row,3,year);
+
+		auto commit = [this,table,model,mi,combo,row]()
+		{
+			QString id;
+			QString text = combo->currentText().trimmed();
+			const int selected = combo->currentIndex();
+			if(selected>=0) id=combo->itemData(selected).toString();
+			if(id==QStringLiteral("__NOT_SET__") || text==QStringLiteral("– nicht aufgestellt –"))
+			{
+				model->setData(mi,QString(),Qt::EditRole);
+				model->setData(mi,QString(),Qt::UserRole);
+				if(auto* y=table->item(row,3)) y->setText(QStringLiteral("–"));
+				return;
+			}
+			if(selected<0 || id.isEmpty())
+			{
+				model->setData(mi,text,Qt::EditRole);
+				model->setData(mi,QString(),Qt::UserRole);
+				if(auto* y=table->item(row,3)) y->setText(QStringLiteral("–"));
+			}
+			else
+			{
+				model->setData(mi,text,Qt::EditRole);
+				model->setData(mi,id,Qt::UserRole);
+				if(auto* y=table->item(row,3)) y->setText(FighterYear_(id));
+			}
+		};
+		connect(combo,QOverload<int>::of(&QComboBox::currentIndexChanged),this,[commit](int){commit();});
+		if(combo->lineEdit()) connect(combo->lineEdit(),&QLineEdit::editingFinished,this,commit);
+	}
+}
+
+void MainWindowTeam::RefreshModernTeamSetupUi_()
+{
+	if (!m_modernSetupRoot) return;
+	const QString home=m_pUi->comboBox_club_home->currentText();
+	const QString guest=m_pUi->comboBox_club_guest->currentText();
+	if(m_modernHomeTeamLabel)m_modernHomeTeamLabel->setText(home);
+	if(m_modernGuestTeamLabel)m_modernGuestTeamLabel->setText(guest);
+	if(m_modernResultHomeHeader)m_modernResultHomeHeader->setText(home+QStringLiteral(" (Heim)"));
+	if(m_modernResultGuestHeader)m_modernResultGuestHeader->setText(guest+QStringLiteral(" (Gast)"));
+
+	PopulateModernLineupTable_(m_modernHomeRound1,0,FighterEnum::First);
+	PopulateModernLineupTable_(m_modernGuestRound1,0,FighterEnum::Second);
+	if(m_pController->GetRoundCount()>1)
+	{
+		m_modernHomeRound2->show(); m_modernGuestRound2->show();
+		PopulateModernLineupTable_(m_modernHomeRound2,1,FighterEnum::First);
+		PopulateModernLineupTable_(m_modernGuestRound2,1,FighterEnum::Second);
+	}
+	else
+	{
+		if(m_modernHomeRound2)m_modernHomeRound2->hide();
+		if(m_modernGuestRound2)m_modernGuestRound2->hide();
+	}
+	UpdateModernResults_();
+}
+
+void MainWindowTeam::CopyModernLineup_(Ipponboard::FighterEnum side)
+{
+	if(m_pController->GetRoundCount()<2)return;
+	auto* src=m_pController->GetTournamentScoreModel(0).get();
+	auto* dst=m_pController->GetTournamentScoreModel(1).get();
+	const int col=side==FighterEnum::Second?TournamentModel::eCol_name2:TournamentModel::eCol_name1;
+	const int rows=std::min(src->rowCount(QModelIndex()),dst->rowCount(QModelIndex()));
+	for(int r=0;r<rows;++r)
+	{
+		const QModelIndex s=src->index(r,col), d=dst->index(r,col);
+		dst->setData(d,src->data(s,Qt::DisplayRole),Qt::EditRole);
+		dst->setData(d,src->data(s,Qt::UserRole),Qt::UserRole);
+	}
+	RefreshModernTeamSetupUi_();
+}
+
+void MainWindowTeam::ClearModernLineup_(Ipponboard::FighterEnum side)
+{
+	const int col=side==FighterEnum::Second?TournamentModel::eCol_name2:TournamentModel::eCol_name1;
+	for(int round=0;round<m_pController->GetRoundCount();++round)
+	{
+		auto* model=m_pController->GetTournamentScoreModel(round).get();
+		for(int r=0;r<model->rowCount(QModelIndex());++r)
+		{
+			const QModelIndex i=model->index(r,col);
+			model->setData(i,QString(),Qt::EditRole);
+			model->setData(i,QString(),Qt::UserRole);
+		}
+	}
+	RefreshModernTeamSetupUi_();
+}
+
+void MainWindowTeam::ShowModernRoster_(Ipponboard::FighterEnum side)
+{
+	const bool guest=side==FighterEnum::Second;
+	const QComboBox* box=guest?m_pUi->comboBox_club_guest:m_pUi->comboBox_club_home;
+	const QStringList names=FighterNamesForTeam_(box->currentData().toString());
+	QMessageBox::information(this,QStringLiteral("Mannschaftskader"),
+		names.isEmpty()?QStringLiteral("Kein Kader hinterlegt."):names.join(QStringLiteral("\n")));
+}
+
+void MainWindowTeam::UpdateModernResults_()
+{
+	if(!m_modernResultR1Home)return;
+	const auto parse=[](const QString&s){QStringList p=s.split(':');return p.size()==2?QPair<int,int>(p[0].trimmed().toInt(),p[1].trimmed().toInt()):QPair<int,int>(0,0);};
+	const auto r1=parse(m_pUi->lineEdit_wins_intermediate->text());
+	const auto total=parse(m_pUi->lineEdit_wins->text());
+	const int r2h=std::max(0,total.first-r1.first), r2g=std::max(0,total.second-r1.second);
+	m_modernResultR1Home->setText(QString::number(r1.first));
+	m_modernResultR1Guest->setText(QString::number(r1.second));
+	m_modernResultR2Home->setText(QString::number(r2h));
+	m_modernResultR2Guest->setText(QString::number(r2g));
+	m_modernResultTotalHome->setText(QString::number(total.first));
+	m_modernResultTotalGuest->setText(QString::number(total.second));
+	const QString home=m_pUi->comboBox_club_home->currentText(), guest=m_pUi->comboBox_club_guest->currentText();
+	m_modernResultWinner->setText(total.first==total.second?QStringLiteral("–"):(total.first>total.second?home:guest));
 }
 
 void MainWindowTeam::UpdateFightNumber_()
@@ -1651,6 +2125,7 @@ void MainWindowTeam::on_comboBox_mode_currentIndexChanged(int i)
 	m_pSecondaryView->UpdateView();
 
 	UpdateFightNumber_();
+	RefreshModernTeamSetupUi_();
 }
 
 void MainWindowTeam::on_comboBox_club_host_currentIndexChanged(const QString& s)
@@ -1678,6 +2153,7 @@ void MainWindowTeam::on_comboBox_club_home_currentIndexChanged(const QString& s)
 #endif
 	//UpdateViews_(); --> already done by controller
 	update_score_screen();
+	RefreshModernTeamSetupUi_();
 }
 
 void MainWindowTeam::on_comboBox_club_guest_currentIndexChanged(const QString& s)
@@ -1696,6 +2172,7 @@ void MainWindowTeam::on_comboBox_club_guest_currentIndexChanged(const QString& s
 #endif
 	//UpdateViews_(); --> already done by controller
 	update_score_screen();
+	RefreshModernTeamSetupUi_();
 }
 
 void MainWindowTeam::on_actionPrint_triggered()
