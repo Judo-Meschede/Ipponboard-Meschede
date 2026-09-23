@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.7**
+`CURRENT_VERSION.txt`: **0.2.8**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.7
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.8**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.7
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.8
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -453,6 +453,18 @@ Erforderliche Schritte:
 4. 5er-Wettkampfmodus auswählen.
 5. Druckvorschau/PDF-Export öffnen und direkt gegen das offizielle Referenz-PDF vergleichen.
 6. Noch nicht unter Windows praktisch getestet.
+
+## 7m. NWJV-5er-Druckabgleich – V0.2.8
+
+Praxistest V0.2.7 gegen das offizielle 5er-PDF zeigte noch sichtbare Abweichungen.
+V0.2.8 korrigiert ausschließlich die 5er-Druckausgabe:
+- offizielles NWJV-Logo wird mit Original-PDF-Boundingbox positioniert.
+- Portable-Build enthält nun das Qt-JPEG-Plugin, damit das bereits eingebettete offizielle Logo sicher geladen wird.
+- Hauptlinien werden stärker an die Original-PDF-Linienstärke angeglichen.
+- feste Kopftexte, WEISS/BLAU, Verbandsbezeichnung, Spaltenüberschriften und Fußtexte werden nach den aus dem Original-PDF ausgelesenen Positionen/Schriftgrößen korrigiert.
+- 7er-Vorlage und Wettkampflogik unverändert.
+
+Noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
