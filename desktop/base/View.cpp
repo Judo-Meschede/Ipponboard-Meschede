@@ -78,18 +78,18 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 	ui->text_ippon_desc1->SetColor(fgColor1);
 	ui->text_wazaari_desc1->SetColor(fgColor1);
 	ui->text_yuko_desc1->SetColor(fgColor1);
-	ui->text_ippon_desc1->SetText("I");
-	ui->text_wazaari_desc1->SetText("W");
-	ui->text_yuko_desc1->SetText("Y");
+	ui->text_ippon_desc1->SetText(m_pController->GetRules()->GetIpponShortLabel());
+	ui->text_wazaari_desc1->SetText(m_pController->GetRules()->GetWazaariShortLabel());
+	ui->text_yuko_desc1->SetText(m_pController->GetRules()->GetYukoShortLabel());
 	ui->text_ippon_desc2->setFont(descFont);
 	ui->text_wazaari_desc2->setFont(descFont);
 	ui->text_yuko_desc2->setFont(descFont);
 	ui->text_ippon_desc2->SetColor(fgColor2, bgColor2);
 	ui->text_wazaari_desc2->SetColor(fgColor2, bgColor2);
 	ui->text_yuko_desc2->SetColor(fgColor2, bgColor2);
-	ui->text_ippon_desc2->SetText("I");
-	ui->text_wazaari_desc2->SetText("W");
-	ui->text_yuko_desc2->SetText("Y");
+	ui->text_ippon_desc2->SetText(m_pController->GetRules()->GetIpponShortLabel());
+	ui->text_wazaari_desc2->SetText(m_pController->GetRules()->GetWazaariShortLabel());
+	ui->text_yuko_desc2->SetText(m_pController->GetRules()->GetYukoShortLabel());
 	ui->text_ippon_desc1->SetColor(fgColor1, bgColor1);
 	ui->text_wazaari_desc1->SetColor(fgColor1, bgColor1);
 	ui->text_yuko_desc1->SetColor(fgColor1, bgColor1);
@@ -741,12 +741,12 @@ void View::update_ippon(Ipponboard::FighterEnum who) const
 			{
 				digit_ippon->hide();
 				digit_wazaari->show();
-				wazaariLabel->SetText("Waza-ari");
+				wazaariLabel->SetText(m_pController->GetRules()->GetWazaariLabel());
 
 				if (m_pController->GetRules()->IsOption_HasYuko())
 				{
 					digit_yuko->show();
-					yukoLabel->SetText("Yuko");
+					yukoLabel->SetText(m_pController->GetRules()->GetYukoLabel());
 				}
 			}
 		}
@@ -754,16 +754,16 @@ void View::update_ippon(Ipponboard::FighterEnum who) const
 		{
 			digit_ippon->show();
 			digit_wazaari->show();
-			wazaariLabel->SetText("W");
+			wazaariLabel->SetText(m_pController->GetRules()->GetWazaariShortLabel());
 
 			if (m_pController->GetRules()->IsOption_HasYuko())
 			{
 				digit_yuko->show();
-				yukoLabel->SetText("Y");
+				yukoLabel->SetText(m_pController->GetRules()->GetYukoShortLabel());
 			}
 		}
 
-		digit_ippon->SetText("IPPON", ScaledText::eSize_full, !is_secondary());
+		digit_ippon->SetText(m_pController->GetRules()->GetIpponLabel().toUpper(), ScaledText::eSize_full, !is_secondary());
 	}
 	else
 	{
@@ -780,12 +780,12 @@ void View::update_ippon(Ipponboard::FighterEnum who) const
 		{
 			digit_ippon->show();
 			digit_wazaari->show();
-			wazaariLabel->SetText("W");
+			wazaariLabel->SetText(m_pController->GetRules()->GetWazaariShortLabel());
 
 			if (m_pController->GetRules()->IsOption_HasYuko())
 			{
 				digit_yuko->show();
-				yukoLabel->SetText("Y");
+				yukoLabel->SetText(m_pController->GetRules()->GetYukoShortLabel());
 			}
 
 			digit_ippon->SetText("-", ScaledText::eSize_full);
@@ -794,12 +794,12 @@ void View::update_ippon(Ipponboard::FighterEnum who) const
 		{
 			digit_ippon->hide();
 			digit_wazaari->show();
-			wazaariLabel->SetText("Waza-ari");
+			wazaariLabel->SetText(m_pController->GetRules()->GetWazaariLabel());
 
 			if (m_pController->GetRules()->IsOption_HasYuko())
 			{
 				digit_yuko->show();
-				yukoLabel->SetText("Yuko");
+				yukoLabel->SetText(m_pController->GetRules()->GetYukoLabel());
 			}
 
 			digit_ippon->SetText("");
