@@ -63,6 +63,7 @@ private:
 	// specific methods
 	void update_club_views();
 	bool LoadMasterDataCache_();
+	void RegisterRuleSetsFromMasterData_();
 	bool LoadModesFromMasterData_(Ipponboard::TournamentMode::List& modes) const;
 	bool UploadTournamentModes_(const Ipponboard::TournamentMode::List& modes, QString& errorMsg);
 	void SaveTournamentModesToCache_(const Ipponboard::TournamentMode::List& modes);
@@ -160,6 +161,7 @@ private:
 	QJsonArray m_masterTeams;
 	QJsonArray m_masterFighters;
 	QJsonArray m_masterTournamentModes;
+	QJsonArray m_masterRuleSets;
 	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
 	QString GetRoundDataAsHtml(const Ipponboard::Fight& fight, int fightNo);
