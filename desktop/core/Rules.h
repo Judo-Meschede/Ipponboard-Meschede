@@ -8,6 +8,8 @@
 #include "Score.h"
 #include <QString>
 #include <QStringList>
+#include <QMap>
+#include <QByteArray>
 #include <memory>
 
 namespace Ipponboard
@@ -56,6 +58,20 @@ public:
 	virtual int GetMaxShidoCount() const { return 3; }
 	virtual int GetMaxWazaariCount() const { return 2; }
 	virtual int GetOsaekomiValue(Ipponboard::Score::Point p) const = 0;
+
+	virtual int GetIpponTeamPoints() const { return 10; }
+	virtual int GetWazaariTeamPoints() const { return 7; }
+	virtual int GetYukoTeamPoints() const { return 5; }
+	virtual int GetShidoTeamPoints() const { return 1; }
+
+	virtual QString GetIpponLabel() const { return QStringLiteral("Ippon"); }
+	virtual QString GetWazaariLabel() const { return QStringLiteral("Waza-ari"); }
+	virtual QString GetYukoLabel() const { return QStringLiteral("Yuko"); }
+	virtual QString GetShidoLabel() const { return QStringLiteral("Shido"); }
+	virtual QString GetHansokumakeLabel() const { return QStringLiteral("Hansoku-make"); }
+	virtual QString GetIpponShortLabel() const { return QStringLiteral("I"); }
+	virtual QString GetWazaariShortLabel() const { return QStringLiteral("W"); }
+	virtual QString GetYukoShortLabel() const { return QStringLiteral("Y"); }
 
 	template<typename T>
 	bool IsOfType() const { return dynamic_cast<const T*>(this) != nullptr; }
@@ -226,11 +242,92 @@ public:
 	virtual int GetMaxWazaariCount() const final { return 2; }
 };
 
-class RulesFactory
+struct RulesDefinition
+{
+	QString name;
+	bool hasYuko { true };
+	bool awaseteIppon { true };
+	bool openEndGoldenScore { true };
+	bool shidoAddsPoint { false };
+	bool shidoScoreCounts { false };
+	int maxShidoCount { 2 };
+	int maxWazaariCount { 2 };
+	int osaekomiYukoSeconds { 5 };
+	int osaekomiWazaariSeconds { 10 };
+	int osaekomiIpponSeconds { 20 };
+	int ipponTeamPoints { 10 };
+	int wazaariTeamPoints { 7 };
+	int yukoTeamPoints { 5 };
+	int shidoTeamPoints { 1 };
+	QString ipponLabel { QStringLiteral("Ippon") };
+	QString wazaariLabel { QStringLiteral("Waza-ari") };
+	QString yukoLabel { QStringLiteral("Yuko") };
+	QString shidoLabel { QStringLiteral("Shido") };
+	QString hansokumakeLabel { QStringLiteral("Hansoku-make") };
+};
+
+class ConfigurableRules : public AbstractRules
 {
 public:
+	explicit ConfigurableRules(const RulesDefinition& definition)
+		: m_definition(definition), m_name(definition.name.toUtf8()) {}
+
+	const char* Name() const final { return m_name.constData(); }
+	bool IsOption_ShidoAddsPoint() const final { return m_definition.shidoAddsPoint; }
+	bool IsOption_ShidoScoreCounts() const final { return m_definition.shidoScoreCounts; }
+	bool IsOption_AwaseteIppon() const final { return m_definition.awaseteIppon; }
+	bool IsOption_HasYuko() const final { return m_definition.hasYuko; }
+	bool IsOption_OpenEndGoldenScore() const final { return m_definition.openEndGoldenScore; }
+	int GetMaxShidoCount() const final { return m_definition.maxShidoCount; }
+	int GetMaxWazaariCount() const final { return m_definition.maxWazaariCount; }
+	int GetOsaekomiValue(Score::Point p) const final
+	{
+		switch (p)
+		{
+		case Score::Point::Ippon: return m_definition.osaekomiIpponSeconds;
+		case Score::Point::Wazaari: return m_definition.osaekomiWazaariSeconds;
+		case Score::Point::Yuko: return m_definition.hasYuko ? m_definition.osaekomiYukoSeconds : -1;
+		default: return -1;
+		}
+	}
+	int GetIpponTeamPoints() const final { return m_definition.ipponTeamPoints; }
+	int GetWazaariTeamPoints() const final { return m_definition.wazaariTeamPoints; }
+	int GetYukoTeamPoints() const final { return m_definition.yukoTeamPoints; }
+	int GetShidoTeamPoints() const final { return m_definition.shidoTeamPoints; }
+	QString GetIpponLabel() const final { return m_definition.ipponLabel; }
+	QString GetWazaariLabel() const final { return m_definition.wazaariLabel; }
+	QString GetYukoLabel() const final { return m_definition.yukoLabel; }
+	QString GetShidoLabel() const final { return m_definition.shidoLabel; }
+	QString GetHansokumakeLabel() const final { return m_definition.hansokumakeLabel; }
+	QString GetIpponShortLabel() const final { return m_definition.ipponLabel.left(1).toUpper(); }
+	QString GetWazaariShortLabel() const final { return m_definition.wazaariLabel.left(1).toUpper(); }
+	QString GetYukoShortLabel() const final { return m_definition.yukoLabel.left(1).toUpper(); }
+
+private:
+	RulesDefinition m_definition;
+	QByteArray m_name;
+};
+
+class RulesFactory
+{
+private:
+	static QMap<QString, RulesDefinition>& Definitions()
+	{
+		static QMap<QString, RulesDefinition> definitions;
+		return definitions;
+	}
+
+public:
+	static void ClearDefinitions() { Definitions().clear(); }
+	static void RegisterDefinition(const RulesDefinition& definition)
+	{
+		if (!definition.name.isEmpty()) Definitions().insert(definition.name, definition);
+	}
 	static std::shared_ptr<AbstractRules> Create(QString name)
 	{
+		const auto dynamicRule = Definitions().constFind(name);
+		if (dynamicRule != Definitions().constEnd())
+			return std::make_shared<ConfigurableRules>(dynamicRule.value());
 		if (name == ClassicRules::StaticName)
 		{
 			return std::make_shared<ClassicRules>();
@@ -268,6 +365,8 @@ public:
 	static QStringList GetNames()
 	{
 		auto result = QStringList();
+		for (auto it = Definitions().constBegin(); it != Definitions().constEnd(); ++it)
+			result.push_back(it.key());
 
 		result.push_back(Rules2025::StaticName);
 		result.push_back(Rules2018::StaticName);
@@ -276,6 +375,7 @@ public:
 		result.push_back(Rules2013::StaticName);
 		result.push_back(ClassicRules::StaticName);
 
+		result.removeDuplicates();
 		return result;
 	}
 
