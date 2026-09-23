@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.4**
+`CURRENT_VERSION.txt`: **0.2.5**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.4
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.5
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.4
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.5
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -381,6 +381,29 @@ Erforderliche Schritte:
 4. unterschiedliche Heim-/Gastmannschaften auswählen und beide Kader in Hin- und Rückrunde prüfen.
 
 Noch nicht unter Windows gebaut/getestet.
+
+## 7j. Live-Kaderauflösung – V0.2.5
+
+Praxistest V0.2.4 zeigte weiterhin auf Heim- und Gastseite den Heimkader.
+
+V0.2.5:
+- Kämpfereditor verwendet keine vorher in den Delegate kopierten Kaderlisten mehr.
+- Beim Öffnen jeder einzelnen Namenszelle wird der Kader live ermittelt.
+- Spalte `eCol_name1` liest zwingend die aktuell ausgewählte Heimmannschaft.
+- Spalte `eCol_name2` liest zwingend die aktuell ausgewählte Gastmannschaft.
+- Fighter-ID wird aus dem tatsächlich geöffneten ComboBox-Eintrag übernommen, nicht mehr aus einer eventuell veralteten Delegate-ID-Liste.
+- Ein-Klick-Öffnung bleibt erhalten.
+- Testdaten geprüft: TV Wickede und JC Samurai Schwelm besitzen im Seed unterschiedliche IDs und unterschiedliche Kader.
+
+Erforderliche Schritte:
+1. Kein Serverupdate erforderlich.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.5 starten.
+4. Heim TV Wickede / Gast JC Samurai Schwelm wählen.
+5. Erwartung Heim: u.a. Hussein Alasaad, Matthias Gedig.
+6. Erwartung Gast: u.a. Sean-Philip Baltzer, Stefan Bende, Felix Tietzsch.
+
+Noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
