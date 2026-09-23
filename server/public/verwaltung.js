@@ -1,5 +1,5 @@
 'use strict';
-let data={clubs:[],teams:[],fighters:[],competitions:[],weightClasses:[],tournamentModes:[]}, currentTab='clubs', selectedId=null, modes={};
+let data={clubs:[],teams:[],fighters:[],competitions:[],weightClasses:[],tournamentModes:[],ruleSets:[]}, currentTab='clubs', selectedId=null, modes={};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast=t=>{const x=$('#toast');x.textContent=t;x.classList.remove('hidden');setTimeout(()=>x.classList.add('hidden'),2200)};
@@ -17,11 +17,35 @@ const fields={
   ['weights','Gewichtsklassen (mit ; trennen)','text'],
   ['listTemplate','Vorlage','select',['list_output_nwjv_5_hinundrueck.html','list_output_nwjv_7_hinundrueck.html','list_output_mm.html','list_output_bundesliga.html','list_output_bay.html','list_output_jugendliga.html']],
   ['nRounds','Runden','number'],
-  ['fightTimeInSeconds','Kampfzeit in Sekunden','number'],
+  ['fightTimeInSeconds','Kampfzeit in Minuten','minutes'],
   ['weightsAreDoubled','Gewichtsklassen doppelt','checkbox'],
-  ['rules','Regelwerk','text'],
+  ['rules','Regelwerk','ruleset'],
   ['fightTimeOverrides','Abweichende Kampfzeiten','text'],
   ['options','Optionen','text']
+ ],
+ ruleSets:[
+  ['name','Bezeichnung','text'],
+  ['status','Status','select',['active','inactive']],
+  ['hasYuko','Yuko vorhanden','checkbox'],
+  ['awaseteIppon','Waza-ari-awasete-Ippon','checkbox'],
+  ['openEndGoldenScore','Golden Score ohne Zeitlimit','checkbox'],
+  ['shidoAddsPoint','Shido erzeugt Wertung','checkbox'],
+  ['shidoScoreCounts','Shido zählt im Vergleich','checkbox'],
+  ['maxShidoCount','Maximale Shido vor Hansoku-make','number'],
+  ['maxWazaariCount','Waza-ari für Ippon','number'],
+  ['osaekomiYukoSeconds','Osaekomi Yuko in Sekunden (0 = aus)','number'],
+  ['osaekomiWazaariSeconds','Osaekomi Waza-ari in Sekunden','number'],
+  ['osaekomiIpponSeconds','Osaekomi Ippon in Sekunden','number'],
+  ['ipponTeamPoints','Unterbewertung Ippon','number'],
+  ['wazaariTeamPoints','Unterbewertung Waza-ari','number'],
+  ['yukoTeamPoints','Unterbewertung Yuko','number'],
+  ['shidoTeamPoints','Unterbewertung Shido','number'],
+  ['ipponLabel','Begriff Ippon','text'],
+  ['wazaariLabel','Begriff Waza-ari','text'],
+  ['yukoLabel','Begriff Yuko','text'],
+  ['shidoLabel','Begriff Shido','text'],
+  ['hansokumakeLabel','Begriff Hansoku-make','text'],
+  ['notes','Bemerkungen','textarea']
  ]
 };
 const columns={
@@ -30,19 +54,21 @@ const columns={
  fighters:[['lastName','Nachname'],['firstName','Vorname'],['clubId','Stammverein'],['passNumber','Pass-Nr.'],['nationality','Nationalität'],['status','Status']],
  competitions:[['date','Datum'],['name','Wettkampf'],['location','Ort'],['type','Art'],['status','Status']],
  weightClasses:[['order','#'],['name','Gewichtsklasse'],['category','Kategorie'],['minWeight','Min.'],['maxWeight','Max.'],['status','Status']],
- tournamentModes:[['title','Titel'],['subTitle','Untertitel'],['weights','Gewichtsklassen'],['nRounds','Runden'],['fightTimeInSeconds','Kampfzeit'],['listTemplate','Vorlage']]
+ tournamentModes:[['title','Titel'],['subTitle','Untertitel'],['weights','Gewichtsklassen'],['nRounds','Runden'],['fightTimeInSeconds','Kampfzeit'],['listTemplate','Vorlage']],
+ ruleSets:[['name','Regelwerk'],['status','Status'],['maxShidoCount','Shido'],['osaekomiYukoSeconds','Yuko-Zeit'],['osaekomiWazaariSeconds','Waza-ari-Zeit'],['osaekomiIpponSeconds','Ippon-Zeit']]
 };
 async function api(url,opts){const r=await fetch(url,opts);const j=await r.json();if(!r.ok)throw new Error(j.error||r.statusText);return j}
-async function load(){const j=await api('/api/masterdata');data=j.masterdata||{};for(const k of ['clubs','teams','fighters','competitions','weightClasses','tournamentModes'])if(!Array.isArray(data[k]))data[k]=[];modes=j.modes||{};$('#sideRevision').textContent='Revision '+(data.revision||0);$('#sideUpdated').textContent='Stand '+new Date(data.updatedAt).toLocaleString('de-DE');render();$('#jsonPreview').value=JSON.stringify({masterdata:data},null,2)}
+async function load(){const j=await api('/api/masterdata');data=j.masterdata||{};for(const k of ['clubs','teams','fighters','competitions','weightClasses','tournamentModes','ruleSets'])if(!Array.isArray(data[k]))data[k]=[];modes=j.modes||{};$('#sideRevision').textContent='Revision '+(data.revision||0);$('#sideUpdated').textContent='Stand '+new Date(data.updatedAt).toLocaleString('de-DE');render();$('#jsonPreview').value=JSON.stringify({masterdata:data},null,2)}
 function setTab(tab){currentTab=tab;selectedId=null;$$('.tabbtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const imp=tab==='importExport';$('#crudView').classList.toggle('hidden',imp);$('#importView').classList.toggle('hidden',!imp);if(!imp)render()}
-function displayValue(row,key){if(key==='clubId')return clubName(row.clubId);if(key==='fightTimeInSeconds')return `${Number(row[key]||0)} s`;if(key==='weightsAreDoubled')return row[key]?'Ja':'Nein';if(key==='roster')return `${(row.fighterIds||[]).length} Kämpfer`;if(key==='logo')return row.logo?`<img class="logo-thumb" src="${esc(row.logo)}" alt="">`:'–';if(key==='status')return `<span class="status-dot" style="background:${row.status==='inactive'?'#777':'#36d66b'}"></span>${esc(row.status||'active')}`;return esc(row[key]??'')}
+function displayValue(row,key){if(key==='clubId')return clubName(row.clubId);if(key==='fightTimeInSeconds')return `${Number(row[key]||0)/60} min`;if(key==='weightsAreDoubled')return row[key]?'Ja':'Nein';if(key==='roster')return `${(row.fighterIds||[]).length} Kämpfer`;if(key==='logo')return row.logo?`<img class="logo-thumb" src="${esc(row.logo)}" alt="">`:'–';if(key==='status')return `<span class="status-dot" style="background:${row.status==='inactive'?'#777':'#36d66b'}"></span>${esc(row.status||'active')}`;return esc(row[key]??'')}
 function render(){if(currentTab==='importExport')return;const q=($('#search')?.value||'').toLowerCase().trim();const rows=(data[currentTab]||[]).filter(r=>JSON.stringify(r).toLowerCase().includes(q));$('#thead').innerHTML='<tr>'+columns[currentTab].map(c=>`<th>${c[1]}</th>`).join('')+'<th>Aktionen</th></tr>';$('#tbody').innerHTML=rows.map(r=>`<tr data-id="${esc(r.id)}" class="${r.id===selectedId?'selected':''}">${columns[currentTab].map(c=>`<td>${displayValue(r,c[0])}</td>`).join('')}<td><div class="actions"><button class="iconbtn edit" data-id="${esc(r.id)}">✎</button><button class="iconbtn del" data-id="${esc(r.id)}">⌫</button></div></td></tr>`).join('')||`<tr><td colspan="${columns[currentTab].length+1}"><div class="empty">Keine Einträge vorhanden.</div></td></tr>`;$$('#tbody tr[data-id]').forEach(tr=>tr.onclick=e=>{if(e.target.closest('button'))return;openEdit(tr.dataset.id)});$$('.edit').forEach(b=>b.onclick=()=>openEdit(b.dataset.id));$$('.del').forEach(b=>b.onclick=()=>remove(b.dataset.id));if(selectedId)showForm((data[currentTab]||[]).find(x=>x.id===selectedId));else $('#detailBody').innerHTML='<div class="empty">Eintrag auswählen oder neu anlegen.</div>'}
+function optionsRules(v){return '<option value="">– auswählen –</option>'+data.ruleSets.filter(r=>r.status!=='inactive').map(r=>`<option value="${esc(r.id)}" ${r.id===v?'selected':''}>${esc(r.name||r.id)}</option>`).join('')}
 function optionsClub(v){return `<option value="">– auswählen –</option>`+data.clubs.map(c=>`<option value="${esc(c.id)}" ${c.id===v?'selected':''}>${esc(c.name)}</option>`).join('')}
 function showForm(row={}){selectedId=row.id||null;$('#detailTitle').textContent=row.id?'Eintrag bearbeiten':'Neuer Eintrag';let html='';if(currentTab==='clubs'){html+=`<div class="detail-logo"><img id="logoPreview" src="${esc(row.logo||'/assets/branding/ssv_meschede_logo.png')}" alt=""><label class="btn ghost">Logo wählen<input id="logoFile" type="file" accept="image/*" hidden></label></div>`}
- for(const [key,label,type,opts] of fields[currentTab]){if(type==='logo')continue;if(type==='textarea')html+=`<div class="form-row"><label>${label}</label><textarea data-field="${key}">${esc(row[key]||'')}</textarea></div>`;else if(type==='select')html+=`<div class="form-row"><label>${label}</label><select data-field="${key}">${opts.map(o=>`<option value="${esc(o)}" ${String(row[key]||'')===o?'selected':''}>${esc(o||'–')}</option>`).join('')}</select></div>`;else if(type==='club')html+=`<div class="form-row"><label>${label}</label><select data-field="${key}">${optionsClub(row[key])}</select></div>`;else if(type==='checkbox')html+=`<div class="form-row"><label>${label}</label><label><input data-field="${key}" type="checkbox" ${row[key]?'checked':''}> Ja</label></div>`;else if(type==='roster'){const fighters=[...data.fighters].filter(f=>f.status!=='inactive').sort((a,b)=>(clubName(a.clubId)+' '+a.lastName+' '+a.firstName).localeCompare(clubName(b.clubId)+' '+b.lastName+' '+b.firstName,'de'));html+=`<div class="form-row"><label>${label}</label><div class="roster">${fighters.length?fighters.map(f=>`<label><input type="checkbox" data-roster="${esc(f.id)}" ${(row.fighterIds||[]).includes(f.id)?'checked':''}><span>${esc((f.firstName||'')+' '+(f.lastName||''))}</span><small>${esc(clubName(f.clubId))}</small></label>`).join(''):'<div class="empty">Noch keine Wettkämpfer angelegt.</div>'}</div></div>`}else html+=`<div class="form-row"><label>${label}</label><input data-field="${key}" type="${type}" value="${esc(row[key]??'')}"></div>`}
+ for(const [key,label,type,opts] of fields[currentTab]){if(type==='logo')continue;if(type==='textarea')html+=`<div class="form-row"><label>${label}</label><textarea data-field="${key}">${esc(row[key]||'')}</textarea></div>`;else if(type==='select')html+=`<div class="form-row"><label>${label}</label><select data-field="${key}">${opts.map(o=>`<option value="${esc(o)}" ${String(row[key]||'')===o?'selected':''}>${esc(o||'–')}</option>`).join('')}</select></div>`;else if(type==='ruleset')html+=`<div class="form-row"><label>${label}</label><select data-field="${key}">${optionsRules(row[key])}</select></div>`;else if(type==='minutes')html+=`<div class="form-row"><label>${label}</label><input data-field="${key}" data-unit="minutes" type="number" step="0.5" min="0" value="${esc((Number(row[key]||0)/60)||'')}"></div>`;else if(type==='club')html+=`<div class="form-row"><label>${label}</label><select data-field="${key}">${optionsClub(row[key])}</select></div>`;else if(type==='checkbox')html+=`<div class="form-row"><label>${label}</label><label><input data-field="${key}" type="checkbox" ${row[key]?'checked':''}> Ja</label></div>`;else if(type==='roster'){const fighters=[...data.fighters].filter(f=>f.status!=='inactive').sort((a,b)=>(clubName(a.clubId)+' '+a.lastName+' '+a.firstName).localeCompare(clubName(b.clubId)+' '+b.lastName+' '+b.firstName,'de'));html+=`<div class="form-row"><label>${label}</label><div class="roster">${fighters.length?fighters.map(f=>`<label><input type="checkbox" data-roster="${esc(f.id)}" ${(row.fighterIds||[]).includes(f.id)?'checked':''}><span>${esc((f.firstName||'')+' '+(f.lastName||''))}</span><small>${esc(clubName(f.clubId))}</small></label>`).join(''):'<div class="empty">Noch keine Wettkämpfer angelegt.</div>'}</div></div>`}else html+=`<div class="form-row"><label>${label}</label><input data-field="${key}" type="${type}" value="${esc(row[key]??'')}"></div>`}
  html+=`<div class="form-actions"><button id="saveBtn" class="btn red">Änderungen speichern</button><button id="cancelBtn" class="btn ghost">Abbrechen</button></div>`;$('#detailBody').innerHTML=html;$('#saveBtn').onclick=saveForm;$('#cancelBtn').onclick=()=>{selectedId=null;render()};const lf=$('#logoFile');if(lf)lf.onchange=async()=>{const f=lf.files[0];if(!f)return;if(f.size>2_000_000){toast('Logo maximal 2 MB');return}const reader=new FileReader();reader.onload=()=>{$('#logoPreview').src=reader.result;$('#logoPreview').dataset.newLogo=reader.result};reader.readAsDataURL(f)}}
 function openEdit(id){selectedId=id;render();showForm((data[currentTab]||[]).find(x=>x.id===id)||{})}
-async function saveForm(){const old=(data[currentTab]||[]).find(x=>x.id===selectedId)||{};const rec={...old};$('#detailBody [data-field]').forEach(el=>{rec[el.dataset.field]=el.type==='checkbox'?el.checked:(el.type==='number'?(el.value===''?'':Number(el.value)):el.value)});if(currentTab==='teams')rec.fighterIds=$$('#detailBody [data-roster]:checked').map(x=>x.dataset.roster);const lp=$('#logoPreview');if(currentTab==='clubs'&&lp?.dataset.newLogo)rec.logo=lp.dataset.newLogo;try{await api('/api/masterdata/'+currentTab,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)});toast('Gespeichert');selectedId=null;await load()}catch(e){toast('Fehler: '+e.message)}}
+async function saveForm(){const old=(data[currentTab]||[]).find(x=>x.id===selectedId)||{};const rec={...old};$('#detailBody [data-field]').forEach(el=>{rec[el.dataset.field]=el.type==='checkbox'?el.checked:(el.dataset.unit==='minutes'?(el.value===''?'':Math.round(Number(el.value)*60)):(el.type==='number'?(el.value===''?'':Number(el.value)):el.value))});if(currentTab==='teams')rec.fighterIds=$$('#detailBody [data-roster]:checked').map(x=>x.dataset.roster);const lp=$('#logoPreview');if(currentTab==='clubs'&&lp?.dataset.newLogo)rec.logo=lp.dataset.newLogo;try{await api('/api/masterdata/'+currentTab,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)});toast('Gespeichert');selectedId=null;await load()}catch(e){toast('Fehler: '+e.message)}}
 async function remove(id){if(!confirm('Eintrag wirklich löschen?'))return;try{await api('/api/masterdata/'+currentTab+'/'+encodeURIComponent(id),{method:'DELETE'});toast('Gelöscht');selectedId=null;await load()}catch(e){toast('Fehler: '+e.message)}}
 $('#tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)};
 $('#newBtn').onclick=()=>{selectedId=null;showForm(currentTab==='tournamentModes'?{
@@ -56,6 +82,8 @@ $('#newBtn').onclick=()=>{selectedId=null;showForm(currentTab==='tournamentModes
  rules:'IJF-2025',
  fightTimeOverrides:'',
  options:''
+}:currentTab==='ruleSets'?{
+ name:'Neues Regelwerk',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:true,shidoAddsPoint:false,shidoScoreCounts:false,maxShidoCount:2,maxWazaariCount:2,osaekomiYukoSeconds:5,osaekomiWazaariSeconds:10,osaekomiIpponSeconds:20,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''
 }:{status:'active'})};$('#closeDetail').onclick=()=>{selectedId=null;render()};$('#search').oninput=render;$('#syncBtn').onclick=async()=>{await load();toast('Daten neu geladen')};
 $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({masterdata:data},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ipponboard-Meschede_Stammdaten.json';a.click();URL.revokeObjectURL(a.href)};$('#copyBtn').onclick=async()=>{await navigator.clipboard.writeText($('#jsonPreview').value);toast('In Zwischenablage kopiert')};$('#importFile').onchange=async e=>{const f=e.target.files[0];if(f)$('#jsonPreview').value=await f.text()};$('#applyImportBtn').onclick=async()=>{try{const x=JSON.parse($('#jsonPreview').value);await api('/api/masterdata/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(x)});toast('Importiert');await load();setTab('clubs')}catch(e){toast('Importfehler: '+e.message)}};
 load().catch(e=>{console.error(e);$('#sideOnline').textContent='Serverfehler';$('#sideOnline').className='warn';toast('Daten konnten nicht geladen werden')});
