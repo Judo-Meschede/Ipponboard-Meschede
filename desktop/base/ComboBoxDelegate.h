@@ -10,6 +10,8 @@
 
 #include <QItemDelegate>
 #include <QStringList>
+#include <functional>
+#include <utility>
 
 // forwards
 class QComboBox;
@@ -17,6 +19,7 @@ class QComboBox;
 class ComboBoxDelegate : public QItemDelegate
 {
 public:
+	using ItemProvider = std::function<std::pair<QStringList, QStringList>(const QModelIndex&)>;
 	ComboBoxDelegate(QObject* parent);
 
 	virtual QWidget* createEditor(
@@ -39,10 +42,12 @@ public:
 		const QModelIndex& /* index */) const override;
 
 	void SetItems(QStringList const& items, QStringList const& itemIds = QStringList());
+	void SetItemProvider(ItemProvider provider);
 
 private:
 	QStringList m_items;
 	QStringList m_itemIds;
+	ItemProvider m_itemProvider;
 };
 
 #endif // __BASE_COMBOBOXDELEGATE_H
