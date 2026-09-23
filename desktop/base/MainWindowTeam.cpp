@@ -2147,7 +2147,7 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	const QColor black(0, 0, 0);
 	const QColor blue(79, 134, 207);
 	const QColor dotted(90, 90, 90);
-	const QPen majorPen(black, 1.8, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+	const QPen majorPen(black, 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
 	const QPen thinPen(black, 1.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
 	const QPen dottedPen(dotted, 0.65, Qt::DotLine, Qt::SquareCap, Qt::MiterJoin);
 
@@ -2203,27 +2203,27 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 			{
 				const QImage logo = QImage::fromData(QByteArray::fromBase64(m.captured(1).toLatin1()), "JPG");
 				if (!logo.isNull())
-					painter.drawImage(QRectF(14.0, 39.0, 97.0, 45.0), logo);
+					painter.drawImage(QRectF(14.0, 35.65385, 94.75, 52.15386), logo);
 			}
 		}
 	}
 
 	// Header texts exactly on the official form.
-	drawLeft(QRectF(133, 14, 190, 17), QStringLiteral("Mannschaftsliste mit Unterbewertung"), 10, true);
-	drawLeft(QRectF(357, 14, 28, 17), QStringLiteral("Art:"), 10, true);
-	drawLeft(QRectF(585, 14, 28, 17), QStringLiteral("Ort:"), 10, true);
-	drawLeft(QRectF(725, 14, 25, 17), QStringLiteral("am"), 10, true);
+	drawLeft(QRectF(133, 16.0, 190, 13), QStringLiteral("Mannschaftsliste mit Unterbewertung"), 10, true);
+	drawLeft(QRectF(357, 16.0, 28, 13), QStringLiteral("Art:"), 10, true);
+	drawLeft(QRectF(585, 16.0, 28, 13), QStringLiteral("Ort:"), 10, true);
+	drawLeft(QRectF(725, 16.0, 25, 13), QStringLiteral("am"), 10, true);
 
 	// Upper WEISS / NWJV / BLAU frame.
 	painter.setPen(majorPen);
 	painter.drawRect(QRectF(129.5, 40.5, 656.5, 51.5));
 	painter.drawLine(QPointF(422.0,40.5), QPointF(422.0,92.0));
 	painter.drawLine(QPointF(498.0,40.5), QPointF(498.0,92.0));
-	drawCentered(QRectF(330, 53, 91, 28), QStringLiteral("WEISS"), 17, true, black);
-	drawCentered(QRectF(700, 53, 84, 28), QStringLiteral("BLAU"), 17, true, blue);
-	drawCentered(QRectF(422, 44, 76, 15), QStringLiteral("Nordrhein-"), 9, false, black);
-	drawCentered(QRectF(422, 60, 76, 15), QStringLiteral("Westfälischer"), 9, false, black);
-	drawCentered(QRectF(422, 76, 76, 15), QStringLiteral("Judo-Verband"), 9, false, black);
+	drawCentered(QRectF(350, 54, 71, 24), QStringLiteral("WEISS"), 16, true, black);
+	drawCentered(QRectF(714, 54, 72, 24), QStringLiteral("BLAU"), 16, true, blue);
+	drawCentered(QRectF(424, 44, 73, 14), QStringLiteral("Nordrhein-"), 10, false, black);
+	drawCentered(QRectF(424, 61, 73, 14), QStringLiteral("Westfälischer"), 10, false, black);
+	drawCentered(QRectF(424, 77, 73, 14), QStringLiteral("Judo-Verband"), 10, false, black);
 
 	// Exact column coordinates measured from the supplied official PDF.
 	const QVector<qreal> x = {14,54,214,242,270,298,326,354,388,422,582,610,638,666,694,722,756,786,826};
@@ -2285,25 +2285,25 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	drawCentered(QRectF(722,92,64,18), QStringLiteral("="), 17, true, blue);
 
 	// Column headings.
-	drawCentered(QRectF(14,145,40,22), QStringLiteral("kg"), 15, true, black);
-	drawCentered(QRectF(54,145,160,22), QStringLiteral("Judoka"), 15, true, black);
-	drawVertical(QRectF(214,111,28,56), QStringLiteral("Yuko"), 9, false, black);
-	drawVertical(QRectF(242,111,28,56), QStringLiteral("Waza-ari"), 9, false, black);
-	drawVertical(QRectF(270,111,28,56), QStringLiteral("Ippon"), 9, false, black);
-	drawVertical(QRectF(298,111,28,56), QStringLiteral("Shido"), 9, false, black);
-	drawVertical(QRectF(326,111,28,56), QStringLiteral("Hansoku-make"), 8, false, black);
-	drawVertical(QRectF(354,111,34,56), QStringLiteral("SIEG"), 9, false, black);
-	drawVertical(QRectF(388,111,34,56), QStringLiteral("Unterbewertung"), 8, false, black);
+	drawCentered(QRectF(14,145,40,22), QStringLiteral("kg"), 16, true, black);
+	drawCentered(QRectF(54,145,160,22), QStringLiteral("Judoka"), 16, true, black);
+	drawVertical(QRectF(214,111,28,56), QStringLiteral("Yuko"), 10, false, black);
+	drawVertical(QRectF(242,111,28,56), QStringLiteral("Waza-ari"), 10, false, black);
+	drawVertical(QRectF(270,111,28,56), QStringLiteral("Ippon"), 10, false, black);
+	drawVertical(QRectF(298,111,28,56), QStringLiteral("Shido"), 10, false, black);
+	drawVertical(QRectF(326,111,28,56), QStringLiteral("Hansoku-make"), 10, false, black);
+	drawVertical(QRectF(354,111,34,56), QStringLiteral("SIEG"), 10, false, black);
+	drawVertical(QRectF(388,111,34,56), QStringLiteral("Unterbewertung"), 10, false, black);
 
-	drawCentered(QRectF(422,145,160,22), QStringLiteral("Judoka"), 15, true, blue);
-	drawVertical(QRectF(582,111,28,56), QStringLiteral("Yuko"), 9, false, blue);
-	drawVertical(QRectF(610,111,28,56), QStringLiteral("Waza-ari"), 9, false, blue);
-	drawVertical(QRectF(638,111,28,56), QStringLiteral("Ippon"), 9, false, blue);
-	drawVertical(QRectF(666,111,28,56), QStringLiteral("Shido"), 9, false, blue);
-	drawVertical(QRectF(694,111,28,56), QStringLiteral("Hansoku-make"), 8, false, blue);
-	drawVertical(QRectF(722,111,34,56), QStringLiteral("SIEG"), 9, false, blue);
-	drawVertical(QRectF(756,111,30,56), QStringLiteral("Unterbewertung"), 8, false, blue);
-	drawVertical(QRectF(786,111,40,56), QStringLiteral("Wettkampfzeit"), 8, false, black);
+	drawCentered(QRectF(422,145,160,22), QStringLiteral("Judoka"), 16, true, blue);
+	drawVertical(QRectF(582,111,28,56), QStringLiteral("Yuko"), 10, false, blue);
+	drawVertical(QRectF(610,111,28,56), QStringLiteral("Waza-ari"), 10, false, blue);
+	drawVertical(QRectF(638,111,28,56), QStringLiteral("Ippon"), 10, false, blue);
+	drawVertical(QRectF(666,111,28,56), QStringLiteral("Shido"), 10, false, blue);
+	drawVertical(QRectF(694,111,28,56), QStringLiteral("Hansoku-make"), 10, false, blue);
+	drawVertical(QRectF(722,111,34,56), QStringLiteral("SIEG"), 10, false, blue);
+	drawVertical(QRectF(756,111,30,56), QStringLiteral("Unterbewertung"), 10, false, blue);
+	drawVertical(QRectF(786,111,40,56), QStringLiteral("Wettkampfzeit"), 10, false, black);
 
 	// Summary fields and footer fixed labels.
 	drawLeft(QRectF(302,316,52,16), QStringLiteral("Hinrunde"), 9, false, black);
@@ -2325,10 +2325,10 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	painter.drawLine(QPointF(35,543), QPointF(167,543));
 	painter.drawLine(QPointF(191,543), QPointF(323,543));
 	painter.drawLine(QPointF(504,543), QPointF(690,543));
-	drawCentered(QRectF(35,545,132,16), QStringLiteral("Listenführung"), 9, false, black);
-	drawCentered(QRectF(191,545,132,16), QStringLiteral("Kampfrichter"), 9, false, black);
-	drawCentered(QRectF(504,545,186,16), QStringLiteral("Sportl. Leitung"), 9, false, black);
-	drawLeft(QRectF(17,564,390,18), QStringLiteral("Anmerkung: Ein Tausch von Judoka bei der Rückrunde ist möglich, aber kein Muss!"), 9, false, black);
+	drawCentered(QRectF(35,545,132,16), QStringLiteral("Listenführung"), 10, false, black);
+	drawCentered(QRectF(191,545,132,16), QStringLiteral("Kampfrichter"), 10, false, black);
+	drawCentered(QRectF(504,545,186,16), QStringLiteral("Sportl. Leitung"), 10, false, black);
+	drawLeft(QRectF(17,564,390,18), QStringLiteral("Anmerkung: Ein Tausch von Judoka bei der Rückrunde ist möglich, aber kein Muss!"), 10, false, black);
 
 	// --- variable content ---
 	const QString modeText = get_full_mode_title(m_currentMode);
