@@ -2138,7 +2138,7 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	// The official NWJV source is A4 landscape, 842 x 595 PDF points.
 	// Everything below uses this exact coordinate system. The viewport maps it
 	// to the physical A4 page without HTML layout or browser scaling.
-	const QRect page = p->pageRect(QPrinter::DevicePixel);
+	const QRect page = p->pageRect(QPrinter::DevicePixel).toRect();
 	painter.setViewport(page);
 	painter.setWindow(QRect(0, 0, 842, 595));
 	painter.setRenderHint(QPainter::Antialiasing, true);
@@ -2380,7 +2380,7 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 		drawCentered(QRectF(786,y,40,h), timeText(fight), 8, false, black);
 	};
 
-	const int fights = std::min(5, m_pController->GetFightCount());
+	const int fights = qMin(5, m_pController->GetFightCount());
 	for(int i=0;i<fights;++i)
 		drawFight(m_pController->GetFight(0,i), rowTopFirst.at(i));
 	if(m_pController->GetRoundCount()>1)
