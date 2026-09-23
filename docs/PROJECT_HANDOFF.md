@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.2**
+`CURRENT_VERSION.txt`: **0.2.3**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.2
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.3
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.2
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.3
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -333,6 +333,32 @@ Noch nicht durchgeführt:
 - Server V0.2.2 ausgerollt.
 - Windows-Build V0.2.2.
 - End-to-End-Praxistest Servermodus → Sync → Desktop.
+
+## 7h. Regelwerk-Verwaltung – V0.2.3
+
+Umgesetzt:
+- Reiter `Regelwerke` in der Server-Verwaltung.
+- vorhandene Ipponboard-Regelwerke werden beim ersten Serverstart als zentrale Regelprofile bereitgestellt.
+- Regelwerk kann zentral gepflegt werden: Yuko vorhanden, Waza-ari-awasete-Ippon, Golden-Score-Verhalten, Shido-Verhalten, maximale Shido/Waza-ari, Osaekomi-Zeiten, Unterbewertungen und Wertungsbegriffe.
+- Wettkampfmodus wählt das Regelwerk aus einer Liste statt über Freitext.
+- Kampfzeit im Wettkampfmodus wird im Web ausschließlich in Minuten angezeigt/eingegeben; intern bleiben Sekunden gespeichert.
+- Fehler im Button `Änderungen speichern` behoben: Formularfelder werden jetzt korrekt vollständig gesammelt.
+- Desktop registriert synchronisierte Regelprofile dynamisch in der bestehenden Rules-Engine.
+- Osaekomi-Schwellen, Yuko-Verfügbarkeit, Waza-ari-awasete-Ippon, Shido-Grenzen, Golden-Score-Verhalten und Unterbewertung werden dadurch aus dem zentralen Regelprofil verwendet.
+- Ippon/Waza-ari/Yuko-Begriffe werden im Mattenmonitor aus dem Regelprofil übernommen.
+- offizielle NWJV-Druckvorlagen bleiben unverändert.
+
+Erforderliche Schritte:
+1. Linux-Server aktuellen GitHub-Stand installieren.
+2. Browser `/verwaltung` öffnen und `Regelwerke` sowie `Wettkampfmodi` prüfen.
+3. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+4. V0.2.3 starten und synchronisieren.
+5. Mannschaftsmodus praktisch testen.
+
+Noch nicht durchgeführt:
+- Server V0.2.3 ausgerollt.
+- Windows-Build V0.2.3.
+- End-to-End-Praxistest der dynamischen Regeln.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
