@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.5**
+`CURRENT_VERSION.txt`: **0.2.6**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.5
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.6
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.5
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.6
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -402,6 +402,29 @@ Erforderliche Schritte:
 4. Heim TV Wickede / Gast JC Samurai Schwelm wählen.
 5. Erwartung Heim: u.a. Hussein Alasaad, Matthias Gedig.
 6. Erwartung Gast: u.a. Sean-Philip Baltzer, Stefan Bende, Felix Tietzsch.
+
+Noch nicht unter Windows praktisch getestet.
+
+## 7k. Harte Heim-/Gast-Trennung – V0.2.6
+
+Praxistest V0.2.5 zeigte weiterhin denselben Heimkader auf Heim- und Gastseite.
+
+V0.2.6:
+- vier vollständig getrennte ComboBoxDelegates.
+- Heim Hinrunde/Rückrunde besitzen einen Provider, der ausschließlich `comboBox_club_home.currentData()` liest.
+- Gast Hinrunde/Rückrunde besitzen einen Provider, der ausschließlich `comboBox_club_guest.currentData()` liest.
+- keine Seitenermittlung mehr über Tabellen-Spaltenindex.
+- kein gemeinsamer Delegate mehr zwischen Heim und Gast.
+- Ein-Klick-Editor bleibt bestehen.
+- Fighter-ID bleibt an den konkret ausgewählten ComboBox-Eintrag gebunden.
+
+Erforderliche Schritte:
+1. Kein Serverupdate.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.6 starten.
+4. TV Wickede gegen JC Samurai Schwelm prüfen.
+5. Heim muss u.a. Hussein Alasaad zeigen.
+6. Gast muss u.a. Sean-Philip Baltzer zeigen.
 
 Noch nicht unter Windows praktisch getestet.
 
