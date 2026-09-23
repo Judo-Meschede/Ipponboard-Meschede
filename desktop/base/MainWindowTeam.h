@@ -160,6 +160,8 @@ private:
 	QStringList m_FighterIdsGuest;
 	ComboBoxDelegate* m_fighterDelegateHomeRound1;
 	ComboBoxDelegate* m_fighterDelegateHomeRound2;
+	ComboBoxDelegate* m_fighterDelegateGuestRound1;
+	ComboBoxDelegate* m_fighterDelegateGuestRound2;
 	QJsonArray m_masterClubs;
 	QJsonArray m_masterTeams;
 	QJsonArray m_masterFighters;
