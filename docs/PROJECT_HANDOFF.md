@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.13**
+`CURRENT_VERSION.txt`: **0.2.14**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.13**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.14**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.13
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.14
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -698,6 +698,24 @@ Erforderliche Schritte:
 6. eine kleine Änderung in einer XLSX durchführen und wieder importieren; danach Daten im jeweiligen Verwaltungsreiter kontrollieren.
 
 Noch nicht auf dem Testserver ausgerollt oder praktisch mit Excel getestet.
+
+## 7t. Kämpferauswahl pro Runde eindeutig – V0.2.14
+
+Umgesetzt:
+- ein Wettkämpfer kann innerhalb derselben Mannschaft und derselben Runde nur noch einmal ausgewählt werden.
+- sobald ein Kämpfer in einer Zeile gewählt wurde, verschwindet er aus den Auswahllisten der übrigen Zeilen dieser Runde.
+- Heim- und Gastmannschaft werden getrennt behandelt.
+- Hin- und Rückrunde werden getrennt behandelt; ein Kämpfer darf in der Rückrunde erneut eingesetzt werden.
+- die aktuell bearbeitete Zeile behält ihren bereits gewählten Kämpfer in der Auswahl.
+- `_n.A.` bleibt absichtlich mehrfach verwendbar.
+
+Erforderliche Schritte:
+1. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. V0.2.14 starten.
+3. in einer Runde einen Kämpfer auswählen und prüfen, dass er in den anderen Gewichtsklassen derselben Mannschaft nicht mehr angeboten wird.
+4. Rückrunde prüfen: dort muss derselbe Kämpfer wieder auswählbar sein.
+
+Kein Serverupdate für diese Änderung erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
