@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.12**
+`CURRENT_VERSION.txt`: **0.2.13**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.12**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.13**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.12
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.13
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -659,6 +659,45 @@ Erforderliche Schritte:
 5. Prüfen: Kampftag/Matte wählen, Datum/Ort/Ausrichter prüfen und kontrollieren, dass nur die Teilnehmermannschaften angeboten werden.
 
 Noch nicht unter Windows gebaut oder praktisch getestet.
+
+## 7s. Kampftage vereinheitlicht + XLSX-Pflege – V0.2.13
+
+Datenmodell:
+- Die parallele Sammlung `competitions` wird nicht mehr als aktive Struktur verwendet.
+- `competitionDays` ist die verbindliche Struktur für Kampftage.
+- Beim Serverstart werden vorhandene alte `competitions` automatisch verlustfrei nach `competitionDays` migriert und anschließend aus dem Masterdata-Dokument entfernt.
+- vorhandene Felder wie `matches`, Liga, Saison und Kampftag-Nr. bleiben dabei erhalten.
+- Teilnehmermannschaften werden bei der Migration aus den vorhandenen Begegnungen abgeleitet.
+- der Verwaltungsreiter `Wettkämpfe` entfällt.
+- der NWJV-Testdatensatz wurde ebenfalls auf `competitionDays` umgestellt.
+
+XLSX-Pflege unter `Verwaltung → Import / Export`:
+- separater XLSX-Export und XLSX-Rückimport für:
+  1. Vereine
+  2. Mannschaften
+  3. Wettkämpfer
+  4. Kampftage
+  5. Gewichtsklassen
+- jede Datei enthält ein Datenblatt und ein Blatt `Hinweise`.
+- bestehende IDs bleiben als technische Schlüssel in der Datei erhalten.
+- neue Zeilen dürfen ohne ID angelegt werden; der Server erzeugt dann beim Import eine neue ID.
+- `Löschen = JA` löscht einen bestehenden Datensatz gezielt.
+- nicht in der XLSX aufgeführte Datensätze bleiben bestehen.
+- bei Mannschaften werden Kader-IDs, Passnummern und Namen zur lokalen Pflege exportiert.
+- bei Kampftagen werden Ausrichter, Teilnehmer, Modus, Mattenzahl, Liga/Saison und weitere Felder exportiert.
+- verschachtelte bestehende Daten wie Begegnungen eines Kampftags bleiben beim XLSX-Update erhalten.
+- XLSX-Erzeugung und -Einlesen erfolgt serverseitig mit ExcelJS.
+- `server/01_INSTALLIEREN.sh` installiert deshalb ab V0.2.13 die benötigten npm-Abhängigkeiten.
+
+Erforderliche Schritte:
+1. auf dem Linux-Testserver aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. `/verwaltung` neu laden.
+4. prüfen, dass der Reiter `Wettkämpfe` verschwunden ist und alte Einträge unter `Kampftage` erscheinen.
+5. unter `Import / Export` alle fünf XLSX-Dateien testweise herunterladen.
+6. eine kleine Änderung in einer XLSX durchführen und wieder importieren; danach Daten im jeweiligen Verwaltungsreiter kontrollieren.
+
+Noch nicht auf dem Testserver ausgerollt oder praktisch mit Excel getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
