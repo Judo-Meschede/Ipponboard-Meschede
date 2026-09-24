@@ -59,6 +59,11 @@ mkdir -p "$APPDIR.new"
 cp -a "$SRC"/. "$APPDIR.new"/
 rm -rf "$APPDIR"
 mv "$APPDIR.new" "$APPDIR"
+
+echo "Installiere Server-Abhängigkeiten ..."
+cd "$APPDIR"
+npm install --omit=dev --no-audit --no-fund
+
 chown -R "$RUNUSER:$RUNGROUP" "$APPDIR"
 mkdir -p "$DATADIR"
 chown -R "$RUNUSER:$RUNGROUP" "$DATADIR"
