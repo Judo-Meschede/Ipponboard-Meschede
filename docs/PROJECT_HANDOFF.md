@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.10**
+`CURRENT_VERSION.txt`: **0.2.11**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.10**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.11**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.10
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.11
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -589,6 +589,32 @@ Architekturregel:
 - Die bisherige globale `competition-state.json` ist für parallele Matten nicht als zukünftiges Sitzungsmodell geeignet.
 - Kampftage, Matten, abgeschlossene Kämpfe und Sync-Zustände müssen getrennt und ID-basiert verwaltet werden.
 - Der Server dokumentiert keine Live-Zustände eines gerade laufenden Einzelkampfs.
+
+## 7q. Server-Kampftage – V0.2.11
+
+Umgesetzt:
+- neue eigenständige Masterdata-Sammlung `competitionDays`; bestehende `competitions` bleibt unverändert.
+- Kampftage können in der Server-Verwaltung angelegt, bearbeitet und gelöscht werden.
+- Felder: Name, Datum, Ausrichter, Ort, teilnehmende Mannschaften, optionaler Wettkampfmodus, Anzahl Matten, Status und Bemerkungen.
+- Teilnehmer werden ausschließlich über stabile `teamIds` referenziert.
+- Ausrichter wird über `hostClubId` referenziert.
+- Matten werden serverseitig als stabile Einträge `mat-1`, `mat-2` usw. erzeugt und zusätzlich mit `matCount` gespeichert.
+- zulässige Mattenzahl wird serverseitig auf 1 bis 20 begrenzt.
+- Kampftage werden automatisch im Masterdata-Snapshot an die Desktop-App ausgeliefert.
+- Import/Merge/Export berücksichtigen `competitionDays`.
+- Beim Löschen von Mannschaften oder Vereinen werden verwaiste Kampftag-Referenzen bereinigt.
+- Server-Version auf V0.2.11 angehoben.
+- noch keine Desktop-Auswahl „Kampftag laden“ umgesetzt.
+- noch keine Matten-/Terminal-Sitzung und noch kein Ergebnis-Sync umgesetzt.
+- laufende Einzelkämpfe werden weiterhin ausdrücklich nicht als neues Kampftag-Modell persistiert oder synchronisiert.
+
+Erforderliche Schritte:
+1. Linux-Testserver aktuellen GitHub-Stand installieren.
+2. Serverdienst neu starten.
+3. Browser `/verwaltung` öffnen und Reiter `Kampftage` praktisch testen.
+4. Kein Windows-Build für diesen Schritt erforderlich.
+
+Noch nicht auf dem Testserver ausgerollt oder praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
