@@ -91,8 +91,12 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_masterClubs()
 	, m_masterTeams()
 	, m_masterFighters()
+	, m_masterCompetitionDays()
 	, m_masterTournamentModes()
 	, m_masterRuleSets()
+	, m_currentCompetitionDayId()
+	, m_currentMatId()
+	, m_competitionDayTeamIds()
 	, m_usingMasterData(false)
 	, m_modes()
 {
@@ -468,6 +472,7 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	m_masterClubs = master.value(QStringLiteral("clubs")).toArray();
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
 	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
+	m_masterCompetitionDays = master.value(QStringLiteral("competitionDays")).toArray();
 	m_masterTournamentModes = master.value(QStringLiteral("tournamentModes")).toArray();
 	m_masterRuleSets = master.value(QStringLiteral("ruleSets")).toArray();
 	m_usingMasterData = !m_masterTeams.isEmpty();
@@ -715,8 +720,10 @@ void MainWindowTeam::update_club_views()
 			const QJsonObject team = value.toObject();
 			if (team.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
 				continue;
-			const QString name = team.value(QStringLiteral("name")).toString();
 			const QString id = team.value(QStringLiteral("id")).toString();
+			if (!m_competitionDayTeamIds.isEmpty() && !m_competitionDayTeamIds.contains(id))
+				continue;
+			const QString name = team.value(QStringLiteral("name")).toString();
 			if (!name.isEmpty() && !id.isEmpty())
 			{
 				m_pUi->comboBox_club_home->addItem(name, id);
@@ -762,6 +769,169 @@ void MainWindowTeam::update_club_views()
 
 	m_pUi->lineEdit_location->setText(m_pClubManager->GetAddress(m_host));
 	UpdateTeamFighterDelegates_();
+}
+
+void MainWindowTeam::ClearCompetitionDayFilter_()
+{
+	m_currentCompetitionDayId.clear();
+	m_currentMatId.clear();
+	m_competitionDayTeamIds.clear();
+	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1").arg(QApplication::applicationVersion()));
+}
+
+bool MainWindowTeam::LoadCompetitionDay_()
+{
+	// Re-read the local synchronized snapshot so a freshly synchronized Kampftag is visible.
+	LoadMasterDataCache_();
+
+	QVector<QJsonObject> days;
+	QStringList labels;
+	for (const QJsonValue& value : m_masterCompetitionDays)
+	{
+		const QJsonObject day = value.toObject();
+		const QString id = day.value(QStringLiteral("id")).toString();
+		const QString name = day.value(QStringLiteral("name")).toString();
+		if (id.isEmpty() || name.isEmpty())
+			continue;
+
+		const QString date = day.value(QStringLiteral("date")).toString();
+		const QString status = day.value(QStringLiteral("status")).toString();
+		QString label = date.isEmpty() ? name : date + QStringLiteral(" – ") + name;
+		if (status == QStringLiteral("closed"))
+			label += QStringLiteral(" [abgeschlossen]");
+		days.append(day);
+		labels.append(label);
+	}
+
+	if (days.isEmpty())
+	{
+		QMessageBox::information(this,
+			QStringLiteral("Kampftag laden"),
+			QStringLiteral("Im synchronisierten Datenstand sind noch keine Kampftage vorhanden."));
+		return false;
+	}
+
+	bool ok = false;
+	const QString selectedLabel = QInputDialog::getItem(
+		this,
+		QStringLiteral("Kampftag laden"),
+		QStringLiteral("Kampftag:"),
+		labels,
+		0,
+		false,
+		&ok);
+	if (!ok)
+		return false;
+
+	const int selectedIndex = labels.indexOf(selectedLabel);
+	if (selectedIndex < 0 || selectedIndex >= days.size())
+		return false;
+	const QJsonObject day = days.at(selectedIndex);
+
+	QStringList teamIds;
+	for (const QJsonValue& value : day.value(QStringLiteral("teamIds")).toArray())
+	{
+		const QString id = value.toString();
+		if (!id.isEmpty() && !teamIds.contains(id))
+			teamIds.append(id);
+	}
+	if (teamIds.size() < 2)
+	{
+		QMessageBox::warning(this,
+			QStringLiteral("Kampftag laden"),
+			QStringLiteral("Dieser Kampftag enthält weniger als zwei teilnehmende Mannschaften."));
+		return false;
+	}
+
+	QString matId = QStringLiteral("mat-1");
+	QString matName = QStringLiteral("Matte 1");
+	QStringList matLabels;
+	QVector<QJsonObject> mats;
+	for (const QJsonValue& value : day.value(QStringLiteral("mats")).toArray())
+	{
+		const QJsonObject mat = value.toObject();
+		if (mat.value(QStringLiteral("id")).toString().isEmpty())
+			continue;
+		mats.append(mat);
+		matLabels.append(mat.value(QStringLiteral("name")).toString(
+			QStringLiteral("Matte %1").arg(mats.size())));
+	}
+	if (mats.isEmpty())
+	{
+		const int count = qMax(1, day.value(QStringLiteral("matCount")).toInt(1));
+		for (int i = 0; i < count; ++i)
+		{
+			QJsonObject mat;
+			mat.insert(QStringLiteral("id"), QStringLiteral("mat-%1").arg(i + 1));
+			mat.insert(QStringLiteral("name"), QStringLiteral("Matte %1").arg(i + 1));
+			mats.append(mat);
+			matLabels.append(mat.value(QStringLiteral("name")).toString());
+		}
+	}
+
+	if (mats.size() > 1)
+	{
+		const QString selectedMat = QInputDialog::getItem(
+			this,
+			QStringLiteral("Matte wählen"),
+			QStringLiteral("Matte:"),
+			matLabels,
+			0,
+			false,
+			&ok);
+		if (!ok)
+			return false;
+		const int matIndex = matLabels.indexOf(selectedMat);
+		if (matIndex < 0 || matIndex >= mats.size())
+			return false;
+		matId = mats.at(matIndex).value(QStringLiteral("id")).toString();
+		matName = mats.at(matIndex).value(QStringLiteral("name")).toString(selectedMat);
+	}
+	else
+	{
+		matId = mats.first().value(QStringLiteral("id")).toString(matId);
+		matName = mats.first().value(QStringLiteral("name")).toString(matName);
+	}
+
+	if (QMessageBox::question(
+		this,
+		QStringLiteral("Kampftag laden"),
+		QStringLiteral("Der aktuelle Turnierstand wird verworfen und der Kampftag geladen. Fortfahren?"),
+		QMessageBox::Yes,
+		QMessageBox::No) == QMessageBox::No)
+	{
+		return false;
+	}
+
+	m_currentCompetitionDayId = day.value(QStringLiteral("id")).toString();
+	m_currentMatId = matId;
+	m_competitionDayTeamIds = teamIds;
+	update_club_views();
+
+	const QString modeId = day.value(QStringLiteral("tournamentModeId")).toString();
+	const int modeIndex = modeId.isEmpty() ? -1 : m_pUi->comboBox_mode->findData(modeId);
+	if (modeIndex >= 0 && modeIndex != m_pUi->comboBox_mode->currentIndex())
+		m_pUi->comboBox_mode->setCurrentIndex(modeIndex);
+	else
+		on_comboBox_mode_currentIndexChanged(m_pUi->comboBox_mode->currentIndex());
+
+	const QString hostClubId = day.value(QStringLiteral("hostClubId")).toString();
+	const int hostIndex = m_pUi->comboBox_club_host->findData(hostClubId);
+	if (hostIndex >= 0)
+		m_pUi->comboBox_club_host->setCurrentIndex(hostIndex);
+
+	const QDate date = QDate::fromString(day.value(QStringLiteral("date")).toString(), Qt::ISODate);
+	if (date.isValid())
+		m_pUi->dateEdit->setDate(date);
+	m_pUi->lineEdit_location->setText(day.value(QStringLiteral("location")).toString());
+
+	const QString dayName = day.value(QStringLiteral("name")).toString();
+	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
+		.arg(QApplication::applicationVersion(), dayName, matName));
+
+	UpdateTeamFighterDelegates_();
+	update_score_screen();
+	return true;
 }
 
 void MainWindowTeam::UpdateFightNumber_()
@@ -1325,6 +1495,22 @@ void MainWindowTeam::on_actionSave_As_triggered()
 
 void MainWindowTeam::on_actionLoad_triggered()
 {
+	QMessageBox source(this);
+	source.setWindowTitle(QStringLiteral("Turnier laden"));
+	source.setText(QStringLiteral("Was möchten Sie laden?"));
+	QAbstractButton* competitionDayButton = source.addButton(QStringLiteral("Kampftag"), QMessageBox::AcceptRole);
+	QAbstractButton* fileButton = source.addButton(QStringLiteral("Lokale Turnierdatei"), QMessageBox::ActionRole);
+	source.addButton(QMessageBox::Cancel);
+	source.exec();
+
+	if (source.clickedButton() == competitionDayButton)
+	{
+		LoadCompetitionDay_();
+		return;
+	}
+	if (source.clickedButton() != fileButton)
+		return;
+
 	QString fileName = QFileDialog::getOpenFileName(this,
 		tr("Load tournament from..."),
 		fm::GetAppConfigDir(),
@@ -1338,6 +1524,9 @@ void MainWindowTeam::on_actionLoad_triggered()
         tr("Loading a tournament file will discard any unsaved changes from your current tournament. Proceed?"),
 		QMessageBox::Yes,
 		QMessageBox::No) == QMessageBox::No) return;
+
+	// A local tournament file is independent from any previously loaded Kampftag filter.
+	ClearCompetitionDayFilter_();
 
 	QFile file = QFile(fileName);
 
