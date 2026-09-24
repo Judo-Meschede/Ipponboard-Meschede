@@ -503,6 +503,93 @@ Erforderliche Schritte:
 
 Noch nicht unter Windows praktisch getestet.
 
+## 7p. Verbindliches Datenmodell Kampftage / Matten / Wiederaufnahme
+
+Ziel:
+- Kampftage werden zentral auf dem Server angelegt.
+- Ein Kampftag enthält mindestens Datum, Name, Ausrichter, Ort, teilnehmende Mannschaften und optional einen Wettkampfmodus.
+- Die Desktop-App kann einen Kampftag laden und beschränkt danach die Mannschaftsauswahl auf dessen Teilnehmer.
+- Mehrere Rechner dürfen parallel auf mehreren Matten arbeiten.
+- Eine Matte ist nicht dauerhaft an einen Rechner gebunden.
+
+Objekte:
+
+### competitionDay
+- `id`
+- Datum
+- Name
+- `hostClubId`
+- Ort
+- `teamIds[]`
+- optional `tournamentModeId`
+- Status
+
+### mat
+- eindeutige ID innerhalb eines Kampftags
+- Bezeichnung, z. B. `Matte 1` bis `Matte 4`
+- keine feste Hardwarebindung
+
+### terminal
+- dauerhafte zufällige `terminalId` je App-/USB-System
+- optional frei lesbarer Terminalname
+- dient ausschließlich zur Nachvollziehbarkeit und Mattenübernahme
+
+### matSession
+- `competitionDayId`
+- `matId`
+- aktuell verwendete `terminalId`
+- Zeitpunkt der Übernahme
+- letzte abgeschlossene Begegnung / letzter abgeschlossener Kampf
+- bei Rechnerwechsel kann ein anderes Terminal dieselbe Matte ausdrücklich übernehmen
+
+### encounter
+- eindeutige ID
+- `competitionDayId`
+- Heimteam-ID
+- Gastteam-ID
+- Matten-ID
+- Status
+- aktuelle Runde bzw. zuletzt abgeschlossener Kampf
+
+### fight
+- eindeutige ID je Begegnung / Runde / Gewichtsklasse
+- beide Fighter-IDs
+- vollständige Wertungen
+- Endkampfzeit
+- Ergebnis
+- Revision
+- `updatedAt`
+- `terminalId`
+- Status abgeschlossen oder korrigiert
+
+Verbindliche Persistenzregel:
+- Der Zustand eines gerade laufenden Einzelkampfs wird **nicht** lokal gespeichert.
+- Der Zustand eines gerade laufenden Einzelkampfs wird **nicht** an den Server übertragen.
+- Bei Absturz während eines laufenden Kampfs muss dieser Kampf manuell wieder eingestellt werden.
+- Erst wenn ein Einzelkampf abgeschlossen wurde, wird dessen vollständiger Endstand lokal gespeichert.
+- Wird ein bereits abgeschlossener Einzelkampf korrigiert, wird die korrigierte Fassung erneut lokal gespeichert.
+- Bei bestehender Onlineverbindung wird ein abgeschlossener oder korrigierter Einzelkampf anschließend sofort an den Server synchronisiert.
+- Ohne Verbindung bleibt nur dieser bereits abgeschlossene oder korrigierte Kampf in der lokalen `syncQueue` und wird später übertragen.
+- Einträge werden erst aus der `syncQueue` entfernt, wenn der Server die Revision bestätigt hat.
+- Laufende Kampfzeit, laufende Osaekomi-Zeit, Zwischenwertungen eines noch nicht abgeschlossenen Einzelkampfs und Undo-Zustände eines laufenden Kampfs gehören ausdrücklich **nicht** in Persistenz oder Sync.
+
+Wiederaufnahme nach Neustart:
+- Die App startet mit demselben Kampftag, derselben Matte und derselben Begegnung wie zuletzt.
+- Wiederhergestellt werden ausschließlich bereits abgeschlossene Kämpfe und die daraus resultierende Listenansicht.
+- Ein beim Absturz noch laufender Einzelkampf startet nicht aus einem Zwischenstand heraus und muss manuell neu eingestellt werden.
+- Dadurch bleibt die Wiederaufnahme robust, ohne laufende Wettkampfzustände serverseitig oder lokal zu protokollieren.
+
+Mattenübernahme:
+- Beim Start eines Kampftags wählt der Nutzer die Matte frei.
+- Ist die Matte bereits einem anderen Terminal zugeordnet, zeigt die App einen klaren Hinweis.
+- Über `Matte übernehmen` kann ein Ersatzrechner die Zuordnung übernehmen.
+- Die Zuordnung dient der Vermeidung paralleler Bearbeitung, darf aber einen Rechnerwechsel im Notfall nicht verhindern.
+
+Architekturregel:
+- Die bisherige globale `competition-state.json` ist für parallele Matten nicht als zukünftiges Sitzungsmodell geeignet.
+- Kampftage, Matten, abgeschlossene Kämpfe und Sync-Zustände müssen getrennt und ID-basiert verwaltet werden.
+- Der Server dokumentiert keine Live-Zustände eines gerade laufenden Einzelkampfs.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Als Nächstes **nicht** zuerst weitere Optik bauen.
