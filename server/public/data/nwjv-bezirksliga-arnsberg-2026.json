@@ -3578,7 +3578,54 @@
         "status": "active"
       }
     ],
-    "competitions": [
+    "weightClasses": [
+      {
+        "id": "wc-bl-arnsberg-m-66",
+        "name": "-66 kg",
+        "category": "Bezirksliga Männer Arnsberg",
+        "minWeight": "",
+        "maxWeight": 66,
+        "order": 1,
+        "status": "active"
+      },
+      {
+        "id": "wc-bl-arnsberg-m-73",
+        "name": "-73 kg",
+        "category": "Bezirksliga Männer Arnsberg",
+        "minWeight": "",
+        "maxWeight": 73,
+        "order": 2,
+        "status": "active"
+      },
+      {
+        "id": "wc-bl-arnsberg-m-81",
+        "name": "-81 kg",
+        "category": "Bezirksliga Männer Arnsberg",
+        "minWeight": "",
+        "maxWeight": 81,
+        "order": 3,
+        "status": "active"
+      },
+      {
+        "id": "wc-bl-arnsberg-m-90",
+        "name": "-90 kg",
+        "category": "Bezirksliga Männer Arnsberg",
+        "minWeight": "",
+        "maxWeight": 90,
+        "order": 4,
+        "status": "active"
+      },
+      {
+        "id": "wc-bl-arnsberg-m-plus90",
+        "name": "+90 kg",
+        "category": "Bezirksliga Männer Arnsberg",
+        "minWeight": 90,
+        "maxWeight": "",
+        "order": 5,
+        "status": "active"
+      }
+    ],
+    "competitionDays": [
       {
         "id": "competition-bezirksliga-arnsberg-2026-1",
         "name": "Bezirksliga Männer Arnsberg 2026 – 1. Kampftag",
@@ -3663,7 +3710,28 @@
             "guestTeamName": "Gütersloher TV",
             "status": "planned"
           }
-        ]
+        ],
+        "hostClubId": "",
+        "teamIds": [
+          "team-bezirksliga-arnsberg-2026-schwelm",
+          "team-bezirksliga-arnsberg-2026-wickede",
+          "team-bezirksliga-arnsberg-2026-hattingen",
+          "team-bezirksliga-arnsberg-2026-wanne-eickel-ii",
+          "team-bezirksliga-arnsberg-2026-linden",
+          "team-bezirksliga-arnsberg-2026-gevelsberg",
+          "team-bezirksliga-arnsberg-2026-pelkum",
+          "team-bezirksliga-arnsberg-2026-guetersloh",
+          "team-bezirksliga-arnsberg-2026-rauxel"
+        ],
+        "tournamentModeId": "",
+        "matCount": 1,
+        "mats": [
+          {
+            "id": "mat-1",
+            "name": "Matte 1"
+          }
+        ],
+        "legacyCompetitionId": "competition-bezirksliga-arnsberg-2026-1"
       },
       {
         "id": "competition-bezirksliga-arnsberg-2026-2",
@@ -3749,7 +3817,28 @@
             "guestTeamName": "Gütersloher TV",
             "status": "planned"
           }
-        ]
+        ],
+        "hostClubId": "",
+        "teamIds": [
+          "team-bezirksliga-arnsberg-2026-rauxel",
+          "team-bezirksliga-arnsberg-2026-gevelsberg",
+          "team-bezirksliga-arnsberg-2026-schwelm",
+          "team-bezirksliga-arnsberg-2026-pelkum",
+          "team-bezirksliga-arnsberg-2026-wanne-eickel-ii",
+          "team-bezirksliga-arnsberg-2026-hattingen",
+          "team-bezirksliga-arnsberg-2026-guetersloh",
+          "team-bezirksliga-arnsberg-2026-linden",
+          "team-bezirksliga-arnsberg-2026-wickede"
+        ],
+        "tournamentModeId": "",
+        "matCount": 1,
+        "mats": [
+          {
+            "id": "mat-1",
+            "name": "Matte 1"
+          }
+        ],
+        "legacyCompetitionId": "competition-bezirksliga-arnsberg-2026-2"
       },
       {
         "id": "competition-bezirksliga-arnsberg-2026-3",
@@ -3835,7 +3924,28 @@
             "guestTeamName": "1. JJJC Hattingen",
             "status": "planned"
           }
-        ]
+        ],
+        "hostClubId": "",
+        "teamIds": [
+          "team-bezirksliga-arnsberg-2026-wickede",
+          "team-bezirksliga-arnsberg-2026-pelkum",
+          "team-bezirksliga-arnsberg-2026-gevelsberg",
+          "team-bezirksliga-arnsberg-2026-schwelm",
+          "team-bezirksliga-arnsberg-2026-guetersloh",
+          "team-bezirksliga-arnsberg-2026-wanne-eickel-ii",
+          "team-bezirksliga-arnsberg-2026-hattingen",
+          "team-bezirksliga-arnsberg-2026-linden",
+          "team-bezirksliga-arnsberg-2026-rauxel"
+        ],
+        "tournamentModeId": "",
+        "matCount": 1,
+        "mats": [
+          {
+            "id": "mat-1",
+            "name": "Matte 1"
+          }
+        ],
+        "legacyCompetitionId": "competition-bezirksliga-arnsberg-2026-3"
       },
       {
         "id": "competition-bezirksliga-arnsberg-2026-4",
@@ -3921,54 +4031,28 @@
             "guestTeamName": "Judoka Rauxel",
             "status": "planned"
           }
-        ]
-      }
-    ],
-    "weightClasses": [
-      {
-        "id": "wc-bl-arnsberg-m-66",
-        "name": "-66 kg",
-        "category": "Bezirksliga Männer Arnsberg",
-        "minWeight": "",
-        "maxWeight": 66,
-        "order": 1,
-        "status": "active"
-      },
-      {
-        "id": "wc-bl-arnsberg-m-73",
-        "name": "-73 kg",
-        "category": "Bezirksliga Männer Arnsberg",
-        "minWeight": "",
-        "maxWeight": 73,
-        "order": 2,
-        "status": "active"
-      },
-      {
-        "id": "wc-bl-arnsberg-m-81",
-        "name": "-81 kg",
-        "category": "Bezirksliga Männer Arnsberg",
-        "minWeight": "",
-        "maxWeight": 81,
-        "order": 3,
-        "status": "active"
-      },
-      {
-        "id": "wc-bl-arnsberg-m-90",
-        "name": "-90 kg",
-        "category": "Bezirksliga Männer Arnsberg",
-        "minWeight": "",
-        "maxWeight": 90,
-        "order": 4,
-        "status": "active"
-      },
-      {
-        "id": "wc-bl-arnsberg-m-plus90",
-        "name": "+90 kg",
-        "category": "Bezirksliga Männer Arnsberg",
-        "minWeight": 90,
-        "maxWeight": "",
-        "order": 5,
-        "status": "active"
+        ],
+        "hostClubId": "",
+        "teamIds": [
+          "team-bezirksliga-arnsberg-2026-hattingen",
+          "team-bezirksliga-arnsberg-2026-guetersloh",
+          "team-bezirksliga-arnsberg-2026-gevelsberg",
+          "team-bezirksliga-arnsberg-2026-pelkum",
+          "team-bezirksliga-arnsberg-2026-schwelm",
+          "team-bezirksliga-arnsberg-2026-linden",
+          "team-bezirksliga-arnsberg-2026-rauxel",
+          "team-bezirksliga-arnsberg-2026-wickede",
+          "team-bezirksliga-arnsberg-2026-wanne-eickel-ii"
+        ],
+        "tournamentModeId": "",
+        "matCount": 1,
+        "mats": [
+          {
+            "id": "mat-1",
+            "name": "Matte 1"
+          }
+        ],
+        "legacyCompetitionId": "competition-bezirksliga-arnsberg-2026-4"
       }
     ]
   }
