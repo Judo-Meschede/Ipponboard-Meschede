@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.17**
+`CURRENT_VERSION.txt`: **0.2.18**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.17**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.18**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.17
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.18
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -783,6 +783,26 @@ Erforderliche Schritte:
 2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
 3. Browser hart neu laden.
 4. `Kampftage → Mannschaften auswählen` und `Mannschaften → Kader auswählen` prüfen.
+5. kein Windows-Build erforderlich.
+
+## 7x. Mehrfachauswahl tatsächlich repariert – V0.2.18
+
+Korrektur zu V0.2.17:
+- Die als behoben gemeldeten vier Selektoren standen im tatsächlich gespeicherten `main` weiterhin falsch.
+- Dadurch öffneten `Mannschaften auswählen` und `Kader auswählen` nicht zuverlässig bzw. brachen beim Rendern ab.
+
+V0.2.18:
+- die vier betroffenen Stellen verwenden jetzt ausdrücklich `document.querySelectorAll(...)`.
+- direkt nach dem Commit wurde der gespeicherte GitHub-Inhalt erneut gelesen.
+- alle vier neuen Selektoren sind dort nachweislich vorhanden.
+- die alten fehlerhaften Varianten sind nicht mehr vorhanden.
+- JavaScript-Syntax von `verwaltung.js` und `server.js` wurde erneut geprüft.
+
+Erforderliche Schritte:
+1. aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Browser hart neu laden.
+4. `Kampftage → Mannschaften auswählen` und `Mannschaften → Kader auswählen` erneut testen.
 5. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
