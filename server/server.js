@@ -5,7 +5,7 @@ const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROO
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
-const APP_VERSION='0.2.15';
+const APP_VERSION='0.2.16';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -29,7 +29,7 @@ let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
 let master=readJson(MASTER_FILE,newMaster); if(!master.schema)master=newMaster();
 function ensureMasterCollections(){
  for(const name of ['clubs','teams','fighters','competitionDays','weightClasses','tournamentModes'])if(!Array.isArray(master[name]))master[name]=[];
- if(!Array.isArray(master.ruleSets)||master.ruleSets.length===0)master.ruleSets=defaultRuleSets();
+ if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();
 }
 ensureMasterCollections();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
@@ -129,6 +129,8 @@ function deleteRecordNoSave(type,id){
   const remainingTeamIds=new Set(master.teams.map(t=>t.id));
   master.competitionDays.forEach(d=>{if(d.hostClubId===id)d.hostClubId='';d.teamIds=Array.isArray(d.teamIds)?d.teamIds.filter(tid=>remainingTeamIds.has(tid)):[]});
  }
+ if(name==='tournamentModes')master.competitionDays.forEach(d=>{if(d.tournamentModeId===id)d.tournamentModeId=''});
+ if(name==='ruleSets')master.tournamentModes.forEach(m=>{if(m.rules===id)m.rules=''});
  return before!==master[name].length;
 }
 function deleteRecord(type,id){const changed=deleteRecordNoSave(type,id);if(changed)saveMaster(collectionName(type)+' gelöscht');return changed}
