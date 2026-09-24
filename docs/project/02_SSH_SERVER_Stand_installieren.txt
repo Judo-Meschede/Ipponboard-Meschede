@@ -1,0 +1,19 @@
+set -euo pipefail
+REPO="$HOME/Ipponboard-Meschede-Source"
+
+if [ ! -f "$REPO/server/01_INSTALLIEREN.sh" ]; then
+  echo "FEHLER: GitHub-Stand fehlt. Zuerst 01 ausführen."
+  exit 1
+fi
+
+cd "$REPO/server"
+sudo bash ./01_INSTALLIEREN.sh test
+
+echo
+echo "Lokaler Healthcheck:"
+curl -fsS http://127.0.0.1:3011/api/health
+echo
+echo
+echo "Öffentlicher Healthcheck:"
+curl -fsS https://test-liga.paul-meschede.de/api/health
+echo
