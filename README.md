@@ -5,7 +5,7 @@ Weiterentwicklung von Ipponboard für den Wettkampfbetrieb des SSV Meschede Judo
 ## Aktueller Stand
 
 Entwicklungsreihe: **V0.x**  
-Aktueller Stand: **V0.1.3**  
+Aktueller Stand: **V0.2.13**  
 Erste freigegebene Version: **V1.0**
 
 ## Repository-Struktur
@@ -18,7 +18,7 @@ Erste freigegebene Version: **V1.0**
 ## Architektur
 
 - **GitHub** ist die zentrale Quelle für Quellcode und Versionen.
-- **Server-Datenbank** enthält Vereine, Mannschaften, Kämpfer, Wettkämpfe und vorbereitete Aufstellungen.
+- **Server-Datenbank** enthält Vereine, Mannschaften, Kämpfer, Kampftage und vorbereitete Aufstellungen.
 - **Portable App** lädt bei vorhandener Verbindung aktuelle Daten vom Server und arbeitet offline mit dem letzten lokalen Stand weiter.
 - **Google Drive** bleibt nur Archiv/Referenzmaterial und ist nicht mehr die primäre Entwicklungsquelle.
 
