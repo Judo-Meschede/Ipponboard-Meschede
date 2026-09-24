@@ -2174,6 +2174,14 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 		painter.drawText(r, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, text);
 		painter.restore();
 	};
+	auto drawCenteredWrapped = [&](const QRectF& r, const QString& text, int px, bool bold = false, const QColor& color = QColor(0,0,0))
+	{
+		painter.save();
+		painter.setPen(color);
+		painter.setFont(font(px, bold));
+		painter.drawText(r, Qt::AlignCenter | Qt::TextWordWrap, text);
+		painter.restore();
+	};
 	auto drawVertical = [&](const QRectF& r, const QString& text, int px, bool bold, const QColor& color)
 	{
 		painter.save();
@@ -2231,7 +2239,9 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	painter.drawRect(QRectF(129.5, 40.5, 656.5, 51.5));
 	painter.drawLine(QPointF(422.0,40.5), QPointF(422.0,92.0));
 	painter.drawLine(QPointF(498.0,40.5), QPointF(498.0,92.0));
+	drawCenteredWrapped(QRectF(140, 46, 202, 40), m_pUi->comboBox_club_home->currentText(), 15, true, black);
 	drawCentered(QRectF(350, 54, 71, 24), QStringLiteral("WEISS"), 16, true, black);
+	drawCenteredWrapped(QRectF(506, 46, 200, 40), m_pUi->comboBox_club_guest->currentText(), 15, true, blue);
 	drawCentered(QRectF(714, 54, 72, 24), QStringLiteral("BLAU"), 16, true, blue);
 	drawCentered(QRectF(424, 44, 73, 14), QStringLiteral("Nordrhein-"), 10, false, black);
 	drawCentered(QRectF(424, 61, 73, 14), QStringLiteral("Westfälischer"), 10, false, black);
@@ -2287,12 +2297,10 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	for(qreal xv : QVector<qreal>{14,54,214,354,388,422,582,722,756,786,826})
 		painter.drawLine(QPointF(xv,332), QPointF(xv,482));
 
-	// Team/operator labels.
-	drawCentered(QRectF(54,92,160,18), QStringLiteral("TEAM"), 13, true, black);
+	// Operator labels. Club names are shown in the large WEISS/BLAU header fields.
 	drawCentered(QRectF(214,92,84,18), QStringLiteral("+"), 17, true, black);
 	drawCentered(QRectF(298,92,56,18), QStringLiteral("-"), 17, true, black);
 	drawCentered(QRectF(354,92,68,18), QStringLiteral("="), 17, true, black);
-	drawCentered(QRectF(422,92,160,18), QStringLiteral("TEAM"), 13, true, blue);
 	drawCentered(QRectF(582,92,84,18), QStringLiteral("+"), 17, true, blue);
 	drawCentered(QRectF(666,92,56,18), QStringLiteral("-"), 17, true, blue);
 	drawCentered(QRectF(722,92,64,18), QStringLiteral("="), 17, true, blue);
@@ -2348,12 +2356,6 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	drawLeft(QRectF(380,14,198,17), modeText, 9, false, black);
 	drawLeft(QRectF(610,14,108,17), m_pUi->lineEdit_location->text(), 9, false, black);
 	drawLeft(QRectF(744,14,80,17), m_pUi->dateEdit->text(), 9, false, black);
-
-	// Club names sit high in the team row, matching the official form.
-	painter.fillRect(QRectF(55,93,158,16), Qt::white);
-	painter.fillRect(QRectF(423,93,158,16), Qt::white);
-	drawCentered(QRectF(55,91,158,19), m_pUi->comboBox_club_home->currentText(), 11, true, black);
-	drawCentered(QRectF(423,91,158,19), m_pUi->comboBox_club_guest->currentText(), 11, true, blue);
 
 	auto scoreText = [](const Fight& fight, int value)
 	{
