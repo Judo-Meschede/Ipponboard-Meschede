@@ -141,6 +141,25 @@ Portable Startdatei:
 
 Aktuell kann auch `app\Ipponboard-Meschede.exe` direkt gestartet werden.
 
+## 5a. Server-Update – verbindlicher GitHub-Workflow
+
+Die früher verwendeten SSH-Hilfsdateien, die einen Projektstand aus Google Drive nach `Downloads` kopieren, sind für Ipponboard-Meschede **veraltet und dürfen nicht mehr verwendet werden**.
+
+Verbindliche Dateien:
+- `docs/project/01_SSH_GITHUB_Stand_aktualisieren.txt`
+- `docs/project/02_SSH_SERVER_Stand_installieren.txt`
+
+Ablauf:
+1. `01` auf dem Linux-Server ausführen. Dadurch wird `main` aus `Judo-Meschede/Ipponboard-Meschede` nach `~/Ipponboard-Meschede-Source` geklont bzw. exakt auf `origin/main` aktualisiert.
+2. `02` ausführen. Dadurch wird `server/01_INSTALLIEREN.sh test` aus genau diesem GitHub-Stand gestartet.
+3. Der Installer deployt nach `/opt/ipponboard-meschede-test`, verwendet persistente Daten unter `/var/lib/ipponboard-meschede-test`, startet `ipponboard-meschede-test.service` auf Port 3011 und führt einen Healthcheck aus.
+4. `02` prüft anschließend zusätzlich den lokalen und öffentlichen Health-Endpunkt.
+
+Wichtig:
+- Google Drive bleibt Archiv/Referenz und ist keine Quelle für Serverupdates.
+- Wenn bei einer Änderung `01/02` erforderlich sind, muss ausdrücklich auf diese aktuellen GitHub-basierten Dateien verwiesen werden.
+- Keine alten Dateien namens sinngemäß `01_SSH_Projektstand_nach_Downloads.txt` mehr für dieses Projekt verwenden.
+
 ## 6. Smart App Control / Signierung
 
 Auf dem Stand-alone-Firmenlaptop war Windows Smart App Control aktiv und blockierte die neue unsignierte EXE.
