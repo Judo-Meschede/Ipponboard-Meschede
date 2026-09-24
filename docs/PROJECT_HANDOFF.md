@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.9**
+`CURRENT_VERSION.txt`: **0.2.10**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.9**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.10**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.9
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.10
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -481,6 +481,25 @@ Erforderliche Schritte:
 2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
 3. V0.2.9 starten.
 4. 5er-Druckvorschau/PDF erneut direkt gegen die offizielle Referenz prüfen.
+
+Noch nicht unter Windows praktisch getestet.
+
+## 7o. Vereinsnamen im NWJV-Kopf – V0.2.10
+
+Praxistest V0.2.9 zeigte, dass die Vereinsnamen noch in der schmalen Teamzeile über `Judoka` standen.
+
+V0.2.10:
+- Vereinsnamen wurden vollständig aus dieser Teamzeile entfernt.
+- Heimverein steht nun groß und fett im großen linken Kopffeld neben `WEISS`.
+- Gastverein steht nun groß und fett im großen rechten Kopffeld neben `BLAU`.
+- lange Vereinsnamen dürfen dort automatisch umbrechen.
+- `+ / - / =`, zweizeilige Wertungsüberschriften, 7er-Vorlage und Wettkampflogik bleiben unverändert.
+
+Erforderliche Schritte:
+1. Kein Serverupdate.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.10 starten.
+4. 5er-Druckvorschau/PDF prüfen.
 
 Noch nicht unter Windows praktisch getestet.
 
