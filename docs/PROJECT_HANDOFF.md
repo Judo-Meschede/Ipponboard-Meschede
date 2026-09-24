@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.14**
+`CURRENT_VERSION.txt`: **0.2.15**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.14**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.15**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.14
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.15
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -716,6 +716,29 @@ Erforderliche Schritte:
 4. Rückrunde prüfen: dort muss derselbe Kämpfer wieder auswählbar sein.
 
 Kein Serverupdate für diese Änderung erforderlich.
+
+## 7u. Große Mehrfachauswahl in der Server-Verwaltung – V0.2.15
+
+Umgesetzt:
+- eingebettete Scroll-Checkboxlisten wurden aus den Detailformularen entfernt.
+- `Mannschaften → Kader` ist jetzt ein Button `Kader auswählen`.
+- `Kampftage → Teilnehmende Mannschaften` ist jetzt ein Button `Mannschaften auswählen`.
+- beide öffnen denselben großen modalen Auswahl-Dialog.
+- Dialog enthält Suche, Anzahl der ausgewählten Einträge, `Sichtbare auswählen`, `Auswahl aufheben`, `Abbrechen` und `Auswahl übernehmen`.
+- Kaderliste zeigt Name, Verein, Passnummer und Nationalität.
+- Mannschaftsliste zeigt Mannschaft, Verein, Kategorie/Liga und Saison.
+- Abbrechen verändert die im Formular vorhandene Auswahl nicht.
+- nach Übernahme zeigt das Formular nur noch eine kompakte Zusammenfassung statt der langen Liste.
+- gleichartige Mehrfachauswahlen in der aktuellen Server-Verwaltung geprüft: neben Kader und Kampftag-Mannschaften existieren aktuell keine weiteren eingebetteten Mehrfachlisten.
+- JavaScript-Syntax von `verwaltung.js` und `server.js` nach der Änderung geprüft.
+
+Erforderliche Schritte:
+1. aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` erneut ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` erneut ausführen.
+3. Browser-Verwaltung neu laden und Kader-/Mannschaftsauswahl prüfen.
+4. kein Windows-Build für diese Änderung erforderlich.
+
+Noch nicht im Browser praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
