@@ -1,6 +1,6 @@
 # Projektübergabe – Ipponboard-Meschede
 
-Stand: 22.09.2026
+Stand: 24.09.2026
 
 ## 1. Projektziel
 
@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.8**
+`CURRENT_VERSION.txt`: **0.2.9**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.8**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.9**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -178,7 +178,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.8
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.9
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -463,6 +463,24 @@ V0.2.8 korrigiert ausschließlich die 5er-Druckausgabe:
 - Hauptlinien werden stärker an die Original-PDF-Linienstärke angeglichen.
 - feste Kopftexte, WEISS/BLAU, Verbandsbezeichnung, Spaltenüberschriften und Fußtexte werden nach den aus dem Original-PDF ausgelesenen Positionen/Schriftgrößen korrigiert.
 - 7er-Vorlage und Wettkampflogik unverändert.
+
+Noch nicht unter Windows praktisch getestet.
+
+## 7n. NWJV-5er-Kopfzeile – V0.2.9
+
+Praxistest V0.2.8 zeigte noch vier sichtbare Abweichungen zur offiziellen Vorlage.
+V0.2.9 korrigiert ausschließlich diese Punkte:
+- die internen Wertungsspalten-Linien laufen in der Team-Kopfzeile nicht mehr durch die Gruppen `+`, `-` und `=`.
+- Vereinsnamen werden in der Teamzeile etwas höher und kräftiger dargestellt.
+- `Hansoku-make` wird in der vertikalen Beschriftung zweizeilig gesetzt.
+- `Unterbewertung` wird in der vertikalen Beschriftung zweizeilig gesetzt.
+- 7er-Vorlage, Wettkampflogik und Server bleiben unverändert.
+
+Erforderliche Schritte:
+1. Kein Serverupdate.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.9 starten.
+4. 5er-Druckvorschau/PDF erneut direkt gegen die offizielle Referenz prüfen.
 
 Noch nicht unter Windows praktisch getestet.
 
