@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.15**
+`CURRENT_VERSION.txt`: **0.2.16**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.15**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.16**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.15
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.16
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -737,6 +737,32 @@ Erforderliche Schritte:
 2. danach `02_SSH_SERVER_Stand_installieren.txt` erneut ausführen.
 3. Browser-Verwaltung neu laden und Kader-/Mannschaftsauswahl prüfen.
 4. kein Windows-Build für diese Änderung erforderlich.
+
+Noch nicht im Browser praktisch getestet.
+
+## 7v. Admin-Löschrechte und Kampftage löschen – V0.2.16
+
+Umgesetzt:
+- jeder bestehende Datensatz in der Server-Verwaltung erhält im Bearbeitungsformular zusätzlich einen klar sichtbaren Button `Eintrag löschen`.
+- Kampftage können damit direkt und vollständig gelöscht werden.
+- weiterhin bleibt auch die Löschaktion in der Tabellenzeile vorhanden.
+- löschbar sind aktuell: Vereine, Mannschaften, Wettkämpfer, Kampftage, Gewichtsklassen, Wettkampfmodi und Regelwerke.
+- vor jedem Löschen erscheint eine eindeutige Bestätigung mit Objektname.
+- bei abhängigen Daten wird die Auswirkung in der Bestätigung angezeigt.
+- Löschen einer Mannschaft entfernt deren ID aus allen Kampftagen.
+- Löschen eines Wettkämpfers entfernt dessen ID aus allen Mannschaftskadern.
+- Löschen eines Wettkampfmodus entfernt dessen ID aus verknüpften Kampftagen.
+- Löschen eines Regelwerks entfernt dessen ID aus verknüpften Wettkampfmodi.
+- Löschen eines Vereins behält das bisherige Verhalten bei: zugehörige Mannschaften und Wettkämpfer werden ebenfalls gelöscht; Kampftag-Verweise werden bereinigt.
+- eine bewusst leer gelöschte Regelwerk-Liste wird nach Neustart nicht mehr automatisch wieder mit Default-Regelwerken befüllt. Defaults entstehen nur noch, wenn die Sammlung technisch fehlt.
+
+Erforderliche Schritte:
+1. V0.2.15 muss nicht separat installiert werden.
+2. auf dem Linux-Testserver einmal die aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+3. danach einmal `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+4. Browser neu laden.
+5. insbesondere einen falsch angelegten Kampftag testweise löschen.
+6. kein Windows-Build erforderlich.
 
 Noch nicht im Browser praktisch getestet.
 
