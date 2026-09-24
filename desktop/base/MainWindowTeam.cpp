@@ -2186,6 +2186,18 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 		painter.drawText(rr, Qt::AlignCenter | Qt::TextSingleLine, text);
 		painter.restore();
 	};
+	auto drawVerticalMultiline = [&](const QRectF& r, const QString& text, int px, bool bold, const QColor& color)
+	{
+		painter.save();
+		painter.setPen(color);
+		painter.setFont(font(px, bold));
+		const QPointF c = r.center();
+		painter.translate(c);
+		painter.rotate(-90.0);
+		const QRectF rr(-r.height()/2.0, -r.width()/2.0, r.height(), r.width());
+		painter.drawText(rr, Qt::AlignCenter, text);
+		painter.restore();
+	};
 
 	// --- fixed official NWJV form geometry ---
 	painter.fillRect(QRectF(0,0,842,595), Qt::white);
@@ -2240,8 +2252,9 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	for (qreal xv : x)
 		painter.drawLine(QPointF(xv, yTeamBottom), QPointF(xv, 317));
 
-	// Team-row vertical boundaries/operators.
-	for(qreal xv : QVector<qreal>{54,214,242,270,298,326,354,388,422,582,610,638,666,694,722,756,786})
+	// Team-row boundaries only between the official operator groups.
+	// Internal score-column lines must not cut through + / - / =.
+	for(qreal xv : QVector<qreal>{54,214,298,354,422,582,666,722,786})
 		painter.drawLine(QPointF(xv,yTeamTop), QPointF(xv,yTeamBottom));
 
 	// Header bottom and first-round rows.
@@ -2291,18 +2304,18 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	drawVertical(QRectF(242,111,28,56), QStringLiteral("Waza-ari"), 10, false, black);
 	drawVertical(QRectF(270,111,28,56), QStringLiteral("Ippon"), 10, false, black);
 	drawVertical(QRectF(298,111,28,56), QStringLiteral("Shido"), 10, false, black);
-	drawVertical(QRectF(326,111,28,56), QStringLiteral("Hansoku-make"), 10, false, black);
+	drawVerticalMultiline(QRectF(326,111,28,56), QStringLiteral("Hansoku-\nmake"), 10, false, black);
 	drawVertical(QRectF(354,111,34,56), QStringLiteral("SIEG"), 10, false, black);
-	drawVertical(QRectF(388,111,34,56), QStringLiteral("Unterbewertung"), 10, false, black);
+	drawVerticalMultiline(QRectF(388,111,34,56), QStringLiteral("Unterbe-\nwertung"), 10, false, black);
 
 	drawCentered(QRectF(422,145,160,22), QStringLiteral("Judoka"), 16, true, blue);
 	drawVertical(QRectF(582,111,28,56), QStringLiteral("Yuko"), 10, false, blue);
 	drawVertical(QRectF(610,111,28,56), QStringLiteral("Waza-ari"), 10, false, blue);
 	drawVertical(QRectF(638,111,28,56), QStringLiteral("Ippon"), 10, false, blue);
 	drawVertical(QRectF(666,111,28,56), QStringLiteral("Shido"), 10, false, blue);
-	drawVertical(QRectF(694,111,28,56), QStringLiteral("Hansoku-make"), 10, false, blue);
+	drawVerticalMultiline(QRectF(694,111,28,56), QStringLiteral("Hansoku-\nmake"), 10, false, blue);
 	drawVertical(QRectF(722,111,34,56), QStringLiteral("SIEG"), 10, false, blue);
-	drawVertical(QRectF(756,111,30,56), QStringLiteral("Unterbewertung"), 10, false, blue);
+	drawVerticalMultiline(QRectF(756,111,30,56), QStringLiteral("Unterbe-\nwertung"), 10, false, blue);
 	drawVertical(QRectF(786,111,40,56), QStringLiteral("Wettkampfzeit"), 10, false, black);
 
 	// Summary fields and footer fixed labels.
@@ -2336,11 +2349,11 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	drawLeft(QRectF(610,14,108,17), m_pUi->lineEdit_location->text(), 9, false, black);
 	drawLeft(QRectF(744,14,80,17), m_pUi->dateEdit->text(), 9, false, black);
 
-	// Cover the literal TEAM placeholders, preserving the cell borders.
-	painter.fillRect(QRectF(55,94,158,14), Qt::white);
-	painter.fillRect(QRectF(423,94,158,14), Qt::white);
-	drawCentered(QRectF(55,93,158,16), m_pUi->comboBox_club_home->currentText(), 10, true, black);
-	drawCentered(QRectF(423,93,158,16), m_pUi->comboBox_club_guest->currentText(), 10, true, blue);
+	// Club names sit high in the team row, matching the official form.
+	painter.fillRect(QRectF(55,93,158,16), Qt::white);
+	painter.fillRect(QRectF(423,93,158,16), Qt::white);
+	drawCentered(QRectF(55,91,158,19), m_pUi->comboBox_club_home->currentText(), 11, true, black);
+	drawCentered(QRectF(423,91,158,19), m_pUi->comboBox_club_guest->currentText(), 11, true, blue);
 
 	auto scoreText = [](const Fight& fight, int value)
 	{
