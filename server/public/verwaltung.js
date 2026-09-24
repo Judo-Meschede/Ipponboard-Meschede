@@ -114,8 +114,8 @@ async function importXlsx(type,file){
   await load();
  }catch(e){toast('XLSX-Import: '+e.message)}
 }
-$('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
-$('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
+$$('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
+$$('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
 
 
 const nwjvBtn=$('#nwjvImportBtn');
