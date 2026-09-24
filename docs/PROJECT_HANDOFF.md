@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.16**
+`CURRENT_VERSION.txt`: **0.2.17**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.16**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.17**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.16
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.17
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -765,6 +765,25 @@ Erforderliche Schritte:
 6. kein Windows-Build erforderlich.
 
 Noch nicht im Browser praktisch getestet.
+
+## 7w. Mehrfachauswahl-Popup repariert – V0.2.17
+
+Praxistest V0.2.16:
+- `Mannschaften auswählen` und `Kader auswählen` reagierten nicht.
+- Ursache: beim Umbau auf den großen Auswahl-Dialog wurden an vier Stellen Einzelelement-Selektoren verwendet, obwohl anschließend `.forEach()` auf mehreren Elementen ausgeführt wurde.
+- dadurch brach JavaScript beim Initialisieren bzw. Öffnen des Dialogs ab.
+
+V0.2.17:
+- alle vier Stellen auf Mehrfachselektion korrigiert.
+- betrifft Popup-Checkboxen, Popup-Buttons im Detailformular sowie das Auslesen der Formularfelder.
+- JavaScript-Syntax von `verwaltung.js` und `server.js` geprüft.
+
+Erforderliche Schritte:
+1. aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Browser hart neu laden.
+4. `Kampftage → Mannschaften auswählen` und `Mannschaften → Kader auswählen` prüfen.
+5. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
