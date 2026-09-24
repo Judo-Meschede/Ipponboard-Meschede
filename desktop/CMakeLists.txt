@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Ipponboard-Meschede VERSION 0.2.14 LANGUAGES CXX)
+project(Ipponboard-Meschede VERSION 0.2.15 LANGUAGES CXX)
 
 # Define variables for the required MSVC runtime libraries
 if(MSVC)
