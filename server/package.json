@@ -1,8 +1,11 @@
 {
   "name": "ipponboard-meschede",
-  "version": "0.1.0",
+  "version": "0.2.13",
   "private": true,
   "scripts": {
     "start": "node server.js"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
   }
 }
