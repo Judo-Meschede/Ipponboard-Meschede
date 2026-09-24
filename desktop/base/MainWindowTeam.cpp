@@ -181,9 +181,37 @@ void MainWindowTeam::Init()
 		const bool isGuest = index.column() == TournamentModel::eCol_name2;
 		const QComboBox* teamBox = isGuest ? m_pUi->comboBox_club_guest : m_pUi->comboBox_club_home;
 		const QString teamId = teamBox->currentData().toString();
-		QStringList names = FighterNamesForTeam_(teamId);
-		QStringList ids = FighterIdsForTeam_(teamId);
+		const QStringList allNames = FighterNamesForTeam_(teamId);
+		const QStringList allIds = FighterIdsForTeam_(teamId);
+
+		// A fighter may be used only once per team and round. The other round is independent.
+		// Keep the fighter of the currently edited row available so an existing selection can be retained.
+		QStringList usedIds;
+		if (index.model())
+		{
+			for (int row = 0; row < index.model()->rowCount(); ++row)
+			{
+				if (row == index.row())
+					continue;
+				const QModelIndex other = index.model()->index(row, index.column());
+				const QString usedId = index.model()->data(other, Qt::UserRole).toString();
+				if (!usedId.isEmpty() && !usedIds.contains(usedId))
+					usedIds.append(usedId);
+			}
+		}
+
+		QStringList names;
+		QStringList ids;
+		for (int i = 0; i < allIds.size() && i < allNames.size(); ++i)
+		{
+			if (usedIds.contains(allIds.at(i)))
+				continue;
+			names.append(allNames.at(i));
+			ids.append(allIds.at(i));
+		}
+
 		// Special valid lineup choice: no athlete entered for this team/weight class.
+		// This entry is intentionally reusable.
 		names.prepend(QStringLiteral("_n.A."));
 		ids.prepend(QString());
 		return std::make_pair(names, ids);
