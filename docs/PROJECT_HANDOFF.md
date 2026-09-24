@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.11**
+`CURRENT_VERSION.txt`: **0.2.12**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.11**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.12**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.11
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.12
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -634,6 +634,31 @@ Erforderliche Schritte:
 4. Kein Windows-Build für diesen Schritt erforderlich.
 
 Noch nicht auf dem Testserver ausgerollt oder praktisch getestet.
+
+## 7r. Kampftag im Desktop laden – V0.2.12
+
+Umgesetzt:
+- `Turnier → Laden…` ist jetzt der zentrale Einstieg.
+- Dort kann zwischen `Kampftag` und `Lokale Turnierdatei` gewählt werden.
+- `Kampftag` liest die synchronisierte lokale Masterdata-Datei erneut ein und zeigt die vorhandenen `competitionDays`.
+- bei mehreren Matten wird anschließend die Matte frei gewählt; bei genau einer Matte wird sie automatisch übernommen.
+- nach dem Laden werden Datum, Ausrichter, Ort und optional der Wettkampfmodus aus dem Kampftag übernommen.
+- Heim-/Gast-Auswahl wird auf die in `teamIds` hinterlegten Mannschaften des Kampftags begrenzt.
+- Kaderauswahl bleibt weiterhin ID-basiert auf den gewählten Mannschaften.
+- Fenstertitel zeigt nach dem Laden Kampftag und gewählte Matte.
+- der bisherige lokale JSON-Dateilader bleibt unverändert nutzbar; beim Laden einer lokalen Datei wird ein eventuell aktiver Kampftag-Filter aufgehoben.
+- noch keine serverseitige Mattenbelegung/Terminal-Sperre.
+- noch kein Persistenz-/Sync-Modell für abgeschlossene Einzelkämpfe; das folgt separat.
+- laufende Einzelkämpfe werden weiterhin nicht persistiert oder synchronisiert.
+
+Erforderliche Schritte:
+1. Server mindestens auf V0.2.11 mit `competitionDays` betreiben und dort einen Kampftag anlegen.
+2. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+3. V0.2.12 starten und Serverdaten synchronisieren lassen.
+4. Mannschaftsmodus → `Turnier → Laden… → Kampftag`.
+5. Prüfen: Kampftag/Matte wählen, Datum/Ort/Ausrichter prüfen und kontrollieren, dass nur die Teilnehmermannschaften angeboten werden.
+
+Noch nicht unter Windows gebaut oder praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
