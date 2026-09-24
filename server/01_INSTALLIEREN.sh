@@ -15,6 +15,7 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Installiere SSV Scoreboard TEST auf Port $PORT"
 if ! command -v node >/dev/null 2>&1; then echo "FEHLER: Node.js fehlt."; exit 3; fi
+if ! command -v npm >/dev/null 2>&1; then echo "FEHLER: npm fehlt."; exit 3; fi
 NODE_MAJOR="$(node -p "process.versions.node.split('.')[0]")"
 if [ "$NODE_MAJOR" -lt 20 ]; then echo "FEHLER: Node.js >=20 erforderlich."; exit 4; fi
 
