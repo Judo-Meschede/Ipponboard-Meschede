@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.28**
+`CURRENT_VERSION.txt`: **0.2.29**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.28**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.29**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.28
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.29
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1089,6 +1089,23 @@ Erforderliche Schritte:
 2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
 3. Browser hart neu laden.
 4. Blanko-Vereinsliste neu herunterladen und Dropdown prüfen.
+5. kein Windows-Build erforderlich.
+
+## 7ai. Vereins-Meldeliste: M/W vor Jahrgang – V0.2.29
+
+Umgesetzt:
+- Reihenfolge der Vereinsliste geändert auf:
+  `Name | Vorname | M/W | Jahrgang | AK | GK | Kyu`.
+- Dropdown `M/W` steht jetzt direkt hinter Vorname.
+- Jahrgang folgt danach.
+- Validierung und Import-Spalten wurden entsprechend mitgezogen.
+- Mannschaftsliste bleibt unverändert.
+
+Erforderliche Schritte:
+1. Linux-Testserver: `01_SSH_GITHUB_Stand_aktualisieren.txt`.
+2. danach `02_SSH_SERVER_Stand_installieren.txt`.
+3. Browser hart neu laden.
+4. Blanko-Vereinsliste neu herunterladen.
 5. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
