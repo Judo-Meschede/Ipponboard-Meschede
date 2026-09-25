@@ -319,7 +319,7 @@ async function buildEventRegistrationTemplate(kind,eventId){
     const maleRef=maleWeights.length?("'_GK_Listen'!$A$1:$A$"+maleWeights.length):"";
     const femaleRef=femaleWeights.length?("'_GK_Listen'!$B$1:$B$"+femaleWeights.length):"";
     let formula='';
-    if(genderCodes.length===1)formula=genderCodes[0]==='w'?femaleRef:maleRef;
+    if(genderCodes.length===1){const ref=genderCodes[0]==='w'?femaleRef:maleRef;formula=ref?'INDIRECT("'+ref+'")':''}
     else formula='INDIRECT(IF($D'+row+'="männlich","'+maleRef+'","'+femaleRef+'"))';
     if(formula)ws.getCell(row,7).dataValidation={type:'list',allowBlank:true,formulae:[formula],showErrorMessage:true,errorTitle:'GK',error:'Bitte eine für dieses Geschlecht freigegebene Gewichtsklasse auswählen.'};
    }else ws.getCell(row,7).dataValidation={type:'decimal',operator:'between',allowBlank:true,formulae:[1,250],showErrorMessage:true,errorTitle:'Gewicht',error:'Bitte Gewicht in kg als Zahl eintragen.'};
