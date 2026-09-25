@@ -784,15 +784,9 @@ void MainWindowBase::update_screen_visibility(QWidget* pView) const
         pView->move(QPoint(screenRes.x(), screenRes.y()));
     }
 
-    if (m_secondScreenSize.isNull())
-    {
-		pView->showFullScreen();
-    }
-    else
-    {
-		pView->resize(m_secondScreenSize);
-		pView->show();
-    }
+    // The mat display is always a true fullscreen window.
+    // Stored legacy custom sizes must never expose the desktop or taskbar.
+    pView->showFullScreen();
 }
 
 void MainWindowBase::show_hide_view() const
