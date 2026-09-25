@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.19**
+`CURRENT_VERSION.txt`: **0.2.20**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.19**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.20**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.19
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.20
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -824,6 +824,26 @@ Erforderliche Schritte:
 1. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
 2. V0.2.19 starten.
 3. zweiten Monitor aktivieren und prüfen, dass die Mattenanzeige den Monitor vollständig inklusive Taskleistenbereich belegt.
+4. kein Serverupdate erforderlich.
+
+Noch nicht unter Windows praktisch getestet.
+
+## 7z. NWJV-Druck für SW-Drucker optimiert – V0.2.20
+
+Umgesetzt:
+- eingetragene Vereinsnamen im großen Kopfbereich werden schwarz gedruckt.
+- Wettkämpfernamen beider Seiten werden schwarz gedruckt.
+- alle eingetragenen Kampfwerte beider Seiten werden schwarz gedruckt.
+- die blaue Formular-Systematik der festen Überschriften bleibt erhalten.
+- in den beiden `=`-Spalten `SIEG` und `Unterbewertung` wird der Wert 0 leer dargestellt.
+- auch in den entsprechenden Summenfeldern wird 0 leer dargestellt.
+- positive Werte bleiben sichtbar.
+- Ziel ist bessere Lesbarkeit auf Schwarzweiß-Druckern.
+
+Erforderliche Schritte:
+1. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. V0.2.20 starten.
+3. 5er-NWJV-Druckvorschau prüfen.
 4. kein Serverupdate erforderlich.
 
 Noch nicht unter Windows praktisch getestet.
