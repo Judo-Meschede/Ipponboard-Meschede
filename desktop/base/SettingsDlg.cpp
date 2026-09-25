@@ -208,25 +208,20 @@ SettingsDlg::~SettingsDlg()
 }
 
 
-void SettingsDlg::SetScreensSettings(int screen, const QSize& dimensions)
+void SettingsDlg::SetScreensSettings(int screen, const QSize&)
 {
 	Q_ASSERT(screen < ui->comboBox_screen->count());
 	ui->comboBox_screen->setCurrentIndex(screen);
 
-	if (dimensions.isNull())
-	{
-		ui->checkBox_secondary_view_custom_size->setChecked(false);
-	}
-	else
-	{
-		ui->checkBox_secondary_view_custom_size->setChecked(true);
-		ui->lineEdit_fixedsize_width->setText(
-			QString::number(dimensions.width()));
-		ui->lineEdit_fixedsize_height->setText(
-			QString::number(dimensions.height()));
-		ui->lineEdit_fixedsize_width->setEnabled(true);
-		ui->lineEdit_fixedsize_height->setEnabled(true);
-	}
+	// Ipponboard-Meschede always uses a true fullscreen mat display.
+	ui->checkBox_secondary_view_custom_size->setChecked(false);
+	ui->checkBox_secondary_view_custom_size->setEnabled(false);
+	ui->lineEdit_fixedsize_width->setText("0");
+	ui->lineEdit_fixedsize_height->setText("0");
+	ui->lineEdit_fixedsize_width->setEnabled(false);
+	ui->lineEdit_fixedsize_height->setEnabled(false);
+	ui->label_screen_width->setEnabled(false);
+	ui->label_screen_height->setEnabled(false);
 }
 
 void SettingsDlg::SetInfoHeaderSettings(const QFont& font,
@@ -300,10 +295,7 @@ int SettingsDlg::GetSelectedScreen() const
 
 QSize SettingsDlg::GetSize() const
 {
-	QSize s;
-	s.setWidth(ui->lineEdit_fixedsize_width->text().toInt());
-	s.setHeight(ui->lineEdit_fixedsize_height->text().toInt());
-	return s;
+	return QSize();
 }
 
 QFont SettingsDlg::GetInfoHeaderFont() const
