@@ -2576,14 +2576,11 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 
 	auto scoreText = [](const Fight& fight, int value)
 	{
-		return (!fight.is_saved && value == 0) ? QString() : QString::number(value);
-	};
-	auto resultText = [](const Fight& fight, int value)
-	{
 		if (!fight.is_saved || value == 0)
 			return QString();
 		return QString::number(value);
 	};
+	auto resultText = scoreText;
 	auto timeText = [](const Fight& fight)
 	{
 		return !fight.is_saved ? QString() : fight.GetTotalTimeElapsedString();
