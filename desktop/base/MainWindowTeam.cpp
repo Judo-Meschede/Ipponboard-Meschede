@@ -32,10 +32,12 @@
 #include <QComboBox>
 #include <QCompleter>
 #include <QDebug>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDesktopWidget>
 #include <QDir>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFontDialog>
 #include <QInputDialog>
 #include <QMenu>
@@ -52,6 +54,7 @@
 #include <QTextEdit>
 #include <QTimer>
 #include <QUrl>
+#include <QUuid>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -72,6 +75,129 @@ namespace
 {
 	bool initialized = false;
 	constexpr auto SaveDateFormat = "dd.MM.yyyy";
+	constexpr auto RecoveryQueueFileName = "competition-sync-queue.json";
+	constexpr auto LastSessionFileName = "last-competition-session.json";
+
+	QString runtime_data_dir()
+	{
+		static const QString result = []()
+		{
+			const QString portable = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("runtime"));
+			if (QDir().mkpath(portable))
+			{
+				const QString testPath = QDir(portable).filePath(QStringLiteral(".write-test"));
+				QSaveFile test(testPath);
+				if (test.open(QIODevice::WriteOnly))
+				{
+					test.write("ok");
+					if (test.commit())
+					{
+						QFile::remove(testPath);
+						return portable;
+					}
+				}
+			}
+
+			const QString fallback = QDir(fm::GetAppDataDir()).filePath(QStringLiteral("runtime"));
+			QDir().mkpath(fallback);
+			return fallback;
+		}();
+		return result;
+	}
+
+	QString safe_runtime_id(QString value)
+	{
+		value.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]")), QStringLiteral("_"));
+		return value.isEmpty() ? QStringLiteral("_") : value;
+	}
+
+	bool write_json_atomic(const QString& filePath, const QJsonDocument& document)
+	{
+		QDir().mkpath(QFileInfo(filePath).absolutePath());
+		QSaveFile file(filePath);
+		if (!file.open(QIODevice::WriteOnly))
+			return false;
+		if (file.write(document.toJson(QJsonDocument::Indented)) <= 0)
+			return false;
+		return file.commit();
+	}
+
+	QJsonDocument read_json_document(const QString& filePath)
+	{
+		QFile file(filePath);
+		if (!file.open(QIODevice::ReadOnly))
+			return QJsonDocument();
+		QJsonParseError error;
+		const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
+		return error.error == QJsonParseError::NoError ? doc : QJsonDocument();
+	}
+
+	QString recovery_api_path(const QString& competitionDayId, const QString& matId)
+	{
+		return QStringLiteral("/api/competition-recovery/%1/%2")
+			.arg(QString::fromLatin1(QUrl::toPercentEncoding(competitionDayId)),
+				 QString::fromLatin1(QUrl::toPercentEncoding(matId)));
+	}
+
+#ifdef _WIN32
+	bool http_json_request(const wchar_t* method, const QString& requestPath, const QByteArray& payload,
+		QByteArray& response, DWORD& status)
+	{
+		response.clear();
+		status = 0;
+		HINTERNET session = WinHttpOpen(L"Ipponboard-Meschede", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+			WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+		if (!session)
+			return false;
+		WinHttpSetTimeouts(session, 3000, 3000, 3000, 5000);
+
+		HINTERNET connect = WinHttpConnect(session, L"test-liga.paul-meschede.de", INTERNET_DEFAULT_HTTPS_PORT, 0);
+		const std::wstring path = requestPath.toStdWString();
+		HINTERNET request = connect ? WinHttpOpenRequest(connect, method, path.c_str(), nullptr,
+			WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE) : nullptr;
+
+		const wchar_t* headers = payload.isEmpty() ? WINHTTP_NO_ADDITIONAL_HEADERS : L"Content-Type: application/json\r\n";
+		const DWORD headerLength = payload.isEmpty() ? 0 : static_cast<DWORD>(-1L);
+		bool ok = request && WinHttpSendRequest(request, headers, headerLength,
+			payload.isEmpty() ? WINHTTP_NO_REQUEST_DATA : const_cast<char*>(payload.constData()),
+			static_cast<DWORD>(payload.size()), static_cast<DWORD>(payload.size()), 0)
+			&& WinHttpReceiveResponse(request, nullptr);
+
+		DWORD statusSize = sizeof(status);
+		if (ok)
+			ok = WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+				WINHTTP_HEADER_NAME_BY_INDEX, &status, &statusSize, WINHTTP_NO_HEADER_INDEX);
+
+		if (ok)
+		{
+			for (;;)
+			{
+				DWORD available = 0;
+				if (!WinHttpQueryDataAvailable(request, &available))
+				{
+					ok = false;
+					break;
+				}
+				if (available == 0)
+					break;
+				QByteArray chunk(static_cast<int>(available), Qt::Uninitialized);
+				DWORD read = 0;
+				if (!WinHttpReadData(request, chunk.data(), available, &read))
+				{
+					ok = false;
+					break;
+				}
+				chunk.resize(static_cast<int>(read));
+				response.append(chunk);
+			}
+		}
+
+		if (request) WinHttpCloseHandle(request);
+		if (connect) WinHttpCloseHandle(connect);
+		WinHttpCloseHandle(session);
+		return ok;
+	}
+#endif
 }
 
 MainWindowTeam::MainWindowTeam(QWidget* parent)
@@ -97,6 +223,7 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_currentCompetitionDayId()
 	, m_currentMatId()
 	, m_competitionDayTeamIds()
+	, m_restoringCompetitionState(false)
 	, m_usingMasterData(false)
 	, m_modes()
 {
@@ -264,7 +391,10 @@ void MainWindowTeam::Init()
 
 	//m_pUi->button_pause->click();	// we start with pause!
 
-	load_autosave_if_available();
+	if (!RestoreLastCompetitionSession_())
+		load_autosave_if_available();
+
+	QTimer::singleShot(1000, this, [this]() { FlushRecoveryQueue_(); });
 }
 
 
