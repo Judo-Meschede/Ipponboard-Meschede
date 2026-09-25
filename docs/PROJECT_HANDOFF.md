@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.22**
+`CURRENT_VERSION.txt`: **0.2.23**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.22**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.23**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.22
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.23
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -920,6 +920,42 @@ Erforderliche Schritte:
 6. optional Netzwerk trennen, Kampf abschließen, Netzwerk wieder verbinden und einen weiteren Abschluss auslösen; die Offline-Warteschlange muss anschließend abgearbeitet werden.
 
 Noch nicht auf dem Linux-Testserver installiert und noch nicht unter Windows gebaut/praktisch getestet.
+
+## 7ac. Tatami-Kopfzeile und nächster Kampf – V0.2.23
+
+Umgesetzt:
+- Terminologie im neuen Desktop-Ablauf: `Tatami` statt `Matte`.
+- bei einem Kampftag mit genau einer Tatami bleibt die bisherige Kopfzeile erhalten: Wettkampfmodus/Liga links, aktuelle Gewichtsklasse rechts.
+- ab mindestens zwei Tatami zeigt die Kopfzeile statt des Wettkampfmodus die gewählte Tatami, z. B. `Tatami 1`; die aktuelle Gewichtsklasse bleibt rechts sichtbar.
+- vorhandene alte Servernamen `Matte 1`, `Matte 2` werden bei der Anzeige automatisch zu `Tatami 1`, `Tatami 2` normalisiert.
+- Auswahlfenster im Desktop heißt jetzt `Tatami wählen`.
+
+Nächster Kampf:
+- der nächste Kampf wird zentral aus aktueller Runde und aktuellem Kampf berechnet.
+- nach dem letzten Kampf der Hinrunde wird korrekt der erste Kampf der Rückrunde als nächster Kampf verwendet.
+- nach dem letzten Kampf des gesamten Mannschaftskampfs erscheint `Kein weiterer Kampf`.
+- Format: Gewichtsklasse, Mannschaft/Club und Kämpfer beider Seiten.
+
+Bedienmonitor:
+- unter der eigentlichen Anzeige steht dauerhaft ein festes Feld `NÄCHSTER KAMPF: ...`.
+- Änderungen an der Aufstellung aktualisieren die Vorschau ebenfalls.
+
+Sekundärer Tatami-Monitor:
+- am unteren Rand erscheint eine schwarze Laufzeile mit gelber Schrift.
+- Inhalt: `Nächster Kampf: ...`.
+- die Laufzeile scrollt kontinuierlich von rechts nach links.
+- sie ist ausschließlich auf dem sekundären Tatami-Monitor aktiv.
+
+Erforderliche Schritte:
+1. nur Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. V0.2.23 starten.
+3. Kampftag mit einer Tatami prüfen: Liga/Wettkampfmodus muss in der Kopfzeile bleiben.
+4. Kampftag mit mindestens zwei Tatami laden und z. B. `Tatami 2` wählen: Kopfzeile muss `Tatami 2` + aktuelle Gewichtsklasse zeigen.
+5. Bedienmonitor: festes Feld `NÄCHSTER KAMPF` prüfen.
+6. sekundären Monitor: Laufzeile unten prüfen.
+7. letzten Kampf der Hinrunde und letzten Kampf des gesamten Kampfs prüfen.
+
+Kein Serverupdate erforderlich. Noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
