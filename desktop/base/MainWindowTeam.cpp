@@ -929,17 +929,415 @@ void MainWindowTeam::update_club_views()
 	UpdateTeamFighterDelegates_();
 }
 
+QString MainWindowTeam::TerminalId_() const
+{
+	const QString path = QDir(runtime_data_dir()).filePath(QStringLiteral("terminal-id.txt"));
+	QFile file(path);
+	if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		const QString existing = QString::fromUtf8(file.readAll()).trimmed();
+		if (!existing.isEmpty())
+			return existing;
+	}
+
+	const QString created = QUuid::createUuid().toString(QUuid::WithoutBraces);
+	QSaveFile out(path);
+	if (out.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		out.write(created.toUtf8());
+		out.commit();
+	}
+	return created;
+}
+
+QString MainWindowTeam::CompetitionStateFilePath_(const QString& competitionDayId, const QString& matId) const
+{
+	const QString dir = QDir(runtime_data_dir()).filePath(QStringLiteral("competition-states"));
+	QDir().mkpath(dir);
+	return QDir(dir).filePath(safe_runtime_id(competitionDayId) + QStringLiteral("__") + safe_runtime_id(matId) + QStringLiteral(".json"));
+}
+
+QJsonDocument MainWindowTeam::BuildRecoverySnapshot_() const
+{
+	QJsonParseError error;
+	const QJsonDocument raw = QJsonDocument::fromJson(GetTournamentAsJson_(), &error);
+	if (error.error != QJsonParseError::NoError || !raw.isObject())
+		return QJsonDocument();
+
+	QJsonObject root = raw.object();
+	QJsonArray rounds = root.value(QStringLiteral("Rounds")).toArray();
+	for (int roundIndex = 0; roundIndex < rounds.size(); ++roundIndex)
+	{
+		QJsonArray round = rounds.at(roundIndex).toArray();
+		for (int fightIndex = 0; fightIndex < round.size(); ++fightIndex)
+		{
+			QJsonObject fight = round.at(fightIndex).toObject();
+			if (!fight.value(QStringLiteral("IsSaved")).toBool())
+			{
+				fight.insert(QStringLiteral("SecondsElapsed"), 0);
+				fight.insert(QStringLiteral("IsGoldenScore"), false);
+				for (const QString& fighterKey : { QStringLiteral("FirstFighter"), QStringLiteral("SecondFighter") })
+				{
+					QJsonObject fighter = fight.value(fighterKey).toObject();
+					fighter.insert(QStringLiteral("Ippon"), 0);
+					fighter.insert(QStringLiteral("Wazaari"), 0);
+					fighter.insert(QStringLiteral("Yuko"), 0);
+					fighter.insert(QStringLiteral("Shido"), 0);
+					fighter.insert(QStringLiteral("Hansokumake"), 0);
+					fight.insert(fighterKey, fighter);
+				}
+			}
+			round.replace(fightIndex, fight);
+		}
+		rounds.replace(roundIndex, round);
+	}
+	root.insert(QStringLiteral("Rounds"), rounds);
+	return QJsonDocument(root);
+}
+
+bool MainWindowTeam::UploadRecoveryEvent_(const QJsonObject& event, QJsonObject* response) const
+{
+#ifdef _WIN32
+	const QString competitionDayId = event.value(QStringLiteral("competitionDayId")).toString();
+	const QString matId = event.value(QStringLiteral("matId")).toString();
+	if (competitionDayId.isEmpty() || matId.isEmpty())
+		return false;
+
+	QByteArray body;
+	DWORD status = 0;
+	const QByteArray payload = QJsonDocument(event).toJson(QJsonDocument::Compact);
+	if (!http_json_request(L"PUT", recovery_api_path(competitionDayId, matId), payload, body, status))
+		return false;
+	if (status < 200 || status >= 300)
+		return false;
+
+	if (response)
+	{
+		QJsonParseError error;
+		const QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+		if (error.error == QJsonParseError::NoError && doc.isObject())
+			*response = doc.object();
+	}
+	return true;
+#else
+	Q_UNUSED(event);
+	Q_UNUSED(response);
+	return false;
+#endif
+}
+
+bool MainWindowTeam::DownloadRecoveryState_(const QString& competitionDayId, const QString& matId, QJsonObject& recovery) const
+{
+	recovery = QJsonObject();
+#ifdef _WIN32
+	QByteArray body;
+	DWORD status = 0;
+	if (!http_json_request(L"GET", recovery_api_path(competitionDayId, matId), QByteArray(), body, status))
+		return false;
+	if (status == 404)
+		return false;
+	if (status < 200 || status >= 300)
+		return false;
+
+	QJsonParseError error;
+	const QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+	if (error.error != QJsonParseError::NoError || !doc.isObject())
+		return false;
+	recovery = doc.object().value(QStringLiteral("recovery")).toObject();
+	return !recovery.isEmpty();
+#else
+	Q_UNUSED(competitionDayId);
+	Q_UNUSED(matId);
+	return false;
+#endif
+}
+
+void MainWindowTeam::FlushRecoveryQueue_()
+{
+	const QString queuePath = QDir(runtime_data_dir()).filePath(QString::fromLatin1(RecoveryQueueFileName));
+	const QJsonDocument doc = read_json_document(queuePath);
+	if (!doc.isArray() || doc.array().isEmpty())
+		return;
+
+	const QJsonArray queue = doc.array();
+	QJsonArray remaining;
+	bool blocked = false;
+	for (int i = 0; i < queue.size(); ++i)
+	{
+		const QJsonObject event = queue.at(i).toObject();
+		if (!blocked && UploadRecoveryEvent_(event))
+			continue;
+
+		blocked = true;
+		remaining.append(event);
+	}
+
+	if (remaining.isEmpty())
+		QFile::remove(queuePath);
+	else
+		write_json_atomic(queuePath, QJsonDocument(remaining));
+}
+
+void MainWindowTeam::PersistCompetitionRecovery_(int completedRound, int completedFight, const QString& reason)
+{
+	if (m_restoringCompetitionState || m_currentCompetitionDayId.isEmpty() || m_currentMatId.isEmpty())
+		return;
+	if (completedRound < 0 || completedRound >= m_pController->GetRoundCount() ||
+		completedFight < 0 || completedFight >= m_pController->GetFightCount())
+		return;
+	if (!m_pController->GetFight(completedRound, completedFight).is_saved)
+		return;
+
+	const QJsonDocument snapshot = BuildRecoverySnapshot_();
+	if (!snapshot.isObject())
+		return;
+
+	const QString updatedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+	QJsonObject local;
+	local.insert(QStringLiteral("schema"), QStringLiteral("ipponboard-competition-recovery-1"));
+	local.insert(QStringLiteral("competitionDayId"), m_currentCompetitionDayId);
+	local.insert(QStringLiteral("matId"), m_currentMatId);
+	local.insert(QStringLiteral("terminalId"), TerminalId_());
+	local.insert(QStringLiteral("updatedAt"), updatedAt);
+	local.insert(QStringLiteral("snapshot"), snapshot.object());
+	write_json_atomic(CompetitionStateFilePath_(m_currentCompetitionDayId, m_currentMatId), QJsonDocument(local));
+
+	QJsonObject event;
+	event.insert(QStringLiteral("competitionDayId"), m_currentCompetitionDayId);
+	event.insert(QStringLiteral("matId"), m_currentMatId);
+	event.insert(QStringLiteral("terminalId"), TerminalId_());
+	event.insert(QStringLiteral("eventRound"), completedRound);
+	event.insert(QStringLiteral("eventFight"), completedFight);
+	event.insert(QStringLiteral("reason"), reason);
+	event.insert(QStringLiteral("clientUpdatedAt"), updatedAt);
+	event.insert(QStringLiteral("snapshot"), snapshot.object());
+
+	FlushRecoveryQueue_();
+	if (UploadRecoveryEvent_(event))
+		return;
+
+	const QString queuePath = QDir(runtime_data_dir()).filePath(QString::fromLatin1(RecoveryQueueFileName));
+	QJsonDocument queueDoc = read_json_document(queuePath);
+	QJsonArray queue = queueDoc.isArray() ? queueDoc.array() : QJsonArray();
+	bool replaced = false;
+	for (int i = 0; i < queue.size(); ++i)
+	{
+		const QJsonObject queued = queue.at(i).toObject();
+		if (queued.value(QStringLiteral("competitionDayId")).toString() == m_currentCompetitionDayId &&
+			queued.value(QStringLiteral("matId")).toString() == m_currentMatId &&
+			queued.value(QStringLiteral("eventRound")).toInt(-1) == completedRound &&
+			queued.value(QStringLiteral("eventFight")).toInt(-1) == completedFight)
+		{
+			queue.replace(i, event);
+			replaced = true;
+			break;
+		}
+	}
+	if (!replaced)
+		queue.append(event);
+	write_json_atomic(queuePath, QJsonDocument(queue));
+}
+
+bool MainWindowTeam::RestoreCompetitionState_(const QString& competitionDayId, const QString& matId, bool showMessage)
+{
+	const QJsonDocument localDoc = read_json_document(CompetitionStateFilePath_(competitionDayId, matId));
+	const QJsonObject local = localDoc.isObject() ? localDoc.object() : QJsonObject();
+	const QJsonObject localSnapshot = local.value(QStringLiteral("snapshot")).toObject();
+
+	bool localPending = false;
+	const QJsonDocument queueDoc = read_json_document(QDir(runtime_data_dir()).filePath(QString::fromLatin1(RecoveryQueueFileName)));
+	if (queueDoc.isArray())
+	{
+		for (const QJsonValue& value : queueDoc.array())
+		{
+			const QJsonObject event = value.toObject();
+			if (event.value(QStringLiteral("competitionDayId")).toString() == competitionDayId &&
+				event.value(QStringLiteral("matId")).toString() == matId)
+			{
+				localPending = true;
+				break;
+			}
+		}
+	}
+
+	QJsonObject serverRecovery;
+	const bool hasServer = DownloadRecoveryState_(competitionDayId, matId, serverRecovery);
+	const QJsonObject serverSnapshot = serverRecovery.value(QStringLiteral("snapshot")).toObject();
+
+	QJsonObject selected;
+	QString source;
+	if (localPending && !localSnapshot.isEmpty())
+	{
+		selected = localSnapshot;
+		source = QStringLiteral("lokal, noch nicht vollständig synchronisiert");
+	}
+	else if (hasServer && !serverSnapshot.isEmpty())
+	{
+		selected = serverSnapshot;
+		source = QStringLiteral("Server");
+	}
+	else if (!localSnapshot.isEmpty())
+	{
+		selected = localSnapshot;
+		source = QStringLiteral("lokal");
+	}
+
+	if (selected.isEmpty())
+		return false;
+
+	QJsonDocument tournamentDoc(selected);
+	m_restoringCompetitionState = true;
+	int result = LoadTournamentFromJson_(tournamentDoc);
+	if (result == 1)
+		result = LoadTournamentFromJson_(tournamentDoc, true);
+	m_restoringCompetitionState = false;
+	if (result != 0)
+		return false;
+
+	if (source == QStringLiteral("Server"))
+	{
+		QJsonObject cached;
+		cached.insert(QStringLiteral("schema"), QStringLiteral("ipponboard-competition-recovery-1"));
+		cached.insert(QStringLiteral("competitionDayId"), competitionDayId);
+		cached.insert(QStringLiteral("matId"), matId);
+		cached.insert(QStringLiteral("terminalId"), TerminalId_());
+		cached.insert(QStringLiteral("updatedAt"), serverRecovery.value(QStringLiteral("updatedAt")).toString());
+		cached.insert(QStringLiteral("snapshot"), selected);
+		write_json_atomic(CompetitionStateFilePath_(competitionDayId, matId), QJsonDocument(cached));
+	}
+
+	if (showMessage)
+		QMessageBox::information(this, QStringLiteral("Kampftag geladen"),
+			QStringLiteral("Der letzte gespeicherte Stand wurde aus %1 wiederhergestellt.").arg(source));
+	return true;
+}
+
+void MainWindowTeam::SaveLastCompetitionSession_() const
+{
+	if (m_currentCompetitionDayId.isEmpty() || m_currentMatId.isEmpty())
+		return;
+	QJsonObject session;
+	session.insert(QStringLiteral("competitionDayId"), m_currentCompetitionDayId);
+	session.insert(QStringLiteral("matId"), m_currentMatId);
+	session.insert(QStringLiteral("updatedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+	write_json_atomic(QDir(runtime_data_dir()).filePath(QString::fromLatin1(LastSessionFileName)), QJsonDocument(session));
+}
+
 void MainWindowTeam::ClearCompetitionDayFilter_()
 {
 	m_currentCompetitionDayId.clear();
 	m_currentMatId.clear();
 	m_competitionDayTeamIds.clear();
+	QFile::remove(QDir(runtime_data_dir()).filePath(QString::fromLatin1(LastSessionFileName)));
 	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1").arg(QApplication::applicationVersion()));
+}
+
+bool MainWindowTeam::ApplyCompetitionDay_(const QJsonObject& day, const QString& matId, const QString& matName,
+	bool confirmDiscard, bool showRestoreMessage)
+{
+	QStringList teamIds;
+	for (const QJsonValue& value : day.value(QStringLiteral("teamIds")).toArray())
+	{
+		const QString id = value.toString();
+		if (!id.isEmpty() && !teamIds.contains(id))
+			teamIds.append(id);
+	}
+	if (teamIds.size() < 2)
+	{
+		if (confirmDiscard)
+			QMessageBox::warning(this, QStringLiteral("Kampftag laden"),
+				QStringLiteral("Dieser Kampftag enthält weniger als zwei teilnehmende Mannschaften."));
+		return false;
+	}
+
+	if (confirmDiscard && QMessageBox::question(
+		this,
+		QStringLiteral("Kampftag laden"),
+		QStringLiteral("Der aktuelle Turnierstand wird verworfen und der Kampftag geladen. Fortfahren?"),
+		QMessageBox::Yes,
+		QMessageBox::No) == QMessageBox::No)
+	{
+		return false;
+	}
+
+	m_currentCompetitionDayId = day.value(QStringLiteral("id")).toString();
+	m_currentMatId = matId;
+	m_competitionDayTeamIds = teamIds;
+	update_club_views();
+
+	const QString modeId = day.value(QStringLiteral("tournamentModeId")).toString();
+	const int modeIndex = modeId.isEmpty() ? -1 : m_pUi->comboBox_mode->findData(modeId);
+	if (modeIndex >= 0 && modeIndex != m_pUi->comboBox_mode->currentIndex())
+		m_pUi->comboBox_mode->setCurrentIndex(modeIndex);
+	else
+		on_comboBox_mode_currentIndexChanged(m_pUi->comboBox_mode->currentIndex());
+
+	const QString hostClubId = day.value(QStringLiteral("hostClubId")).toString();
+	const int hostIndex = m_pUi->comboBox_club_host->findData(hostClubId);
+	if (hostIndex >= 0)
+		m_pUi->comboBox_club_host->setCurrentIndex(hostIndex);
+
+	const QDate date = QDate::fromString(day.value(QStringLiteral("date")).toString(), Qt::ISODate);
+	if (date.isValid())
+		m_pUi->dateEdit->setDate(date);
+	m_pUi->lineEdit_location->setText(day.value(QStringLiteral("location")).toString());
+
+	const QString dayName = day.value(QStringLiteral("name")).toString();
+	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
+		.arg(QApplication::applicationVersion(), dayName, matName));
+
+	UpdateTeamFighterDelegates_();
+	update_score_screen();
+	SaveLastCompetitionSession_();
+	RestoreCompetitionState_(m_currentCompetitionDayId, m_currentMatId, showRestoreMessage);
+	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
+		.arg(QApplication::applicationVersion(), dayName, matName));
+	FlushRecoveryQueue_();
+	return true;
+}
+
+bool MainWindowTeam::RestoreLastCompetitionSession_()
+{
+	const QJsonDocument doc = read_json_document(QDir(runtime_data_dir()).filePath(QString::fromLatin1(LastSessionFileName)));
+	if (!doc.isObject())
+		return false;
+	const QJsonObject session = doc.object();
+	const QString dayId = session.value(QStringLiteral("competitionDayId")).toString();
+	const QString matId = session.value(QStringLiteral("matId")).toString();
+	if (dayId.isEmpty() || matId.isEmpty())
+		return false;
+
+	QJsonObject day;
+	for (const QJsonValue& value : m_masterCompetitionDays)
+	{
+		const QJsonObject candidate = value.toObject();
+		if (candidate.value(QStringLiteral("id")).toString() == dayId)
+		{
+			day = candidate;
+			break;
+		}
+	}
+	if (day.isEmpty())
+		return false;
+
+	QString matName = matId;
+	for (const QJsonValue& value : day.value(QStringLiteral("mats")).toArray())
+	{
+		const QJsonObject mat = value.toObject();
+		if (mat.value(QStringLiteral("id")).toString() == matId)
+		{
+			matName = mat.value(QStringLiteral("name")).toString(matId);
+			break;
+		}
+	}
+	if (matName == matId && matId.startsWith(QStringLiteral("mat-")))
+		matName = QStringLiteral("Matte %1").arg(matId.mid(4));
+
+	return ApplyCompetitionDay_(day, matId, matName, false, false);
 }
 
 bool MainWindowTeam::LoadCompetitionDay_()
 {
-	// Re-read the local synchronized snapshot so a freshly synchronized Kampftag is visible.
 	LoadMasterDataCache_();
 
 	QVector<QJsonObject> days;
@@ -985,21 +1383,6 @@ bool MainWindowTeam::LoadCompetitionDay_()
 	if (selectedIndex < 0 || selectedIndex >= days.size())
 		return false;
 	const QJsonObject day = days.at(selectedIndex);
-
-	QStringList teamIds;
-	for (const QJsonValue& value : day.value(QStringLiteral("teamIds")).toArray())
-	{
-		const QString id = value.toString();
-		if (!id.isEmpty() && !teamIds.contains(id))
-			teamIds.append(id);
-	}
-	if (teamIds.size() < 2)
-	{
-		QMessageBox::warning(this,
-			QStringLiteral("Kampftag laden"),
-			QStringLiteral("Dieser Kampftag enthält weniger als zwei teilnehmende Mannschaften."));
-		return false;
-	}
 
 	QString matId = QStringLiteral("mat-1");
 	QString matName = QStringLiteral("Matte 1");
@@ -1051,45 +1434,7 @@ bool MainWindowTeam::LoadCompetitionDay_()
 		matName = mats.first().value(QStringLiteral("name")).toString(matName);
 	}
 
-	if (QMessageBox::question(
-		this,
-		QStringLiteral("Kampftag laden"),
-		QStringLiteral("Der aktuelle Turnierstand wird verworfen und der Kampftag geladen. Fortfahren?"),
-		QMessageBox::Yes,
-		QMessageBox::No) == QMessageBox::No)
-	{
-		return false;
-	}
-
-	m_currentCompetitionDayId = day.value(QStringLiteral("id")).toString();
-	m_currentMatId = matId;
-	m_competitionDayTeamIds = teamIds;
-	update_club_views();
-
-	const QString modeId = day.value(QStringLiteral("tournamentModeId")).toString();
-	const int modeIndex = modeId.isEmpty() ? -1 : m_pUi->comboBox_mode->findData(modeId);
-	if (modeIndex >= 0 && modeIndex != m_pUi->comboBox_mode->currentIndex())
-		m_pUi->comboBox_mode->setCurrentIndex(modeIndex);
-	else
-		on_comboBox_mode_currentIndexChanged(m_pUi->comboBox_mode->currentIndex());
-
-	const QString hostClubId = day.value(QStringLiteral("hostClubId")).toString();
-	const int hostIndex = m_pUi->comboBox_club_host->findData(hostClubId);
-	if (hostIndex >= 0)
-		m_pUi->comboBox_club_host->setCurrentIndex(hostIndex);
-
-	const QDate date = QDate::fromString(day.value(QStringLiteral("date")).toString(), Qt::ISODate);
-	if (date.isValid())
-		m_pUi->dateEdit->setDate(date);
-	m_pUi->lineEdit_location->setText(day.value(QStringLiteral("location")).toString());
-
-	const QString dayName = day.value(QStringLiteral("name")).toString();
-	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
-		.arg(QApplication::applicationVersion(), dayName, matName));
-
-	UpdateTeamFighterDelegates_();
-	update_score_screen();
-	return true;
+	return ApplyCompetitionDay_(day, matId, matName, true, true);
 }
 
 void MainWindowTeam::UpdateFightNumber_()
