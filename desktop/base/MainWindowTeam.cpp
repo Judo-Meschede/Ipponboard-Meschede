@@ -149,7 +149,7 @@ namespace
 			WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
 		if (!session)
 			return false;
-		WinHttpSetTimeouts(session, 3000, 3000, 3000, 5000);
+		WinHttpSetTimeouts(session, 750, 1200, 1200, 1500);
 
 		HINTERNET connect = WinHttpConnect(session, L"test-liga.paul-meschede.de", INTERNET_DEFAULT_HTTPS_PORT, 0);
 		const std::wstring path = requestPath.toStdWString();
@@ -1114,12 +1114,15 @@ void MainWindowTeam::PersistCompetitionRecovery_(int completedRound, int complet
 	event.insert(QStringLiteral("snapshot"), snapshot.object());
 
 	FlushRecoveryQueue_();
-	if (UploadRecoveryEvent_(event))
-		return;
 
 	const QString queuePath = QDir(runtime_data_dir()).filePath(QString::fromLatin1(RecoveryQueueFileName));
 	QJsonDocument queueDoc = read_json_document(queuePath);
 	QJsonArray queue = queueDoc.isArray() ? queueDoc.array() : QJsonArray();
+
+	// Preserve event order: if older offline events are still pending, queue this one behind them.
+	// Otherwise try the new event immediately.
+	if (queue.isEmpty() && UploadRecoveryEvent_(event))
+		return;
 	bool replaced = false;
 	for (int i = 0; i < queue.size(); ++i)
 	{
@@ -1162,7 +1165,11 @@ bool MainWindowTeam::RestoreCompetitionState_(const QString& competitionDayId, c
 	}
 
 	QJsonObject serverRecovery;
-	const bool hasServer = DownloadRecoveryState_(competitionDayId, matId, serverRecovery);
+	bool hasServer = false;
+	// Startup with a local state must stay fast and fully offline-capable.
+	// Interactive loads and replacement terminals still check the server for the latest state.
+	if (!localPending && (showMessage || localSnapshot.isEmpty()))
+		hasServer = DownloadRecoveryState_(competitionDayId, matId, serverRecovery);
 	const QJsonObject serverSnapshot = serverRecovery.value(QStringLiteral("snapshot")).toObject();
 
 	QJsonObject selected;
