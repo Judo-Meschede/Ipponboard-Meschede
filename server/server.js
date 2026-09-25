@@ -261,7 +261,7 @@ async function buildRegistrationTemplate(type){
   cell.protection={locked:false};
   cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}};
  }
- const headers=isClub?['Name','Vorname','Jahrgang','M/W','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ const headers=isClub?['Name','Vorname','M/W','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
  headers.forEach((value,index)=>{
   const cell=ws.getRow(3).getCell(index+2);cell.value=value;registrationCellStyle(cell,{bold:true});
  });
@@ -271,8 +271,12 @@ async function buildRegistrationTemplate(type){
   for(let col=2;col<=maxCol;col++)registrationEditable(ws.getCell(row,col),fill);
  }
  for(let row=4;row<=43;row++){
-  ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
-  if(isClub)ws.getCell(row,5).dataValidation={type:'list',allowBlank:true,formulae:['"männlich,weiblich"'],showErrorMessage:true,errorTitle:'M/W',error:'Bitte männlich oder weiblich auswählen.'};
+  if(isClub){
+   ws.getCell(row,4).dataValidation={type:'list',allowBlank:true,formulae:['"männlich,weiblich"'],showErrorMessage:true,errorTitle:'M/W',error:'Bitte männlich oder weiblich auswählen.'};
+   ws.getCell(row,5).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+  }else{
+   ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+  }
  }
  const meta=wb.addWorksheet('_Ipponboard');
  meta.state='veryHidden';
@@ -339,7 +343,7 @@ function registrationWorksheet(wb,type){
  return wb.getWorksheet(expected)||wb.worksheets.find(ws=>ws.state!=='veryHidden'&&!ws.name.startsWith('_'))||wb.worksheets[0];
 }
 function validateRegistrationHeaders(ws,type){
- const expected=type==='club'?['Name','Vorname','Jahrgang','M/W','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ const expected=type==='club'?['Name','Vorname','M/W','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
  const actual=expected.map((_,i)=>excelCellText(ws.getCell(3,i+2)));
  const missing=expected.filter((name,i)=>normalizeKey(actual[i])!==normalizeKey(name));
  if(missing.length)throw new Error('Vorlage nicht erkannt. Erwartete Überschriften: '+expected.join(', '));
@@ -363,8 +367,8 @@ async function importRegistrationTemplate(type,buffer){
   if(!club)throw new Error('Verein konnte nicht eindeutig zugeordnet werden.');
   for(let rowNo=4;rowNo<=ws.rowCount;rowNo++){
    const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim();
-   const birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,4)));
-   const gender=registrationGender(excelCellText(ws.getCell(rowNo,5)));
+   const gender=registrationGender(excelCellText(ws.getCell(rowNo,4)));
+   const birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,5)));
    const ageClass=excelCellText(ws.getCell(rowNo,6)).trim(),weightClass=excelCellText(ws.getCell(rowNo,7)).trim(),kyu=excelCellText(ws.getCell(rowNo,8)).trim();
    if(!lastName&&!firstName&&!birthYear&&!gender&&!ageClass&&!weightClass&&!kyu)continue;
    if(!lastName||!firstName||!birthYear){warnings.push('Zeile '+rowNo+': Name, Vorname und Jahrgang sind Pflicht.');skipped++;continue}
