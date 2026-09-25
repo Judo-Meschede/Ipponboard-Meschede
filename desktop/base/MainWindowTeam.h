@@ -21,6 +21,7 @@ class QSettings;
 class QString;
 class QPoint;
 class ComboBoxDelegate;
+class QLabel;
 
 namespace Ui { class MainWindowTeam; }
 
@@ -88,6 +89,9 @@ private:
 	void UpdateTeamFighterDelegates_();
 	void UpdateFightNumber_();
 	void UpdateButtonText_();
+	void UpdateNextFightPreview_();
+	QString NextFightText_() const;
+	void UpdateTatamiHeader_();
 	void update_score_screen();
 	void WriteScoreToHtml_();
 	QByteArray GetTournamentAsJson_() const;
@@ -185,7 +189,10 @@ private:
 	QJsonArray m_masterRuleSets;
 	QString m_currentCompetitionDayId;
 	QString m_currentMatId;
+	QString m_currentTatamiName;
+	int m_currentTatamiCount;
 	QStringList m_competitionDayTeamIds;
+	QLabel* m_pNextFightLabel;
 	bool m_restoringCompetitionState;
 	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
