@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.29**
+`CURRENT_VERSION.txt`: **0.2.30**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.29**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.30**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.29
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.30
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1107,6 +1107,78 @@ Erforderliche Schritte:
 3. Browser hart neu laden.
 4. Blanko-Vereinsliste neu herunterladen.
 5. kein Windows-Build erforderlich.
+
+## 7aj. Meldelisten fest an Events gebunden + Einzelturniere – V0.2.30
+
+Architektur:
+- allgemeine Blanko-Meldelisten wurden aus `Import / Export` entfernt.
+- technische Admin-XLSX bleiben dort weiterhin getrennt bestehen.
+- Meldelisten werden jetzt ausschließlich aus dem konkreten Event heraus erzeugt und auch nur wieder in dieses Event importiert.
+- jede erzeugte Datei enthält intern Eventtyp und Event-ID; eine Datei eines anderen Wettkampfs wird beim Import abgelehnt.
+
+Mannschaftswettkampf / Kampftag:
+- im Detail eines gespeicherten Kampftags steht jetzt `Mannschaftsmeldung`.
+- dort: `Blanko XLSX herunterladen` und `Ausgefüllte XLSX einlesen`.
+- die Datei enthält fest Kampftag, Datum und Ort.
+- editierbar sind Mannschaft sowie die Kämpferfelder.
+- Spalten: Name, Vorname, Jahrgang, Verein.
+- importierte Mannschaft wird automatisch diesem Kampftag zugeordnet.
+- existierende Mannschaft wird mit dem importierten Kader aktualisiert; neue Mannschaft wird angelegt.
+
+Einzelturnier:
+- neuer Verwaltungsreiter `Einzelturniere`.
+- Felder:
+  - Wettkampf
+  - Datum
+  - Ausrichter
+  - Ort
+  - Altersklassen als Checkboxen
+  - Geschlecht männlich/weiblich als Checkboxen
+  - GK-Modus `offizielle Gewichtsklassen` oder `gewichtsnah`
+  - Regelwerk
+  - Status
+  - Bemerkungen
+- neues Einzelturnier startet standardmäßig mit männlich + weiblich und offiziellen Gewichtsklassen.
+- gespeicherte Einzelturniere haben direkt im Detail `Vereinsmeldung` mit Download/Import.
+
+Zielgerichtete Einzelturnier-XLSX:
+- fest eingetragen: Einzelturnier, Datum, konfigurierte AK, Geschlecht und GK-Modus.
+- Verein wird vom meldenden Verein im grauen Feld eingetragen.
+- bei offiziellen GK:
+  `Name | Vorname | M/W | Jahrgang | AK | GK | Kyu`.
+- bei `gewichtsnah`:
+  `Name | Vorname | M/W | Jahrgang | AK | Gewicht kg | Kyu`.
+- M/W-Dropdown enthält nur die im Event zugelassenen Geschlechter.
+- AK-Dropdown enthält nur die im Event ausgewählten Altersklassen.
+- bei offiziellen Gewichtsklassen wird die GK-Auswahl aus den gepflegten Gewichtsklassen passend zur Eventkonfiguration abgeleitet, soweit entsprechende Stammdaten vorhanden sind.
+- bei genau einem Geschlecht bzw. genau einer AK wird der Wert in den Zeilen bereits vorbelegt.
+- nur graue Felder sind bearbeitbar; Struktur und Eventkennung sind geschützt.
+
+Import Einzelturnier:
+- Personenzuordnung weiter über `Name + Vorname + Jahrgang + Verein`.
+- keine Passnummer erforderlich.
+- Mehrdeutigkeiten werden nicht geraten, sondern als Hinweis gemeldet.
+- Meldungen werden zusätzlich konkret am Einzelturnier gespeichert.
+- eventbezogene Werte M/W, AK, GK/Gewicht und Kyu bleiben an der jeweiligen Turniermeldung erhalten.
+- erneuter Import desselben Vereins ersetzt dessen bisherige Meldungen für dieses Einzelturnier vollständig; damit verschwinden auch zwischenzeitlich abgemeldete Kämpfer.
+- allgemeiner Wettkämpferbestand wird parallel angelegt/aktualisiert.
+
+Datenmodell:
+- neue Masterdata-Sammlung `individualTournaments`.
+- Löschen von Vereinen/Wettkämpfern/Regelwerken bereinigt die zugehörigen Einzelturnier-Verknüpfungen.
+- JSON-Backup/Sync enthält Einzelturniere automatisch.
+- alte Stammdaten ohne `individualTournaments` werden beim Laden automatisch um eine leere Sammlung ergänzt.
+
+Erforderliche Schritte:
+1. Linux-Testserver: `01_SSH_GITHUB_Stand_aktualisieren.txt`.
+2. danach `02_SSH_SERVER_Stand_installieren.txt`.
+3. Browser hart neu laden.
+4. Kampftag öffnen und eventbezogene Mannschaftsliste testen.
+5. neues Einzelturnier anlegen, AK/M/W/GK-Modus wählen und speichern.
+6. Einzelturnier erneut öffnen, Vereinsliste herunterladen, ausfüllen und gezielt wieder importieren.
+7. kein Windows-Build erforderlich.
+
+Noch nicht praktisch gegen Excel und den laufenden Testserver getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
