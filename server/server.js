@@ -217,6 +217,187 @@ async function importXlsx(type,buffer){
  return {ok:true,type,created,updated,deleted,skipped,warnings,revision:master.revision};
 }
 
+
+const REGISTRATION_TEMPLATE_VERSION='ipponboard-registration-template-1';
+const REGISTRATION_TEMPLATE_PASSWORD='Ipponboard-Meschede';
+function registrationCellStyle(cell,{fill=null,bold=false,center=false,fontSize=11}={}){
+ cell.font={name:'Aptos Narrow',size:fontSize,bold};
+ cell.alignment={vertical:'middle',horizontal:center?'center':'left'};
+ if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};
+ cell.border={
+  top:{style:'thin',color:{argb:'FF000000'}},
+  left:{style:'thin',color:{argb:'FF000000'}},
+  bottom:{style:'thin',color:{argb:'FF000000'}},
+  right:{style:'thin',color:{argb:'FF000000'}}
+ };
+}
+function registrationEditable(cell,fill){
+ registrationCellStyle(cell,{fill});
+ cell.protection={locked:false};
+}
+async function buildRegistrationTemplate(type){
+ if(!['club','team'].includes(type))throw new Error('invalid registration template type');
+ const wb=new ExcelJS.Workbook();wb.creator='Ipponboard-Meschede';wb.created=new Date();
+ const isClub=type==='club';
+ const ws=wb.addWorksheet(isClub?'Vereinsliste':'Mannschaftsliste',{views:[{showGridLines:false}]});
+ const maxCol=isClub?7:5;
+ ws.getColumn(1).width=5;
+ ws.getColumn(2).width=27;
+ ws.getColumn(3).width=27;
+ if(isClub){
+  ws.getColumn(4).width=12;ws.getColumn(5).width=11;ws.getColumn(6).width=11;ws.getColumn(7).width=11;
+ }else{
+  ws.getColumn(4).width=13;ws.getColumn(5).width=32;
+ }
+ ws.getRow(1).height=24;ws.getRow(2).height=10;ws.getRow(3).height=24;
+ for(let row=4;row<=43;row++)ws.getRow(row).height=21;
+
+ ws.getCell('B1').value=isClub?'Verein':'Mannschaft:';
+ registrationCellStyle(ws.getCell('B1'),{bold:true});
+ if(isClub)ws.mergeCells('C1:G1');else ws.mergeCells('C1:E1');
+ registrationEditable(ws.getCell('C1'),'FFD9D9D9');
+ for(let col=4;col<=maxCol;col++){
+  const cell=ws.getRow(1).getCell(col);
+  cell.protection={locked:false};
+  cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}};
+ }
+ const headers=isClub?['Name','Vorname','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ headers.forEach((value,index)=>{
+  const cell=ws.getRow(3).getCell(index+2);cell.value=value;registrationCellStyle(cell,{bold:true});
+ });
+ for(let row=4;row<=43;row++){
+  const no=ws.getCell(row,1);no.value=row-3;no.numFmt='00';registrationCellStyle(no,{center:true,fontSize:9});
+  const fill=row%2===0?'FFD9D9D9':'FFB7B7B7';
+  for(let col=2;col<=maxCol;col++)registrationEditable(ws.getCell(row,col),fill);
+ }
+ if(isClub){
+  ws.getCell('D4').dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+ }else{
+  for(let row=4;row<=43;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+ }
+ const meta=wb.addWorksheet('_Ipponboard');
+ meta.state='veryHidden';
+ meta.getCell('A1').value=REGISTRATION_TEMPLATE_VERSION;
+ meta.getCell('A2').value=type;
+ meta.getCell('A3').value='Nur graue Felder bearbeiten';
+ await ws.protect(REGISTRATION_TEMPLATE_PASSWORD,{
+  selectLockedCells:false,selectUnlockedCells:true,formatCells:false,formatColumns:false,formatRows:false,
+  insertColumns:false,insertRows:false,deleteColumns:false,deleteRows:false,sort:false,autoFilter:false
+ });
+ const filename=isClub?'Ipponboard_Blanko_Vereinsliste.xlsx':'Ipponboard_Blanko_Mannschaftsliste.xlsx';
+ return {buffer:Buffer.from(await wb.xlsx.writeBuffer()),filename};
+}
+function registrationBirthYear(value){
+ const text=String(value==null?'':value).trim();
+ const match=text.match(/\b(19|20)\d{2}\b/);
+ if(!match)return '';
+ const year=Number(match[0]);
+ return year>=1900&&year<=2100?String(year):'';
+}
+function fighterBirthYear(fighter){
+ const direct=registrationBirthYear(fighter&&fighter.birthYear);
+ if(direct)return direct;
+ return registrationBirthYear(fighter&&fighter.birthDate);
+}
+function registrationFindClub(name){
+ const key=normalizeKey(name);if(!key)return [];
+ return master.clubs.filter(c=>normalizeKey(c&&c.name)===key);
+}
+function registrationEnsureClub(name,warnings,context){
+ const clean=String(name||'').trim();if(!clean)return null;
+ const matches=registrationFindClub(clean);
+ if(matches.length===1)return matches[0];
+ if(matches.length>1){warnings.push(context+': Verein „'+clean+'“ ist mehrfach vorhanden.');return null}
+ const club=cleanRecord('clubs',{name:clean,shortName:clean,country:'GER',status:'active',notes:'Über Meldeliste angelegt'});
+ master.clubs.push(club);return club;
+}
+function registrationFighterMatches(firstName,lastName,birthYear,clubId){
+ const first=normalizeKey(firstName),last=normalizeKey(lastName),year=String(birthYear||'');
+ return master.fighters.filter(f=>
+  normalizeKey(f&&f.firstName)===first&&normalizeKey(f&&f.lastName)===last&&
+  fighterBirthYear(f)===year&&String(f&&f.clubId||'')===String(clubId||''));
+}
+function registrationUpsertFighter({firstName,lastName,birthYear,clubId,ageClass='',weightClass='',kyu=''},warnings,rowNo){
+ const matches=registrationFighterMatches(firstName,lastName,birthYear,clubId);
+ if(matches.length>1){warnings.push('Zeile '+rowNo+': '+firstName+' '+lastName+' ist nicht eindeutig zuzuordnen.');return {fighter:null,created:false,updated:false}}
+ if(matches.length===1){
+  const current=matches[0],idx=master.fighters.findIndex(f=>f.id===current.id);
+  const updated=cleanRecord('fighters',{...current,firstName,lastName,birthYear,clubId,
+   ageClass:ageClass||current.ageClass||'',weightClass:weightClass||current.weightClass||'',kyu:kyu||current.kyu||'',status:current.status||'active'});
+  master.fighters[idx]=updated;return {fighter:updated,created:false,updated:true};
+ }
+ const fighter=cleanRecord('fighters',{firstName,lastName,birthYear,clubId,ageClass,weightClass,kyu,status:'active',notes:'Über Meldeliste angelegt'});
+ master.fighters.push(fighter);return {fighter,created:true,updated:false};
+}
+function registrationWorksheet(wb,type){
+ const expected=type==='club'?'Vereinsliste':'Mannschaftsliste';
+ return wb.getWorksheet(expected)||wb.worksheets.find(ws=>ws.state!=='veryHidden'&&!ws.name.startsWith('_'))||wb.worksheets[0];
+}
+function validateRegistrationHeaders(ws,type){
+ const expected=type==='club'?['Name','Vorname','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ const actual=expected.map((_,i)=>excelCellText(ws.getCell(3,i+2)));
+ const missing=expected.filter((name,i)=>normalizeKey(actual[i])!==normalizeKey(name));
+ if(missing.length)throw new Error('Vorlage nicht erkannt. Erwartete Überschriften: '+expected.join(', '));
+}
+async function importRegistrationTemplate(type,buffer){
+ if(!['club','team'].includes(type))throw new Error('invalid registration template type');
+ const wb=new ExcelJS.Workbook();await wb.xlsx.load(buffer);
+ const meta=wb.getWorksheet('_Ipponboard');
+ if(meta){
+  const marker=excelCellText(meta.getCell('A1')),fileType=excelCellText(meta.getCell('A2'));
+  if(marker&&marker!==REGISTRATION_TEMPLATE_VERSION)throw new Error('Unbekannte Meldelisten-Version.');
+  if(fileType&&fileType!==type)throw new Error('Falscher Meldelist-Typ.');
+ }
+ const ws=registrationWorksheet(wb,type);if(!ws)throw new Error('Keine Tabelle gefunden.');
+ validateRegistrationHeaders(ws,type);
+ const warnings=[];let fightersCreated=0,fightersUpdated=0,skipped=0,clubsCreatedBefore=master.clubs.length;
+ if(type==='club'){
+  const clubName=excelCellText(ws.getCell('C1')).trim();
+  if(!clubName)throw new Error('Verein fehlt im grauen Feld oben.');
+  const club=registrationEnsureClub(clubName,warnings,'Vereinsliste');
+  if(!club)throw new Error('Verein konnte nicht eindeutig zugeordnet werden.');
+  for(let rowNo=4;rowNo<=ws.rowCount;rowNo++){
+   const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim();
+   const birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,4)));
+   const ageClass=excelCellText(ws.getCell(rowNo,5)).trim(),weightClass=excelCellText(ws.getCell(rowNo,6)).trim(),kyu=excelCellText(ws.getCell(rowNo,7)).trim();
+   if(!lastName&&!firstName&&!birthYear&&!ageClass&&!weightClass&&!kyu)continue;
+   if(!lastName||!firstName||!birthYear){warnings.push('Zeile '+rowNo+': Name, Vorname und Jahrgang sind Pflicht.');skipped++;continue}
+   const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id,ageClass,weightClass,kyu},warnings,rowNo);
+   if(result.created)fightersCreated++;else if(result.updated)fightersUpdated++;else skipped++;
+  }
+  saveMaster('Vereins-Meldeliste importiert: '+clubName);
+  return {ok:true,type,clubName,clubsCreated:master.clubs.length-clubsCreatedBefore,fightersCreated,fightersUpdated,skipped,warnings,revision:master.revision};
+ }
+ const teamName=excelCellText(ws.getCell('C1')).trim();
+ if(!teamName)throw new Error('Mannschaft fehlt im grauen Feld oben.');
+ const teamMatches=master.teams.filter(t=>normalizeKey(t&&t.name)===normalizeKey(teamName));
+ if(teamMatches.length>1)throw new Error('Mannschaft „'+teamName+'“ ist mehrfach vorhanden.');
+ const rosterIds=[],rosterClubIds=[];
+ for(let rowNo=4;rowNo<=ws.rowCount;rowNo++){
+  const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim();
+  const birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,4))),clubName=excelCellText(ws.getCell(rowNo,5)).trim();
+  if(!lastName&&!firstName&&!birthYear&&!clubName)continue;
+  if(!lastName||!firstName||!birthYear||!clubName){warnings.push('Zeile '+rowNo+': Name, Vorname, Jahrgang und Verein sind Pflicht.');skipped++;continue}
+  const club=registrationEnsureClub(clubName,warnings,'Zeile '+rowNo);
+  if(!club){skipped++;continue}
+  const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id},warnings,rowNo);
+  if(result.created)fightersCreated++;else if(result.updated)fightersUpdated++;else{skipped++;continue}
+  if(result.fighter&&!rosterIds.includes(result.fighter.id)){rosterIds.push(result.fighter.id);rosterClubIds.push(club.id)}
+ }
+ if(!rosterIds.length)throw new Error('Keine gültigen Wettkämpfer in der Mannschaftsliste gefunden.');
+ const uniqueClubIds=[...new Set(rosterClubIds)];
+ let teamCreated=false,teamUpdated=false,team;
+ if(teamMatches.length===1){
+  team=cleanRecord('teams',{...teamMatches[0],fighterIds:rosterIds,clubId:uniqueClubIds.length===1?uniqueClubIds[0]:(teamMatches[0].clubId||''),status:teamMatches[0].status||'active'});
+  master.teams[master.teams.findIndex(t=>t.id===team.id)]=team;teamUpdated=true;
+ }else{
+  team=cleanRecord('teams',{name:teamName,shortName:teamName,clubId:uniqueClubIds.length===1?uniqueClubIds[0]:'',fighterIds:rosterIds,status:'active',notes:'Über Mannschaftsliste angelegt'});
+  master.teams.push(team);teamCreated=true;
+ }
+ saveMaster('Mannschafts-Meldeliste importiert: '+teamName);
+ return {ok:true,type,teamName,clubsCreated:master.clubs.length-clubsCreatedBefore,fightersCreated,fightersUpdated,skipped,teamCreated,teamUpdated,rosterCount:rosterIds.length,warnings,revision:master.revision};
+}
+
 function recoveryKey(dayId,matId){return encodeURIComponent(String(dayId))+'::'+encodeURIComponent(String(matId))}
 function sanitizeRecoverySnapshot(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('invalid recovery snapshot');
@@ -294,6 +475,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(saveMatch&&req.method==='POST'){try{const b=await readBody(req);const item=saveRecord(saveMatch[1],b);return json(res,{ok:true,item,masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
  const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|weightClasses|tournamentModes|ruleSets)\/([^/]+)$/);
  if(delMatch&&req.method==='DELETE'){try{return json(res,{ok:deleteRecord(delMatch[1],decodeURIComponent(delMatch[2])),masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
+ const registrationMatch=u.pathname.match(/^\/api\/registration-template\/(club|team)$/);
+ if(registrationMatch&&req.method==='GET'){try{const result=await buildRegistrationTemplate(registrationMatch[1]);return sendBuffer(res,result.buffer,result.filename)}catch(e){return json(res,{error:e.message||'Meldeliste konnte nicht erstellt werden'},500)}}
+ if(registrationMatch&&req.method==='POST'){try{const buffer=await readRawBody(req);if(!buffer.length)return json(res,{error:'Leere XLSX-Datei'},400);return json(res,await importRegistrationTemplate(registrationMatch[1],buffer))}catch(e){return json(res,{error:e.message||'Meldeliste konnte nicht importiert werden'},400)}}
  const xlsxMatch=u.pathname.match(/^\/api\/xlsx\/(clubs|teams|fighters|competitionDays|weightClasses)$/);
  if(xlsxMatch&&req.method==='GET'){try{const type=xlsxMatch[1],buffer=await buildXlsx(type);return sendBuffer(res,buffer,XLSX_META[type].filename)}catch(e){return json(res,{error:e.message||'XLSX export failed'},500)}}
  if(xlsxMatch&&req.method==='POST'){try{const buffer=await readRawBody(req);if(!buffer.length)return json(res,{error:'Leere XLSX-Datei'},400);return json(res,await importXlsx(xlsxMatch[1],buffer))}catch(e){return json(res,{error:e.message||'XLSX import failed'},400)}}
