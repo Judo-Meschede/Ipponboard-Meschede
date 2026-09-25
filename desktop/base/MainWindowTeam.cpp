@@ -2458,7 +2458,7 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	painter.drawLine(QPointF(498.0,40.5), QPointF(498.0,92.0));
 	drawCenteredWrapped(QRectF(140, 46, 202, 40), m_pUi->comboBox_club_home->currentText(), 15, true, black);
 	drawCentered(QRectF(350, 54, 71, 24), QStringLiteral("WEISS"), 16, true, black);
-	drawCenteredWrapped(QRectF(506, 46, 200, 40), m_pUi->comboBox_club_guest->currentText(), 15, true, blue);
+	drawCenteredWrapped(QRectF(506, 46, 200, 40), m_pUi->comboBox_club_guest->currentText(), 15, true, black);
 	drawCentered(QRectF(714, 54, 72, 24), QStringLiteral("BLAU"), 16, true, blue);
 	drawCentered(QRectF(424, 44, 73, 14), QStringLiteral("Nordrhein-"), 10, false, black);
 	drawCentered(QRectF(424, 61, 73, 14), QStringLiteral("Westfälischer"), 10, false, black);
@@ -2578,6 +2578,12 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 	{
 		return (!fight.is_saved && value == 0) ? QString() : QString::number(value);
 	};
+	auto resultText = [](const Fight& fight, int value)
+	{
+		if (!fight.is_saved || value == 0)
+			return QString();
+		return QString::number(value);
+	};
 	auto timeText = [](const Fight& fight)
 	{
 		return !fight.is_saved ? QString() : fight.GetTotalTimeElapsedString();
@@ -2597,18 +2603,18 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 		drawCentered(QRectF(270,y,28,h), scoreText(fight,s1.Ippon()), 8, false, black);
 		drawCentered(QRectF(298,y,28,h), scoreText(fight,s1.Shido()), 8, false, black);
 		drawCentered(QRectF(326,y,28,h), scoreText(fight,s1.Hansokumake()), 8, false, black);
-		drawCentered(QRectF(354,y,34,h), scoreText(fight,fight.HasWon(FighterEnum::First)), 8, false, black);
-		drawCentered(QRectF(388,y,34,h), scoreText(fight,fight.GetScorePoints(FighterEnum::First)), 8, false, black);
+		drawCentered(QRectF(354,y,34,h), resultText(fight,fight.HasWon(FighterEnum::First)), 8, false, black);
+		drawCentered(QRectF(388,y,34,h), resultText(fight,fight.GetScorePoints(FighterEnum::First)), 8, false, black);
 
-		drawLeft(QRectF(426,y,152,h), fight.fighters[static_cast<int>(FighterEnum::Second)].name, 8, false, blue);
+		drawLeft(QRectF(426,y,152,h), fight.fighters[static_cast<int>(FighterEnum::Second)].name, 8, false, black);
 		const auto& s2=fight.GetScore2();
-		drawCentered(QRectF(582,y,28,h), scoreText(fight,s2.Yuko()), 8, false, blue);
-		drawCentered(QRectF(610,y,28,h), scoreText(fight,s2.Wazaari()), 8, false, blue);
-		drawCentered(QRectF(638,y,28,h), scoreText(fight,s2.Ippon()), 8, false, blue);
-		drawCentered(QRectF(666,y,28,h), scoreText(fight,s2.Shido()), 8, false, blue);
-		drawCentered(QRectF(694,y,28,h), scoreText(fight,s2.Hansokumake()), 8, false, blue);
-		drawCentered(QRectF(722,y,34,h), scoreText(fight,fight.HasWon(FighterEnum::Second)), 8, false, blue);
-		drawCentered(QRectF(756,y,30,h), scoreText(fight,fight.GetScorePoints(FighterEnum::Second)), 8, false, blue);
+		drawCentered(QRectF(582,y,28,h), scoreText(fight,s2.Yuko()), 8, false, black);
+		drawCentered(QRectF(610,y,28,h), scoreText(fight,s2.Wazaari()), 8, false, black);
+		drawCentered(QRectF(638,y,28,h), scoreText(fight,s2.Ippon()), 8, false, black);
+		drawCentered(QRectF(666,y,28,h), scoreText(fight,s2.Shido()), 8, false, black);
+		drawCentered(QRectF(694,y,28,h), scoreText(fight,s2.Hansokumake()), 8, false, black);
+		drawCentered(QRectF(722,y,34,h), resultText(fight,fight.HasWon(FighterEnum::Second)), 8, false, black);
+		drawCentered(QRectF(756,y,30,h), resultText(fight,fight.GetScorePoints(FighterEnum::Second)), 8, false, black);
 		drawCentered(QRectF(786,y,40,h), timeText(fight), 8, false, black);
 	};
 
@@ -2632,10 +2638,10 @@ void MainWindowTeam::PrintExactNwjv5_(QPrinter* p)
 		painter.fillRect(QRectF(389,y+1,32,13),Qt::white);
 		painter.fillRect(QRectF(723,y+1,32,13),Qt::white);
 		painter.fillRect(QRectF(757,y+1,28,13),Qt::white);
-		drawCentered(QRectF(354,y,34,15),QString::number(wins.first),9,true,black);
-		drawCentered(QRectF(388,y,34,15),QString::number(score.first),9,true,black);
-		drawCentered(QRectF(722,y,34,15),QString::number(wins.second),9,true,blue);
-		drawCentered(QRectF(756,y,30,15),QString::number(score.second),9,true,blue);
+		drawCentered(QRectF(354,y,34,15),wins.first==0?QString():QString::number(wins.first),9,true,black);
+		drawCentered(QRectF(388,y,34,15),score.first==0?QString():QString::number(score.first),9,true,black);
+		drawCentered(QRectF(722,y,34,15),wins.second==0?QString():QString::number(wins.second),9,true,black);
+		drawCentered(QRectF(756,y,30,15),score.second==0?QString():QString::number(score.second),9,true,black);
 	};
 	summary(317,wins1,score1);
 	summary(482,wins2,score2);
