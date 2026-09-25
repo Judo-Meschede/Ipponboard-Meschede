@@ -126,6 +126,8 @@ function cleanRecord(type,r){
   out.ageClasses=Array.isArray(out.ageClasses)?[...new Set(out.ageClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
   out.genders=Array.isArray(out.genders)?[...new Set(out.genders.map(String).filter(x=>['m','w'].includes(x)))]:[];
   out.weightMode=out.weightMode==='weight-near'?'weight-near':'official';
+  out.maleWeightClasses=Array.isArray(out.maleWeightClasses)?[...new Set(out.maleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
+  out.femaleWeightClasses=Array.isArray(out.femaleWeightClasses)?[...new Set(out.femaleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
   out.ruleSetId=String(out.ruleSetId||'');
   out.status=['planned','active','closed'].includes(out.status)?out.status:'planned';
   out.registrations=Array.isArray(out.registrations)?out.registrations.filter(x=>x&&x.fighterId).map(x=>({
@@ -274,18 +276,9 @@ function registrationUpsertFighter({firstName,lastName,birthYear,clubId,gender='
  const fighter=cleanRecord('fighters',{firstName,lastName,birthYear,clubId,gender,ageClass,weightClass,weight,kyu,status:'active',notes:'Über eventbezogene Meldeliste angelegt'});master.fighters.push(fighter);return {fighter,created:true,updated:false};
 }
 function eventByKind(kind,id){const arr=kind==='team'?master.competitionDays:kind==='individual'?master.individualTournaments:null;return arr&&arr.find(x=>String(x.id||'')===String(id||''))}
-function individualWeightOptions(event){
- const ageClasses=Array.isArray(event.ageClasses)?event.ageClasses.map(x=>normalizeKey(x).replace(/\s+/g,'')):[],genders=Array.isArray(event.genders)?event.genders:[];
- const allAgeTokens=[...new Set(master.weightClasses.map(w=>normalizeKey(w&&w.category)).flatMap(c=>(c.match(/(?:u|ü)\s*\d{1,2}/g)||[]).map(x=>x.replace(/\s+/g,''))))],result=[];
- for(const wc of master.weightClasses){
-  if(wc.status==='inactive'||!wc.name)continue;
-  const cat=normalizeKey(wc.category||''),catCompact=cat.replace(/\s+/g,''),ageMarkers=allAgeTokens.filter(token=>catCompact.includes(token));
-  if(ageMarkers.length&&ageClasses.length&&!ageClasses.some(a=>catCompact.includes(a)))continue;
-  const female=/weib|female|mäd|maed|\bf\b/.test(cat),male=/männ|maenn|male|jungen|\bm\b/.test(cat);
-  if(female&&!genders.includes('w'))continue;if(male&&!female&&!genders.includes('m'))continue;
-  if(!result.includes(String(wc.name)))result.push(String(wc.name));
- }
- return result;
+function individualWeightOptions(event,gender){
+ const key=gender==='w'?'femaleWeightClasses':'maleWeightClasses';
+ return [...new Set((Array.isArray(event&&event[key])?event[key]:[]).map(String).map(x=>x.trim()).filter(Boolean))];
 }
 function validationListFormula(values){const list=[...new Set((values||[]).map(String).filter(Boolean))].join(',');return list&&list.length<=240?'"'+list.replace(/"/g,'""')+'"':''}
 function setListValidation(cell,formula,title){if(formula)cell.dataValidation={type:'list',allowBlank:true,formulae:[formula],showErrorMessage:true,errorTitle:title,error:'Bitte einen Wert aus der Liste auswählen.'}}
@@ -309,11 +302,27 @@ async function buildEventRegistrationTemplate(kind,eventId){
  if(isTeam){
   for(let row=startRow;row<=endRow;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
  }else{
-  const genderValues=(event.genders||[]).length?(event.genders||[]).map(genderLabel):['männlich','weiblich'],ageValues=(event.ageClasses||[]).filter(Boolean),weightValues=event.weightMode==='official'?individualWeightOptions(event):[];
-  const refs={genders:validationListFormula(genderValues),ageClasses:validationListFormula(ageValues),weights:validationListFormula(weightValues)};
+  const genderCodes=(event.genders||[]).length?(event.genders||[]):['m','w'],genderValues=genderCodes.map(genderLabel),ageValues=(event.ageClasses||[]).filter(Boolean);
+  const refs={genders:validationListFormula(genderValues),ageClasses:validationListFormula(ageValues)};
+  let maleWeights=[],femaleWeights=[],listSheet=null;
+  if(event.weightMode==='official'){
+   maleWeights=individualWeightOptions(event,'m');femaleWeights=individualWeightOptions(event,'w');
+   if(genderCodes.includes('m')&&!maleWeights.length)throw new Error('Für männlich wurden im Einzelturnier keine Gewichtsklassen ausgewählt.');
+   if(genderCodes.includes('w')&&!femaleWeights.length)throw new Error('Für weiblich wurden im Einzelturnier keine Gewichtsklassen ausgewählt.');
+   listSheet=wb.addWorksheet('_GK_Listen');listSheet.state='veryHidden';
+   maleWeights.forEach((v,i)=>listSheet.getCell(i+1,1).value=v);
+   femaleWeights.forEach((v,i)=>listSheet.getCell(i+1,2).value=v);
+  }
   for(let row=startRow;row<=endRow;row++){
    setListValidation(ws.getCell(row,4),refs.genders,'M/W');ws.getCell(row,5).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};setListValidation(ws.getCell(row,6),refs.ageClasses,'AK');
-   if(event.weightMode==='official')setListValidation(ws.getCell(row,7),refs.weights,'GK');else ws.getCell(row,7).dataValidation={type:'decimal',operator:'between',allowBlank:true,formulae:[1,250],showErrorMessage:true,errorTitle:'Gewicht',error:'Bitte Gewicht in kg als Zahl eintragen.'};
+   if(event.weightMode==='official'){
+    const maleRef=maleWeights.length?("'_GK_Listen'!$A$1:$A$"+maleWeights.length):"";
+    const femaleRef=femaleWeights.length?("'_GK_Listen'!$B$1:$B$"+femaleWeights.length):"";
+    let formula='';
+    if(genderCodes.length===1)formula=genderCodes[0]==='w'?femaleRef:maleRef;
+    else formula='INDIRECT(IF($D'+row+'="männlich","'+maleRef+'","'+femaleRef+'"))';
+    if(formula)ws.getCell(row,7).dataValidation={type:'list',allowBlank:true,formulae:[formula],showErrorMessage:true,errorTitle:'GK',error:'Bitte eine für dieses Geschlecht freigegebene Gewichtsklasse auswählen.'};
+   }else ws.getCell(row,7).dataValidation={type:'decimal',operator:'between',allowBlank:true,formulae:[1,250],showErrorMessage:true,errorTitle:'Gewicht',error:'Bitte Gewicht in kg als Zahl eintragen.'};
    if(genderValues.length===1)ws.getCell(row,4).value=genderValues[0];if(ageValues.length===1)ws.getCell(row,6).value=ageValues[0];
   }
  }
@@ -353,7 +362,7 @@ async function importEventRegistrationTemplate(kind,eventId,buffer){
  }
  const clubName=excelCellText(ws.getCell('C2')).trim();if(!clubName)throw new Error('Verein fehlt im grauen Feld oben.');
  const club=registrationEnsureClub(clubName,warnings,'Einzelturnier');if(!club)throw new Error('Verein konnte nicht eindeutig zugeordnet werden.');
- const allowedGenders=(event.genders||[]).length?event.genders:['m','w'],allowedAges=(event.ageClasses||[]).map(String),allowedWeights=event.weightMode==='official'?individualWeightOptions(event):[],importedRegistrations=[];
+ const allowedGenders=(event.genders||[]).length?event.genders:['m','w'],allowedAges=(event.ageClasses||[]).map(String),importedRegistrations=[];
  for(let rowNo=9;rowNo<=ws.rowCount;rowNo++){
   const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim(),gender=registrationGender(excelCellText(ws.getCell(rowNo,4))),birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,5))),ageClass=excelCellText(ws.getCell(rowNo,6)).trim(),weightRaw=excelCellText(ws.getCell(rowNo,7)).trim(),kyu=excelCellText(ws.getCell(rowNo,8)).trim();
   if(!lastName&&!firstName&&!gender&&!birthYear&&!ageClass&&!weightRaw&&!kyu)continue;
@@ -361,7 +370,7 @@ async function importEventRegistrationTemplate(kind,eventId,buffer){
   if(!allowedGenders.includes(gender)){warnings.push('Zeile '+rowNo+': Geschlecht ist für dieses Turnier nicht vorgesehen.');skipped++;continue}
   if(allowedAges.length&&!allowedAges.some(x=>normalizeKey(x)===normalizeKey(ageClass))){warnings.push('Zeile '+rowNo+': AK „'+ageClass+'“ ist für dieses Turnier nicht vorgesehen.');skipped++;continue}
   let weightClass='',weight='';
-  if(event.weightMode==='official'){weightClass=weightRaw;if(allowedWeights.length&&!allowedWeights.some(x=>normalizeKey(x)===normalizeKey(weightClass))){warnings.push('Zeile '+rowNo+': GK „'+weightClass+'“ passt nicht zur Turnierkonfiguration.');skipped++;continue}}
+  if(event.weightMode==='official'){weightClass=weightRaw;const allowedWeights=individualWeightOptions(event,gender);if(!allowedWeights.some(x=>normalizeKey(x)===normalizeKey(weightClass))){warnings.push('Zeile '+rowNo+': GK „'+weightClass+'“ ist für '+genderLabel(gender)+' in diesem Turnier nicht freigegeben.');skipped++;continue}}
   else{const parsed=Number(String(weightRaw).replace(',','.'));if(!Number.isFinite(parsed)||parsed<=0){warnings.push('Zeile '+rowNo+': Gewicht ist keine gültige Zahl.');skipped++;continue}weight=parsed}
   const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id,gender,ageClass,weightClass,weight,kyu},warnings,rowNo);if(result.created)fightersCreated++;else if(result.updated)fightersUpdated++;else{skipped++;continue}
   if(result.fighter){const entry={fighterId:result.fighter.id,clubId:club.id,gender,ageClass,weightClass,weight,kyu,importedAt:new Date().toISOString(),source:'xlsx'},idx=importedRegistrations.findIndex(x=>x.fighterId===result.fighter.id);if(idx>=0)importedRegistrations[idx]=entry;else importedRegistrations.push(entry)}
