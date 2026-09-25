@@ -270,11 +270,7 @@ async function buildRegistrationTemplate(type){
   const fill=row%2===0?'FFD9D9D9':'FFB7B7B7';
   for(let col=2;col<=maxCol;col++)registrationEditable(ws.getCell(row,col),fill);
  }
- if(isClub){
-  ws.getCell('D4').dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
- }else{
-  for(let row=4;row<=43;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
- }
+ for(let row=4;row<=43;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
  const meta=wb.addWorksheet('_Ipponboard');
  meta.state='veryHidden';
  meta.getCell('A1').value=REGISTRATION_TEMPLATE_VERSION;
