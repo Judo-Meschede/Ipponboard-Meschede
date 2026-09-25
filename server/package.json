@@ -1,6 +1,6 @@
 {
   "name": "ipponboard-meschede",
-  "version": "0.2.27",
+  "version": "0.2.28",
   "private": true,
   "scripts": {
     "start": "node server.js"
