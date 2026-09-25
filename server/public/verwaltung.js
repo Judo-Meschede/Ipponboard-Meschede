@@ -10,7 +10,7 @@ const fields={
  clubs:[['name','Vereinsname','text'],['shortName','Kurzname','text'],['country','Land','text'],['status','Status','select',['active','inactive']],['website','Webseite','text'],['notes','Bemerkungen','textarea'],['logo','Logo','logo']],
  teams:[['name','Mannschaftsname','text'],['shortName','Kurzname','text'],['clubId','Verein','club'],['category','Kategorie / Liga','text'],['season','Saison','text'],['status','Status','select',['active','inactive']],['notes','Bemerkungen','textarea'],['fighterIds','Kader','roster']],
  fighters:[['firstName','Vorname','text'],['lastName','Nachname','text'],['clubId','Stammverein','club'],['passNumber','Pass-Nr.','text'],['licenseNumber','Lizenz-Nr.','text'],['birthDate','Geburtsdatum','date'],['gender','Geschlecht','select',['','m','w','divers']],['nationality','Nationalität','text'],['weight','Gewicht','number'],['status','Status','select',['active','inactive']],['notes','Bemerkungen','textarea']],
- competitionDays:[['name','Kampftag','text'],['date','Datum','date'],['hostClubId','Ausrichter','club'],['location','Ort','text'],['teamIds','Teilnehmende Mannschaften','teammulti'],['tournamentModeId','Wettkampfmodus','tournamentmode'],['matCount','Anzahl Matten','number'],['status','Status','select',['planned','active','closed']],['notes','Bemerkungen','textarea']],
+ competitionDays:[['name','Kampftag','text'],['date','Datum','date'],['hostClubId','Ausrichter','club'],['location','Ort','text'],['teamIds','Teilnehmende Mannschaften','teammulti'],['tournamentModeId','Wettkampfmodus','tournamentmode'],['matCount','Anzahl Tatami','number'],['status','Status','select',['planned','active','closed']],['notes','Bemerkungen','textarea']],
  weightClasses:[['name','Bezeichnung','text'],['category','Kategorie','text'],['minWeight','Min. kg','number'],['maxWeight','Max. kg','number'],['order','Reihenfolge','number'],['status','Status','select',['active','inactive']]],
  tournamentModes:[
   ['title','Titel','text'],
@@ -53,7 +53,7 @@ const columns={
  clubs:[['logo','Logo'],['name','Vereinsname'],['shortName','Kurzname'],['country','Land'],['status','Status']],
  teams:[['name','Mannschaft'],['clubId','Verein'],['category','Kategorie'],['season','Saison'],['roster','Kader']],
  fighters:[['lastName','Nachname'],['firstName','Vorname'],['clubId','Stammverein'],['passNumber','Pass-Nr.'],['nationality','Nationalität'],['status','Status']],
- competitionDays:[['date','Datum'],['name','Kampftag'],['hostClubId','Ausrichter'],['location','Ort'],['teams','Mannschaften'],['matCount','Matten'],['status','Status']],
+ competitionDays:[['date','Datum'],['name','Kampftag'],['hostClubId','Ausrichter'],['location','Ort'],['teams','Mannschaften'],['matCount','Tatami'],['status','Status']],
  weightClasses:[['order','#'],['name','Gewichtsklasse'],['category','Kategorie'],['minWeight','Min.'],['maxWeight','Max.'],['status','Status']],
  tournamentModes:[['title','Titel'],['subTitle','Untertitel'],['weights','Gewichtsklassen'],['nRounds','Runden'],['fightTimeInSeconds','Kampfzeit'],['listTemplate','Vorlage']],
  ruleSets:[['name','Regelwerk'],['status','Status'],['maxShidoCount','Shido'],['osaekomiYukoSeconds','Yuko-Zeit'],['osaekomiWazaariSeconds','Waza-ari-Zeit'],['osaekomiIpponSeconds','Ippon-Zeit']]
