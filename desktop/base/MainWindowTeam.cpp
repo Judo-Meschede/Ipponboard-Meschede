@@ -40,6 +40,7 @@
 #include <QFileInfo>
 #include <QFontDialog>
 #include <QInputDialog>
+#include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPrintPreviewDialog>
@@ -223,7 +224,10 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_masterRuleSets()
 	, m_currentCompetitionDayId()
 	, m_currentMatId()
+	, m_currentTatamiName()
+	, m_currentTatamiCount(1)
 	, m_competitionDayTeamIds()
+	, m_pNextFightLabel(nullptr)
 	, m_restoringCompetitionState(false)
 	, m_usingMasterData(false)
 	, m_modes()
@@ -387,8 +391,19 @@ void MainWindowTeam::Init()
 
 	m_pUi->actionAutoAdjustPoints->setChecked(m_pController->IsAutoAdjustPoints());
 
+	m_pNextFightLabel = new QLabel(m_pUi->tab_view);
+	m_pNextFightLabel->setObjectName(QStringLiteral("label_next_fight"));
+	m_pNextFightLabel->setMinimumHeight(42);
+	m_pNextFightLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+	m_pNextFightLabel->setWordWrap(false);
+	m_pNextFightLabel->setStyleSheet(QStringLiteral(
+		"QLabel { background-color:#111; color:#fff; border:1px solid #555; "
+		"padding:8px 12px; font-size:15px; font-weight:700; }"));
+	m_pUi->verticalLayout_6->insertWidget(2, m_pNextFightLabel);
+
 	UpdateFightNumber_();
 	UpdateButtonText_();
+	UpdateNextFightPreview_();
 
 	//m_pUi->button_pause->click();	// we start with pause!
 
@@ -598,6 +613,7 @@ void MainWindowTeam::update_views()
 
 	UpdateFightNumber_();
 	UpdateButtonText_();
+	UpdateNextFightPreview_();
 }
 
 bool MainWindowTeam::LoadMasterDataCache_()
@@ -1235,8 +1251,11 @@ void MainWindowTeam::ClearCompetitionDayFilter_()
 {
 	m_currentCompetitionDayId.clear();
 	m_currentMatId.clear();
+	m_currentTatamiName.clear();
+	m_currentTatamiCount = 1;
 	m_competitionDayTeamIds.clear();
 	QFile::remove(QDir(runtime_data_dir()).filePath(QString::fromLatin1(LastSessionFileName)));
+	UpdateTatamiHeader_();
 	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1").arg(QApplication::applicationVersion()));
 }
 
@@ -1270,6 +1289,13 @@ bool MainWindowTeam::ApplyCompetitionDay_(const QJsonObject& day, const QString&
 
 	m_currentCompetitionDayId = day.value(QStringLiteral("id")).toString();
 	m_currentMatId = matId;
+	m_currentTatamiCount = qMax(1, qMax(day.value(QStringLiteral("matCount")).toInt(1),
+		day.value(QStringLiteral("mats")).toArray().size()));
+	m_currentTatamiName = matName.trimmed();
+	if (m_currentTatamiName.startsWith(QStringLiteral("Matte "), Qt::CaseInsensitive))
+		m_currentTatamiName = QStringLiteral("Tatami ") + m_currentTatamiName.mid(6);
+	if (m_currentTatamiName.isEmpty() && matId.startsWith(QStringLiteral("mat-")))
+		m_currentTatamiName = QStringLiteral("Tatami %1").arg(matId.mid(4));
 	m_competitionDayTeamIds = teamIds;
 	update_club_views();
 
@@ -1291,15 +1317,18 @@ bool MainWindowTeam::ApplyCompetitionDay_(const QJsonObject& day, const QString&
 	m_pUi->lineEdit_location->setText(day.value(QStringLiteral("location")).toString());
 
 	const QString dayName = day.value(QStringLiteral("name")).toString();
+	UpdateTatamiHeader_();
 	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
-		.arg(QApplication::applicationVersion(), dayName, matName));
+		.arg(QApplication::applicationVersion(), dayName, m_currentTatamiName));
 
 	UpdateTeamFighterDelegates_();
 	update_score_screen();
 	SaveLastCompetitionSession_();
 	RestoreCompetitionState_(m_currentCompetitionDayId, m_currentMatId, showRestoreMessage);
+	UpdateTatamiHeader_();
+	UpdateNextFightPreview_();
 	setWindowTitle(QStringLiteral("Ipponboard-Meschede v%1 — %2 / %3")
-		.arg(QApplication::applicationVersion(), dayName, matName));
+		.arg(QApplication::applicationVersion(), dayName, m_currentTatamiName));
 	FlushRecoveryQueue_();
 	return true;
 }
@@ -1339,7 +1368,7 @@ bool MainWindowTeam::RestoreLastCompetitionSession_()
 		}
 	}
 	if (matName == matId && matId.startsWith(QStringLiteral("mat-")))
-		matName = QStringLiteral("Matte %1").arg(matId.mid(4));
+		matName = QStringLiteral("Tatami %1").arg(matId.mid(4));
 
 	return ApplyCompetitionDay_(day, matId, matName, false, false);
 }
@@ -1393,7 +1422,7 @@ bool MainWindowTeam::LoadCompetitionDay_()
 	const QJsonObject day = days.at(selectedIndex);
 
 	QString matId = QStringLiteral("mat-1");
-	QString matName = QStringLiteral("Matte 1");
+	QString matName = QStringLiteral("Tatami 1");
 	QStringList matLabels;
 	QVector<QJsonObject> mats;
 	for (const QJsonValue& value : day.value(QStringLiteral("mats")).toArray())
@@ -1403,7 +1432,7 @@ bool MainWindowTeam::LoadCompetitionDay_()
 			continue;
 		mats.append(mat);
 		matLabels.append(mat.value(QStringLiteral("name")).toString(
-			QStringLiteral("Matte %1").arg(mats.size())));
+			QStringLiteral("Tatami %1").arg(mats.size())));
 	}
 	if (mats.isEmpty())
 	{
@@ -1412,7 +1441,7 @@ bool MainWindowTeam::LoadCompetitionDay_()
 		{
 			QJsonObject mat;
 			mat.insert(QStringLiteral("id"), QStringLiteral("mat-%1").arg(i + 1));
-			mat.insert(QStringLiteral("name"), QStringLiteral("Matte %1").arg(i + 1));
+			mat.insert(QStringLiteral("name"), QStringLiteral("Tatami %1").arg(i + 1));
 			mats.append(mat);
 			matLabels.append(mat.value(QStringLiteral("name")).toString());
 		}
@@ -1422,8 +1451,8 @@ bool MainWindowTeam::LoadCompetitionDay_()
 	{
 		const QString selectedMat = QInputDialog::getItem(
 			this,
-			QStringLiteral("Matte wählen"),
-			QStringLiteral("Matte:"),
+			QStringLiteral("Tatami wählen"),
+			QStringLiteral("Tatami:"),
 			matLabels,
 			0,
 			false,
@@ -2352,6 +2381,7 @@ void MainWindowTeam::on_comboBox_mode_currentIndexChanged(int i)
 			connect(model.get(), &QAbstractItemModel::dataChanged, this,
 				[this, round](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>&)
 				{
+					UpdateNextFightPreview_();
 					if (m_restoringCompetitionState || m_currentCompetitionDayId.isEmpty() || m_currentMatId.isEmpty())
 						return;
 					if (!topLeft.isValid() || topLeft.row() != bottomRight.row() || topLeft.column() != bottomRight.column())
@@ -2367,15 +2397,14 @@ void MainWindowTeam::on_comboBox_mode_currentIndexChanged(int i)
 		}
 	}
 
-	// set mode text as mat label
-	m_MatLabel = modeDescription;
-	m_pPrimaryView->SetMat(modeDescription);
-	m_pSecondaryView->SetMat(modeDescription);
+	Q_UNUSED(modeDescription);
+	UpdateTatamiHeader_();
 
 	m_pPrimaryView->UpdateView();
 	m_pSecondaryView->UpdateView();
 
 	UpdateFightNumber_();
+	UpdateNextFightPreview_();
 }
 
 void MainWindowTeam::on_comboBox_club_host_currentIndexChanged(const QString& s)
