@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.20**
+`CURRENT_VERSION.txt`: **0.2.21**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.20**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.21**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.20
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.21
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -847,6 +847,25 @@ Erforderliche Schritte:
 4. kein Serverupdate erforderlich.
 
 Noch nicht unter Windows praktisch getestet.
+
+## 7aa. NWJV-Druck: alle Nullwerte leer – V0.2.21
+
+Korrektur zu V0.2.20:
+- `0 = leer` wurde zuvor nur auf die `=`-Spalten und Summen angewendet.
+- dadurch blieben in Yuko, Waza-ari, Ippon, Shido und Hansoku-make weiterhin zahlreiche Nullen sichtbar.
+
+V0.2.21:
+- in allen Ergebnisfeldern wird der Wert 0 leer gedruckt.
+- positive Wertungen bleiben sichtbar.
+- nicht abgeschlossene Kämpfe bleiben weiterhin ohne Ergebniswerte.
+- Namen und tatsächlich eingetragene Werte bleiben schwarz für gute SW-Druckbarkeit.
+- Summenfelder bleiben ebenfalls bei 0 leer.
+
+Erforderliche Schritte:
+1. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. V0.2.21 starten.
+3. 5er-NWJV-Druckvorschau prüfen.
+4. kein Serverupdate erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
