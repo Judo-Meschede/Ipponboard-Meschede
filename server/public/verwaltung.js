@@ -156,8 +156,8 @@ async function importXlsx(type,file){
   await load();
  }catch(e){toast('XLSX-Import: '+e.message)}
 }
-$('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
-$('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
+document.querySelectorAll('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
+document.querySelectorAll('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
 
 async function exportRegistrationTemplate(type){
  try{
@@ -187,8 +187,8 @@ async function importRegistrationTemplate(type,file){
   await load();
  }catch(e){toast('Meldelisten-Import: '+e.message)}
 }
-$('.registration-export').forEach(b=>b.onclick=()=>exportRegistrationTemplate(b.dataset.type));
-$('.registration-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importRegistrationTemplate(i.dataset.type,f);i.value=''});
+document.querySelectorAll('.registration-export').forEach(b=>b.onclick=()=>exportRegistrationTemplate(b.dataset.type));
+document.querySelectorAll('.registration-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importRegistrationTemplate(i.dataset.type,f);i.value=''});
 
 
 const nwjvBtn=$('#nwjvImportBtn');
