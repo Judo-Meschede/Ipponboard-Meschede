@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.25**
+`CURRENT_VERSION.txt`: **0.2.26**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.25**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.26**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.25
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.26
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1003,6 +1003,52 @@ Erforderliche Schritte:
 3. Zuordnung Heim/Gast zu den Mannschaftsnamen prüfen.
 
 Kein Serverupdate erforderlich.
+
+## 7af. Blanko-Meldelisten für Fremdvereine – V0.2.26
+
+Ziel:
+- die bisherigen technischen XLSX-Exporte bleiben für Admin-Datenpflege bestehen.
+- zusätzlich gibt es einfache Blanko-Meldelisten, die an Fremdvereine geschickt und vor dem Kampftag wieder importiert werden können.
+- Passnummern sind in diesen Meldelisten ausdrücklich nicht vorgesehen.
+
+Vereinsliste:
+- Blanko-Datei `Ipponboard_Blanko_Vereinsliste.xlsx`.
+- Kopf: Verein.
+- Spalten: Name, Vorname, Jahrgang, AK, GK, Kyu.
+- 40 vorbereitete Zeilen.
+- nur graue Felder sind entsperrt und bearbeitbar.
+- restliche Tabellenstruktur ist geschützt.
+- Jahrgang wird als vierstellige Zahl geprüft.
+
+Mannschaftsliste:
+- Blanko-Datei `Ipponboard_Blanko_Mannschaftsliste.xlsx`.
+- Kopf: Mannschaft.
+- Spalten: Name, Vorname, Jahrgang, Verein.
+- 40 vorbereitete Zeilen.
+- nur graue Felder sind entsperrt und bearbeitbar.
+- restliche Tabellenstruktur ist geschützt.
+- Jahrgang wird als vierstellige Zahl geprüft.
+
+Import:
+- neuer Bereich `Import / Export → Meldelisten für Fremdvereine`.
+- je Vorlage: `Blanko herunterladen` und `Ausgefüllte XLSX einlesen`.
+- Vereinsliste legt den Verein bei Bedarf an und importiert/aktualisiert die Wettkämpfer.
+- Mannschaftsliste legt fehlende Vereine und Wettkämpfer an und legt die Mannschaft neu an bzw. ersetzt bei einer bestehenden Mannschaft den Kader durch die importierte Liste.
+- eindeutige Personenzuordnung erfolgt ausschließlich über `Name + Vorname + Jahrgang + Verein`.
+- bei Mehrdeutigkeiten wird nicht geraten; die Zeile wird übersprungen und als Hinweis gemeldet.
+- bei Vereinslisten werden AK, GK und Kyu am Wettkämpfer gespeichert.
+- Jahrgang, AK, GK und Kyu sind danach auch im Wettkämpfer-Detail der Verwaltung sichtbar.
+- bestehende technische XLSX-Funktionen wurden in `Admin-Datenpflege (technisch)` umbenannt und bleiben separat bestehen.
+
+Erforderliche Schritte:
+1. Linux-Testserver: aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Browser neu laden.
+4. unter `Import / Export` beide Blanko-Dateien herunterladen und prüfen.
+5. testweise je eine Datei ausfüllen und wieder importieren.
+6. kein Windows-Build erforderlich.
+
+Noch nicht praktisch mit Excel/LibreOffice gegen den laufenden Testserver getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
