@@ -5,7 +5,8 @@ const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROO
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
-const APP_VERSION='0.2.18';
+const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
+const APP_VERSION='0.2.22';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -27,6 +28,9 @@ function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
 let master=readJson(MASTER_FILE,newMaster); if(!master.schema)master=newMaster();
+function newRecoveryStore(){return {schema:'ipponboard-competition-recovery-1',revision:0,updatedAt:new Date().toISOString(),entries:{}}}
+let recoveryStore=readJson(RECOVERY_FILE,newRecoveryStore);
+if(!recoveryStore||recoveryStore.schema!=='ipponboard-competition-recovery-1'||typeof recoveryStore.entries!=='object'||Array.isArray(recoveryStore.entries))recoveryStore=newRecoveryStore();
 function ensureMasterCollections(){
  for(const name of ['clubs','teams','fighters','competitionDays','weightClasses','tournamentModes'])if(!Array.isArray(master[name]))master[name]=[];
  if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();
@@ -34,6 +38,7 @@ function ensureMasterCollections(){
 ensureMasterCollections();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
 function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,master)}catch(e){console.error('Masterdata save failed',e)}}
+function saveRecoveryStore(){recoveryStore.revision=Number(recoveryStore.revision||0)+1;recoveryStore.updatedAt=new Date().toISOString();try{atomicWrite(RECOVERY_FILE,recoveryStore)}catch(e){console.error('Recovery save failed',e)}}
 function competitionToDay(raw){
  const matches=Array.isArray(raw&&raw.matches)?raw.matches:[];
  const teamIds=[...new Set([...(Array.isArray(raw&&raw.teamIds)?raw.teamIds:[]),...matches.flatMap(m=>[m&&m.homeTeamId,m&&m.guestTeamId])].map(String).filter(Boolean))];
@@ -118,6 +123,13 @@ function cleanRecord(type,r){
  return out;
 }
 function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);saveMaster(`${name} gespeichert`);return item}
+function deleteRecoveryForCompetitionDay(id){
+ let changed=false;
+ for(const [key,entry] of Object.entries(recoveryStore.entries||{})){
+  if(entry&&String(entry.competitionDayId||'')===String(id)){delete recoveryStore.entries[key];changed=true}
+ }
+ if(changed)saveRecoveryStore();
+}
 function deleteRecordNoSave(type,id){
  const name=collectionName(type);if(!name)throw new Error('invalid collection');
  const arr=master[name],before=arr.length;master[name]=arr.filter(x=>x.id!==id);
@@ -129,6 +141,7 @@ function deleteRecordNoSave(type,id){
   const remainingTeamIds=new Set(master.teams.map(t=>t.id));
   master.competitionDays.forEach(d=>{if(d.hostClubId===id)d.hostClubId='';d.teamIds=Array.isArray(d.teamIds)?d.teamIds.filter(tid=>remainingTeamIds.has(tid)):[]});
  }
+ if(name==='competitionDays')deleteRecoveryForCompetitionDay(id);
  if(name==='tournamentModes')master.competitionDays.forEach(d=>{if(d.tournamentModeId===id)d.tournamentModeId=''});
  if(name==='ruleSets')master.tournamentModes.forEach(m=>{if(m.rules===id)m.rules=''});
  return before!==master[name].length;
@@ -203,6 +216,33 @@ async function importXlsx(type,buffer){
  return {ok:true,type,created,updated,deleted,skipped,warnings,revision:master.revision};
 }
 
+function recoveryKey(dayId,matId){return encodeURIComponent(String(dayId))+'::'+encodeURIComponent(String(matId))}
+function sanitizeRecoverySnapshot(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('invalid recovery snapshot');
+ const snapshot=JSON.parse(JSON.stringify(raw));
+ const rounds=Array.isArray(snapshot.Rounds)?snapshot.Rounds:[];
+ for(const round of rounds){
+  if(!Array.isArray(round))continue;
+  for(const fight of round){
+   if(!fight||typeof fight!=='object'||fight.IsSaved===true)continue;
+   fight.SecondsElapsed=0;
+   fight.IsGoldenScore=false;
+   for(const key of ['FirstFighter','SecondFighter']){
+    if(!fight[key]||typeof fight[key]!=='object')fight[key]={};
+    for(const score of ['Ippon','Wazaari','Yuko','Shido','Hansokumake'])fight[key][score]=0;
+   }
+  }
+ }
+ snapshot.Rounds=rounds;
+ return snapshot;
+}
+function recoveryEventFight(snapshot,roundIndex,fightIndex){
+ const rounds=Array.isArray(snapshot&&snapshot.Rounds)?snapshot.Rounds:[];
+ const round=Number.isInteger(roundIndex)&&roundIndex>=0&&roundIndex<rounds.length&&Array.isArray(rounds[roundIndex])?rounds[roundIndex]:null;
+ if(!round||!Number.isInteger(fightIndex)||fightIndex<0||fightIndex>=round.length)return null;
+ const fight=round[fightIndex];
+ return fight&&typeof fight==='object'&&fight.IsSaved===true?fight:null;
+}
 function wsAccept(k){return crypto.createHash('sha1').update(k+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64')}
 function frame(o){const p=Buffer.from(JSON.stringify(o));if(p.length<126)return Buffer.concat([Buffer.from([0x81,p.length]),p]);const h=Buffer.alloc(4);h[0]=0x81;h[1]=126;h.writeUInt16BE(p.length,2);return Buffer.concat([h,p])}
 function broadcast(){for(const s of sockets){try{s.write(frame({type:'state',state}))}catch{}}}
@@ -220,6 +260,35 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   saveMaster('Wettkampfmodi gespeichert');
   return json(res,{ok:true,tournamentModes:master.tournamentModes,revision:master.revision,updatedAt:master.updatedAt});
  }catch(e){return json(res,{error:e.message||'bad request'},400)}}
+ const recoveryMatch=u.pathname.match(/^\/api\/competition-recovery\/([^/]+)\/([^/]+)$/);
+ if(recoveryMatch){
+  const competitionDayId=decodeURIComponent(recoveryMatch[1]),matId=decodeURIComponent(recoveryMatch[2]),key=recoveryKey(competitionDayId,matId);
+  if(req.method==='GET'){
+   const entry=recoveryStore.entries[key];
+   return entry?json(res,{ok:true,recovery:entry}):json(res,{error:'not found'},404);
+  }
+  if(req.method==='PUT'){
+   try{
+    if(!master.competitionDays.some(d=>String(d.id||'')===competitionDayId))return json(res,{error:'competition day not found'},404);
+    const body=await readBody(req);
+    const snapshot=sanitizeRecoverySnapshot(body&&body.snapshot);
+    const eventRound=Number.parseInt(body&&body.eventRound,10),eventFight=Number.parseInt(body&&body.eventFight,10);
+    const eventData=recoveryEventFight(snapshot,eventRound,eventFight);
+    if(!eventData)return json(res,{error:'event fight is not completed'},400);
+    const now=new Date().toISOString(),existing=recoveryStore.entries[key]||{};
+    const fights={...(existing.fights||{})},fightKey=eventRound+':'+eventFight,oldFight=fights[fightKey]||{};
+    fights[fightKey]={round:eventRound,fight:eventFight,revision:Number(oldFight.revision||0)+1,updatedAt:now,terminalId:String(body.terminalId||''),reason:String(body.reason||'completed'),data:eventData};
+    const entry={
+     competitionDayId,matId,revision:Number(existing.revision||0)+1,updatedAt:now,
+     terminalId:String(body.terminalId||''),lastReason:String(body.reason||'completed'),
+     lastEvent:{round:eventRound,fight:eventFight},fights,snapshot
+    };
+    recoveryStore.entries[key]=entry;saveRecoveryStore();
+    return json(res,{ok:true,recovery:entry});
+   }catch(e){return json(res,{error:e.message||'bad recovery request'},400)}
+  }
+  return json(res,{error:'method not allowed'},405);
+ }
  const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|weightClasses|tournamentModes|ruleSets)$/);
  if(saveMatch&&req.method==='POST'){try{const b=await readBody(req);const item=saveRecord(saveMatch[1],b);return json(res,{ok:true,item,masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
  const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|weightClasses|tournamentModes|ruleSets)\/([^/]+)$/);
@@ -240,5 +309,5 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
 });
 server.on('upgrade',(req,sock)=>{if(req.url!=='/ws'){sock.destroy();return}const k=req.headers['sec-websocket-key'];if(!k){sock.destroy();return}sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+wsAccept(k)+'\r\n\r\n');sockets.add(sock);sock.write(frame({type:'state',state}));sock.on('close',()=>sockets.delete(sock));sock.on('error',()=>sockets.delete(sock))});
 setInterval(()=>{const now=Date.now(),d=now-lastTick;lastTick=now;const f=currentFight();let ch=false;if(f.running&&f.timeMs>0){f.timeMs=Math.max(0,f.timeMs-d);if(!f.timeMs)f.running=false;ch=true}if(f.hold.active){f.hold.timeMs+=d;ch=true}if(ch)broadcast()},100);
-fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);
+fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);if(!fs.existsSync(RECOVERY_FILE))atomicWrite(RECOVERY_FILE,recoveryStore);
 server.listen(PORT,HOST,()=>{const a=server.address();const port=a&&typeof a==='object'?a.port:PORT;console.log(`Ipponboard-Meschede ${APP_VERSION} ${process.env.IPPONBOARD_DESKTOP?'Desktop':'Web'} ${HOST}:${port}`);if(process.send)process.send({type:'listening',port})});
