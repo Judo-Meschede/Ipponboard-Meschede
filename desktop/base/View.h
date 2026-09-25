@@ -8,6 +8,9 @@
 #include <QWidget>
 #include <QMouseEvent>
 
+class QLabel;
+class QTimer;
+
 #include "../core/iController.h"
 #include "../core/iView.h"
 #include "../core/Enums.h"
@@ -60,6 +63,7 @@ public:
 	void SetTextColorSecond(const QColor& color, const QColor& bgColor);
 	void SetMainClockColor(const QColor& fgColor, const QColor& bgColor);
 	void SetMat(const QString& mat) { m_mat = mat; }
+	void SetNextFightText(const QString& text);
 	void SetWeight(const QString& weight) { m_weight = weight; }  //TODO: move to controller !!
 	void SetCategory(const QString& cat) { m_category = cat; }  //TODO: move to controller !!
 
@@ -75,6 +79,7 @@ private slots:
 	void resetMainTimerValue_();
 	void setMainTimerValue_();
 	void blink_();
+	void scrollNextFightTicker_();
 
 private:
 	void update_ippon(Ipponboard::FighterEnum) const;
@@ -113,6 +118,11 @@ private:
 	bool m_drawIppon;
 	bool m_showInfoHeader;
 	QTimer* m_pBlinkTimer;
+	QTimer* m_pTickerTimer;
+	QWidget* m_pTickerContainer;
+	QLabel* m_pTickerLabel;
+	QString m_nextFightText;
+	int m_tickerX;
 };
 
 } // namespace Ipponboard
