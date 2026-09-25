@@ -1571,6 +1571,87 @@ void MainWindowTeam::UpdateButtonText_()
 	}
 }
 
+void MainWindowTeam::UpdateTatamiHeader_()
+{
+	QString header = m_pUi->comboBox_mode->currentText();
+	if (m_currentTatamiCount >= 2 && !m_currentTatamiName.isEmpty())
+		header = m_currentTatamiName;
+
+	m_MatLabel = header;
+	m_pPrimaryView->SetMat(header);
+	m_pSecondaryView->SetMat(header);
+}
+
+QString MainWindowTeam::NextFightText_() const
+{
+	if (!m_pController || m_pController->GetFightCount() <= 0 || m_pController->GetRoundCount() <= 0)
+		return QStringLiteral("Kein weiterer Kampf");
+
+	int round = m_pController->GetCurrentRound();
+	int fight = m_pController->GetCurrentFight();
+
+	if (fight + 1 < m_pController->GetFightCount())
+	{
+		++fight;
+	}
+	else if (round + 1 < m_pController->GetRoundCount())
+	{
+		++round;
+		fight = 0;
+	}
+	else
+	{
+		return QStringLiteral("Kein weiterer Kampf");
+	}
+
+	const Ipponboard::Fight& next = m_pController->GetFight(round, fight);
+	QString weight = next.weight.trimmed();
+	weight.replace(QRegularExpression(QStringLiteral("\\s*kg$"),
+		QRegularExpression::CaseInsensitiveOption), QStringLiteral(" kg"));
+
+	auto displayName = [](QString name)
+	{
+		name = name.trimmed();
+		if (name.isEmpty() || name == QStringLiteral("--"))
+			return QStringLiteral("noch offen");
+		return name;
+	};
+	auto displayClub = [](QString club)
+	{
+		club = club.trimmed();
+		return club.isEmpty() ? QStringLiteral("Team") : club;
+	};
+
+	const auto first = Ipponboard::FighterEnum::First;
+	const auto second = Ipponboard::FighterEnum::Second;
+	return QStringLiteral("%1 | %2: %3 – %4: %5")
+		.arg(weight,
+			displayClub(next.fighters[first].club),
+			displayName(next.fighters[first].name),
+			displayClub(next.fighters[second].club),
+			displayName(next.fighters[second].name));
+}
+
+void MainWindowTeam::UpdateNextFightPreview_()
+{
+	const QString next = NextFightText_();
+	const bool hasNext = next != QStringLiteral("Kein weiterer Kampf");
+	const QString operatorText = hasNext
+		? QStringLiteral("NÄCHSTER KAMPF: %1").arg(next)
+		: QStringLiteral("KEIN WEITERER KAMPF");
+
+	if (m_pNextFightLabel)
+		m_pNextFightLabel->setText(operatorText);
+
+	if (m_pSecondaryView)
+	{
+		const QString tickerText = hasNext
+			? QStringLiteral("Nächster Kampf: %1").arg(next)
+			: QStringLiteral("Kein weiterer Kampf");
+		m_pSecondaryView->SetNextFightText(tickerText);
+	}
+}
+
 void MainWindowTeam::update_score_screen()
 {
 	const QString home = m_pUi->comboBox_club_home->currentText();
