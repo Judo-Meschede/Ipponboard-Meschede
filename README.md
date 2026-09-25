@@ -5,7 +5,7 @@ Weiterentwicklung von Ipponboard für den Wettkampfbetrieb des SSV Meschede Judo
 ## Aktueller Stand
 
 Entwicklungsreihe: **V0.x**  
-Aktueller Stand: **V0.2.29**  
+Aktueller Stand: **V0.2.30**  
 Erste freigegebene Version: **V1.0**
 
 ## Repository-Struktur
