@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.26**
+`CURRENT_VERSION.txt`: **0.2.27**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.26**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.27**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.26
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.27
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1049,6 +1049,29 @@ Erforderliche Schritte:
 6. kein Windows-Build erforderlich.
 
 Noch nicht praktisch mit Excel/LibreOffice gegen den laufenden Testserver getestet.
+
+## 7ag. XLSX-Download-/Import-Buttons repariert – V0.2.27
+
+Praxistest V0.2.26:
+- weder die neuen Blanko-Vereins-/Mannschaftslisten noch die technischen Admin-XLSX reagierten beim Download.
+- Ursache: die vier Button-Gruppen wurden mit einem Einzelelement-Selektor angesprochen und anschließend mit `.forEach()` behandelt.
+- dadurch wurden die Klick-/Datei-Handler nicht gebunden.
+
+V0.2.27:
+- technische XLSX-Exportbuttons verwenden ausdrücklich `document.querySelectorAll(...)`.
+- technische XLSX-Importfelder ebenso.
+- Blanko-Meldelisten-Downloadbuttons ebenso.
+- Blanko-Meldelisten-Importfelder ebenso.
+- gespeicherten `main` anschließend erneut geprüft: alle vier neuen Selektoren vorhanden, alte fehlerhafte Varianten entfernt.
+- JavaScript-Syntax geprüft.
+
+Erforderliche Schritte:
+1. Linux-Testserver: aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Browser hart neu laden.
+4. zuerst `Blanko Vereinsliste` und `Blanko Mannschaftsliste` testen.
+5. danach einen technischen XLSX-Export testen.
+6. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
