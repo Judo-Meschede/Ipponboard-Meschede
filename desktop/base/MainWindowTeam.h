@@ -65,7 +65,18 @@ private:
 	void update_club_views();
 	bool LoadMasterDataCache_();
 	bool LoadCompetitionDay_();
+	bool ApplyCompetitionDay_(const QJsonObject& day, const QString& matId, const QString& matName, bool confirmDiscard, bool showRestoreMessage);
+	bool RestoreLastCompetitionSession_();
+	bool RestoreCompetitionState_(const QString& competitionDayId, const QString& matId, bool showMessage);
+	void SaveLastCompetitionSession_() const;
 	void ClearCompetitionDayFilter_();
+	QJsonDocument BuildRecoverySnapshot_() const;
+	void PersistCompetitionRecovery_(int completedRound, int completedFight, const QString& reason);
+	void FlushRecoveryQueue_();
+	bool UploadRecoveryEvent_(const QJsonObject& event, QJsonObject* response = nullptr) const;
+	bool DownloadRecoveryState_(const QString& competitionDayId, const QString& matId, QJsonObject& recovery) const;
+	QString CompetitionStateFilePath_(const QString& competitionDayId, const QString& matId) const;
+	QString TerminalId_() const;
 	void RegisterRuleSetsFromMasterData_();
 	bool LoadModesFromMasterData_(Ipponboard::TournamentMode::List& modes) const;
 	bool UploadTournamentModes_(const Ipponboard::TournamentMode::List& modes, QString& errorMsg);
@@ -173,6 +184,7 @@ private:
 	QString m_currentCompetitionDayId;
 	QString m_currentMatId;
 	QStringList m_competitionDayTeamIds;
+	bool m_restoringCompetitionState;
 	bool m_usingMasterData;
 	Ipponboard::TournamentMode::List m_modes;
 	QString GetRoundDataAsHtml(const Ipponboard::Fight& fight, int fightNo);
