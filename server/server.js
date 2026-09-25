@@ -240,12 +240,12 @@ async function buildRegistrationTemplate(type){
  const wb=new ExcelJS.Workbook();wb.creator='Ipponboard-Meschede';wb.created=new Date();
  const isClub=type==='club';
  const ws=wb.addWorksheet(isClub?'Vereinsliste':'Mannschaftsliste',{views:[{showGridLines:false}]});
- const maxCol=isClub?7:5;
+ const maxCol=isClub?8:5;
  ws.getColumn(1).width=5;
  ws.getColumn(2).width=27;
  ws.getColumn(3).width=27;
  if(isClub){
-  ws.getColumn(4).width=12;ws.getColumn(5).width=11;ws.getColumn(6).width=11;ws.getColumn(7).width=11;
+  ws.getColumn(4).width=12;ws.getColumn(5).width=14;ws.getColumn(6).width=11;ws.getColumn(7).width=11;ws.getColumn(8).width=11;
  }else{
   ws.getColumn(4).width=13;ws.getColumn(5).width=32;
  }
@@ -254,14 +254,14 @@ async function buildRegistrationTemplate(type){
 
  ws.getCell('B1').value=isClub?'Verein':'Mannschaft:';
  registrationCellStyle(ws.getCell('B1'),{bold:true});
- if(isClub)ws.mergeCells('C1:G1');else ws.mergeCells('C1:E1');
+ if(isClub)ws.mergeCells('C1:H1');else ws.mergeCells('C1:E1');
  registrationEditable(ws.getCell('C1'),'FFD9D9D9');
  for(let col=4;col<=maxCol;col++){
   const cell=ws.getRow(1).getCell(col);
   cell.protection={locked:false};
   cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}};
  }
- const headers=isClub?['Name','Vorname','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ const headers=isClub?['Name','Vorname','Jahrgang','M/W','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
  headers.forEach((value,index)=>{
   const cell=ws.getRow(3).getCell(index+2);cell.value=value;registrationCellStyle(cell,{bold:true});
  });
@@ -270,7 +270,10 @@ async function buildRegistrationTemplate(type){
   const fill=row%2===0?'FFD9D9D9':'FFB7B7B7';
   for(let col=2;col<=maxCol;col++)registrationEditable(ws.getCell(row,col),fill);
  }
- for(let row=4;row<=43;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+ for(let row=4;row<=43;row++){
+  ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
+  if(isClub)ws.getCell(row,5).dataValidation={type:'list',allowBlank:true,formulae:['"männlich,weiblich"'],showErrorMessage:true,errorTitle:'M/W',error:'Bitte männlich oder weiblich auswählen.'};
+ }
  const meta=wb.addWorksheet('_Ipponboard');
  meta.state='veryHidden';
  meta.getCell('A1').value=REGISTRATION_TEMPLATE_VERSION;
@@ -295,6 +298,12 @@ function fighterBirthYear(fighter){
  if(direct)return direct;
  return registrationBirthYear(fighter&&fighter.birthDate);
 }
+function registrationGender(value){
+ const key=normalizeKey(value);
+ if(['m','männlich','maennlich','male'].includes(key))return 'm';
+ if(['w','weiblich','female'].includes(key))return 'w';
+ return '';
+}
 function registrationFindClub(name){
  const key=normalizeKey(name);if(!key)return [];
  return master.clubs.filter(c=>normalizeKey(c&&c.name)===key);
@@ -313,16 +322,16 @@ function registrationFighterMatches(firstName,lastName,birthYear,clubId){
   normalizeKey(f&&f.firstName)===first&&normalizeKey(f&&f.lastName)===last&&
   fighterBirthYear(f)===year&&String(f&&f.clubId||'')===String(clubId||''));
 }
-function registrationUpsertFighter({firstName,lastName,birthYear,clubId,ageClass='',weightClass='',kyu=''},warnings,rowNo){
+function registrationUpsertFighter({firstName,lastName,birthYear,clubId,gender='',ageClass='',weightClass='',kyu=''},warnings,rowNo){
  const matches=registrationFighterMatches(firstName,lastName,birthYear,clubId);
  if(matches.length>1){warnings.push('Zeile '+rowNo+': '+firstName+' '+lastName+' ist nicht eindeutig zuzuordnen.');return {fighter:null,created:false,updated:false}}
  if(matches.length===1){
   const current=matches[0],idx=master.fighters.findIndex(f=>f.id===current.id);
   const updated=cleanRecord('fighters',{...current,firstName,lastName,birthYear,clubId,
-   ageClass:ageClass||current.ageClass||'',weightClass:weightClass||current.weightClass||'',kyu:kyu||current.kyu||'',status:current.status||'active'});
+   gender:gender||current.gender||'',ageClass:ageClass||current.ageClass||'',weightClass:weightClass||current.weightClass||'',kyu:kyu||current.kyu||'',status:current.status||'active'});
   master.fighters[idx]=updated;return {fighter:updated,created:false,updated:true};
  }
- const fighter=cleanRecord('fighters',{firstName,lastName,birthYear,clubId,ageClass,weightClass,kyu,status:'active',notes:'Über Meldeliste angelegt'});
+ const fighter=cleanRecord('fighters',{firstName,lastName,birthYear,clubId,gender,ageClass,weightClass,kyu,status:'active',notes:'Über Meldeliste angelegt'});
  master.fighters.push(fighter);return {fighter,created:true,updated:false};
 }
 function registrationWorksheet(wb,type){
@@ -330,7 +339,7 @@ function registrationWorksheet(wb,type){
  return wb.getWorksheet(expected)||wb.worksheets.find(ws=>ws.state!=='veryHidden'&&!ws.name.startsWith('_'))||wb.worksheets[0];
 }
 function validateRegistrationHeaders(ws,type){
- const expected=type==='club'?['Name','Vorname','Jahrgang','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
+ const expected=type==='club'?['Name','Vorname','Jahrgang','M/W','AK','GK','Kyu']:['Name','Vorname','Jahrgang','Verein'];
  const actual=expected.map((_,i)=>excelCellText(ws.getCell(3,i+2)));
  const missing=expected.filter((name,i)=>normalizeKey(actual[i])!==normalizeKey(name));
  if(missing.length)throw new Error('Vorlage nicht erkannt. Erwartete Überschriften: '+expected.join(', '));
@@ -355,10 +364,11 @@ async function importRegistrationTemplate(type,buffer){
   for(let rowNo=4;rowNo<=ws.rowCount;rowNo++){
    const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim();
    const birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,4)));
-   const ageClass=excelCellText(ws.getCell(rowNo,5)).trim(),weightClass=excelCellText(ws.getCell(rowNo,6)).trim(),kyu=excelCellText(ws.getCell(rowNo,7)).trim();
-   if(!lastName&&!firstName&&!birthYear&&!ageClass&&!weightClass&&!kyu)continue;
+   const gender=registrationGender(excelCellText(ws.getCell(rowNo,5)));
+   const ageClass=excelCellText(ws.getCell(rowNo,6)).trim(),weightClass=excelCellText(ws.getCell(rowNo,7)).trim(),kyu=excelCellText(ws.getCell(rowNo,8)).trim();
+   if(!lastName&&!firstName&&!birthYear&&!gender&&!ageClass&&!weightClass&&!kyu)continue;
    if(!lastName||!firstName||!birthYear){warnings.push('Zeile '+rowNo+': Name, Vorname und Jahrgang sind Pflicht.');skipped++;continue}
-   const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id,ageClass,weightClass,kyu},warnings,rowNo);
+   const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id,gender,ageClass,weightClass,kyu},warnings,rowNo);
    if(result.created)fightersCreated++;else if(result.updated)fightersUpdated++;else skipped++;
   }
   saveMaster('Vereins-Meldeliste importiert: '+clubName);
