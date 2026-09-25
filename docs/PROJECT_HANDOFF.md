@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.27**
+`CURRENT_VERSION.txt`: **0.2.28**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.27**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.28**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.27
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.28
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1072,6 +1072,24 @@ Erforderliche Schritte:
 4. zuerst `Blanko Vereinsliste` und `Blanko Mannschaftsliste` testen.
 5. danach einen technischen XLSX-Export testen.
 6. kein Windows-Build erforderlich.
+
+## 7ah. Vereins-Meldeliste um M/W ergänzt – V0.2.28
+
+Umgesetzt:
+- Vereinsliste enthält jetzt zusätzlich die Spalte `M/W`.
+- Reihenfolge: Name, Vorname, Jahrgang, M/W, AK, GK, Kyu.
+- `M/W` ist ein graues, entsperrtes Dropdownfeld.
+- zulässige Auswahl: `männlich` oder `weiblich`.
+- beim Import wird dies als `m` bzw. `w` am Wettkämpfer gespeichert.
+- vorhandene Datensätze behalten ihr bisheriges Geschlecht, wenn das Feld in der Meldeliste leer bleibt.
+- Mannschaftsliste bleibt unverändert.
+
+Erforderliche Schritte:
+1. Linux-Testserver: aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Browser hart neu laden.
+4. Blanko-Vereinsliste neu herunterladen und Dropdown prüfen.
+5. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
