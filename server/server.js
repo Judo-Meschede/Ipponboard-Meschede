@@ -275,12 +275,12 @@ function registrationUpsertFighter({firstName,lastName,birthYear,clubId,gender='
 }
 function eventByKind(kind,id){const arr=kind==='team'?master.competitionDays:kind==='individual'?master.individualTournaments:null;return arr&&arr.find(x=>String(x.id||'')===String(id||''))}
 function individualWeightOptions(event){
- const ageClasses=Array.isArray(event.ageClasses)?event.ageClasses.map(normalizeKey):[],genders=Array.isArray(event.genders)?event.genders:[];
- const allAgeTokens=[...new Set(master.weightClasses.map(w=>normalizeKey(w&&w.category)).flatMap(c=>(c.match(/u\s*\d{1,2}/g)||[]).map(x=>x.replace(/\s+/g,''))))],result=[];
+ const ageClasses=Array.isArray(event.ageClasses)?event.ageClasses.map(x=>normalizeKey(x).replace(/\s+/g,'')):[],genders=Array.isArray(event.genders)?event.genders:[];
+ const allAgeTokens=[...new Set(master.weightClasses.map(w=>normalizeKey(w&&w.category)).flatMap(c=>(c.match(/(?:u|ü)\s*\d{1,2}/g)||[]).map(x=>x.replace(/\s+/g,''))))],result=[];
  for(const wc of master.weightClasses){
   if(wc.status==='inactive'||!wc.name)continue;
   const cat=normalizeKey(wc.category||''),catCompact=cat.replace(/\s+/g,''),ageMarkers=allAgeTokens.filter(token=>catCompact.includes(token));
-  if(ageMarkers.length&&ageClasses.length&&!ageClasses.some(a=>catCompact.includes(a.replace(/\s+/g,''))))continue;
+  if(ageMarkers.length&&ageClasses.length&&!ageClasses.some(a=>catCompact.includes(a)))continue;
   const female=/weib|female|mäd|maed|\bf\b/.test(cat),male=/männ|maenn|male|jungen|\bm\b/.test(cat);
   if(female&&!genders.includes('w'))continue;if(male&&!female&&!genders.includes('m'))continue;
   if(!result.includes(String(wc.name)))result.push(String(wc.name));
