@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.21**
+`CURRENT_VERSION.txt`: **0.2.22**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.21**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.22**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.21
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.22
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -866,6 +866,60 @@ Erforderliche Schritte:
 2. V0.2.21 starten.
 3. 5er-NWJV-Druckvorschau prüfen.
 4. kein Serverupdate erforderlich.
+
+## 7ab. Kampftag-/Matten-Wiederaufnahme und Ergebnis-Sync – V0.2.22
+
+Ziel:
+- ein Kampftag erhält je Matte einen eigenen Wiederanlaufstand.
+- Wechsel zwischen Kampftagen darf den gespeicherten Ergebnisstand des anderen Kampftags nicht überschreiben.
+- laufende Einzelkämpfe werden weiterhin ausdrücklich nicht persistiert oder an den Server übertragen.
+
+Desktop lokal:
+- neuer portabler Runtime-Bereich direkt neben der Anwendung unter `runtime/`; wenn dieser Ort nicht beschreibbar ist, wird auf den normalen App-Datenbereich zurückgefallen.
+- je `competitionDayId + matId` entsteht eine eigene Wiederanlaufdatei unter `runtime/competition-states/`.
+- gespeichert wird ausschließlich an Abschluss-/Korrekturpunkten eines Einzelkampfs.
+- bei einem gespeicherten Snapshot werden alle noch nicht abgeschlossenen Kämpfe defensiv auf Ergebnis 0 / Zeit 0 / kein Golden Score bereinigt; Kämpferzuordnungen und Gewichtsklassen bleiben erhalten.
+- dadurch stellt ein Absturz mitten im laufenden Kampf höchstens den Stand vor Beginn dieses Kampfs wieder her; der laufende Kampf muss wie festgelegt manuell neu eingestellt werden.
+- der zuletzt verwendete Kampftag und die Matte werden unter `runtime/last-competition-session.json` gespeichert.
+- beim Programmstart wird dieser Kampftag automatisch wieder geöffnet; vorhandener lokaler Stand wird offline sofort wiederhergestellt.
+- die bisherige globale Autosave-Datei bleibt als Fallback für nicht kampftagbezogene lokale Turnierdateien erhalten.
+- `Turnier → Neu` und das Laden einer lokalen Turnierdatei lösen die Kampftagbindung wieder auf.
+
+Server:
+- neue persistente Datei `competition-recovery.json` im bestehenden Server-Datenverzeichnis.
+- neuer Endpunkt `GET/PUT /api/competition-recovery/:competitionDayId/:matId`.
+- Server speichert je Kampftag/Matte nur Snapshots, die durch einen abgeschlossenen oder korrigierten Einzelkampf ausgelöst wurden.
+- der Server bereinigt zusätzlich selbst alle nicht als abgeschlossen markierten Kämpfe auf Ergebnis/Zeit 0; damit können keine Live-Kampfstände versehentlich gespeichert werden.
+- zusätzlich wird pro Runde/Kampf ein Revisionsdatensatz für den zuletzt synchronisierten abgeschlossenen/korrigierten Kampf geführt.
+- Löschen eines Kampftags entfernt auch dessen Recovery-Daten.
+- vollständiger JSON-Serverexport enthält die Recovery-Daten ebenfalls.
+
+Offline-Sync:
+- jeder Abschluss/Korrektur wird zuerst lokal gespeichert.
+- bei erreichbarem Server wird das Ereignis anschließend sofort übertragen.
+- bei fehlender Verbindung landet es in `runtime/competition-sync-queue.json`.
+- mehrere Offline-Ereignisse bleiben in Reihenfolge erhalten.
+- Korrekturen desselben noch nicht synchronisierten Kampfs ersetzen dessen wartenden Eintrag durch die neueste Fassung.
+- bei wieder verfügbarer Verbindung wird die Warteschlange in Reihenfolge übertragen.
+- beim interaktiven erneuten Laden eines Kampftags wird bei vorhandener Verbindung der Serverstand berücksichtigt.
+- ein Ersatzrechner ohne lokale Datei kann damit den letzten serverseitig bestätigten Stand der Matte laden.
+- Terminal-ID wird je App-/USB-System unter `runtime/terminal-id.txt` erzeugt und mit jedem Sync übertragen.
+- Matten-Sperre/aktive Übernahme eines anderen Terminals ist weiterhin ein eigener nächster Schritt; die Terminal-ID-Grundlage ist jetzt vorhanden.
+
+Korrekturen:
+- `Weiter/Nächster` und `Vorheriger` speichern/synchronisieren den gerade abgeschlossenen Kampf.
+- wird ein bereits gespeicherter Tabellenwert nachträglich geändert, wird dies ebenfalls als Korrektur gespeichert/synchronisiert.
+- Änderungen eines noch laufenden, nicht gespeicherten Kampfs lösen keinen Recovery-Sync aus.
+
+Erforderliche Schritte:
+1. auf dem Linux-Testserver aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. anschließend unter Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+4. V0.2.22 testen: Kampftag A laden, mindestens einen Kampf abschließen, Kampftag B laden, danach A erneut laden. Der alte Stand von A muss wieder erscheinen.
+5. danach App schließen/neu öffnen: zuletzt verwendeter Kampftag/Matte muss automatisch wieder erscheinen.
+6. optional Netzwerk trennen, Kampf abschließen, Netzwerk wieder verbinden und einen weiteren Abschluss auslösen; die Offline-Warteschlange muss anschließend abgearbeitet werden.
+
+Noch nicht auf dem Linux-Testserver installiert und noch nicht unter Windows gebaut/praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
