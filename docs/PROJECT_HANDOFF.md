@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.18**
+`CURRENT_VERSION.txt`: **0.2.19**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.18**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.19**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.18
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.19
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -804,6 +804,29 @@ Erforderliche Schritte:
 3. Browser hart neu laden.
 4. `Kampftage → Mannschaften auswählen` und `Mannschaften → Kader auswählen` erneut testen.
 5. kein Windows-Build erforderlich.
+
+## 7y. Mattenmonitor zwingend Vollbild – V0.2.19
+
+Praxistest:
+- auf Windows war am zweiten Monitor die Taskleiste sichtbar.
+- Ursache: `update_screen_visibility()` verwendete echtes Vollbild nur dann, wenn keine feste Zweitmonitor-Größe gespeichert war.
+- bei vorhandener Größe wurde lediglich `resize()+show()` verwendet.
+
+V0.2.19:
+- der sekundäre Mattenmonitor wird immer mit echtem Vollbild geöffnet.
+- gespeicherte alte Größenwerte werden vollständig ignoriert.
+- die Monitor-Auswahl bleibt erhalten.
+- die Option für eine benutzerdefinierte Größe des Zweitmonitors ist in den Einstellungen deaktiviert.
+- beim Speichern wird für den Zweitmonitor künftig immer `0×0` bzw. Auto/Vollbild hinterlegt.
+- Ziel: keine Fensterrahmen, kein Desktop und keine Windows-Taskleiste auf dem Mattenmonitor.
+
+Erforderliche Schritte:
+1. Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. V0.2.19 starten.
+3. zweiten Monitor aktivieren und prüfen, dass die Mattenanzeige den Monitor vollständig inklusive Taskleistenbereich belegt.
+4. kein Serverupdate erforderlich.
+
+Noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
