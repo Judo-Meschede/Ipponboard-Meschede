@@ -173,7 +173,7 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 		m_pTickerLabel->setTextFormat(Qt::PlainText);
 		m_pTickerLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 		m_pTickerLabel->setStyleSheet(QStringLiteral("color: rgb(255,255,96); background: transparent;"));
-		m_pTickerLabel->setFont(QFont(QStringLiteral("Calibri"), 20, QFont::Bold));
+		m_pTickerLabel->setFont(QFont(QStringLiteral("Calibri"), 30, QFont::Bold));
 		m_pTickerLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 		ui->verticalLayout_main->addWidget(m_pTickerContainer, 0);
 
