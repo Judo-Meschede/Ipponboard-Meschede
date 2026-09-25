@@ -129,7 +129,9 @@ function cleanRecord(type,r){
   out.ruleSetId=String(out.ruleSetId||'');
   out.status=['planned','active','closed'].includes(out.status)?out.status:'planned';
   out.registrations=Array.isArray(out.registrations)?out.registrations.filter(x=>x&&x.fighterId).map(x=>({
-   fighterId:String(x.fighterId),clubId:String(x.clubId||''),importedAt:String(x.importedAt||''),source:String(x.source||'')
+   fighterId:String(x.fighterId),clubId:String(x.clubId||''),gender:['m','w'].includes(x.gender)?x.gender:'',ageClass:String(x.ageClass||''),
+   weightClass:String(x.weightClass||''),weight:x.weight===''||x.weight==null?'':Number(x.weight),kyu:String(x.kyu||''),
+   importedAt:String(x.importedAt||''),source:String(x.source||'')
   })):[];
  }
  return out;
@@ -285,11 +287,7 @@ function individualWeightOptions(event){
  }
  return result;
 }
-function addValidationListSheet(wb,{genders=[],ageClasses=[],weights=[]}){
- const ls=wb.addWorksheet('_Listen');ls.state='veryHidden';
- genders.forEach((v,i)=>ls.getCell(i+1,1).value=v);ageClasses.forEach((v,i)=>ls.getCell(i+1,2).value=v);weights.forEach((v,i)=>ls.getCell(i+1,3).value=v);
- return {genders:genders.length?"'_Listen'!$A$1:$A$"+genders.length:'',ageClasses:ageClasses.length?"'_Listen'!$B$1:$B$"+ageClasses.length:'',weights:weights.length?"'_Listen'!$C$1:$C$"+weights.length:''};
-}
+function validationListFormula(values){const list=[...new Set((values||[]).map(String).filter(Boolean))].join(',');return list&&list.length<=240?'"'+list.replace(/"/g,'""')+'"':''}
 function setListValidation(cell,formula,title){if(formula)cell.dataValidation={type:'list',allowBlank:true,formulae:[formula],showErrorMessage:true,errorTitle:title,error:'Bitte einen Wert aus der Liste auswählen.'}}
 function prepareProtectedSheet(ws,maxCol,startRow,endRow){
  for(let row=startRow;row<=endRow;row++){const no=ws.getCell(row,1);no.value=row-startRow+1;no.numFmt='00';registrationCellStyle(no,{center:true,fontSize:9});const fill=row%2===0?'FFD9D9D9':'FFB7B7B7';for(let col=2;col<=maxCol;col++)registrationEditable(ws.getCell(row,col),fill)}
@@ -312,7 +310,7 @@ async function buildEventRegistrationTemplate(kind,eventId){
   for(let row=startRow;row<=endRow;row++)ws.getCell(row,4).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};
  }else{
   const genderValues=(event.genders||[]).length?(event.genders||[]).map(genderLabel):['männlich','weiblich'],ageValues=(event.ageClasses||[]).filter(Boolean),weightValues=event.weightMode==='official'?individualWeightOptions(event):[];
-  const refs=addValidationListSheet(wb,{genders:genderValues,ageClasses:ageValues,weights:weightValues});
+  const refs={genders:validationListFormula(genderValues),ageClasses:validationListFormula(ageValues),weights:validationListFormula(weightValues)};
   for(let row=startRow;row<=endRow;row++){
    setListValidation(ws.getCell(row,4),refs.genders,'M/W');ws.getCell(row,5).dataValidation={type:'whole',operator:'between',allowBlank:true,formulae:[1900,2100],showErrorMessage:true,errorTitle:'Jahrgang',error:'Bitte vierstelligen Jahrgang eintragen.'};setListValidation(ws.getCell(row,6),refs.ageClasses,'AK');
    if(event.weightMode==='official')setListValidation(ws.getCell(row,7),refs.weights,'GK');else ws.getCell(row,7).dataValidation={type:'decimal',operator:'between',allowBlank:true,formulae:[1,250],showErrorMessage:true,errorTitle:'Gewicht',error:'Bitte Gewicht in kg als Zahl eintragen.'};
@@ -407,7 +405,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{masterdata:master,modes});
  if(u.pathname==='/api/sync/snapshot'&&req.method==='GET')return json(res,{ok:true,schema:master.schema,revision:master.revision,updatedAt:master.updatedAt,masterdata:master});
- if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
+ if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));master.individualTournaments=master.individualTournaments.map(x=>cleanRecord('individualTournaments',x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/merge'&&req.method==='POST'){try{const b=await readBody(req);const incoming=b&&b.masterdata?b.masterdata:b;return json(res,{ok:true,masterdata:mergeMasterData(incoming)})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/tournamentModes'&&req.method==='PUT'){try{
   const b=await readBody(req),items=Array.isArray(b&&b.tournamentModes)?b.tournamentModes:null;
