@@ -1619,20 +1619,19 @@ QString MainWindowTeam::NextFightText_() const
 			return QStringLiteral("noch offen");
 		return name;
 	};
-	auto displayClub = [](QString club)
-	{
-		club = club.trimmed();
-		return club.isEmpty() ? QStringLiteral("Team") : club;
-	};
-
 	const auto first = Ipponboard::FighterEnum::First;
 	const auto second = Ipponboard::FighterEnum::Second;
-	return QStringLiteral("%1 | %2: %3 – %4: %5")
+	QString homeTeam = m_pUi->comboBox_club_home->currentText().trimmed();
+	QString guestTeam = m_pUi->comboBox_club_guest->currentText().trimmed();
+	if (homeTeam.isEmpty()) homeTeam = QStringLiteral("Heim");
+	if (guestTeam.isEmpty()) guestTeam = QStringLiteral("Gast");
+
+	return QStringLiteral("%1 | %2 [%3] – %4 [%5]")
 		.arg(weight)
-		.arg(displayClub(next.fighters[first].club))
 		.arg(displayName(next.fighters[first].name))
-		.arg(displayClub(next.fighters[second].club))
-		.arg(displayName(next.fighters[second].name));
+		.arg(homeTeam)
+		.arg(displayName(next.fighters[second].name))
+		.arg(guestTeam);
 }
 
 void MainWindowTeam::UpdateNextFightPreview_()
