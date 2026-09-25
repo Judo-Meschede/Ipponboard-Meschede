@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.23**
+`CURRENT_VERSION.txt`: **0.2.24**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.23**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.24**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.23
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.24
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -956,6 +956,37 @@ Erforderliche Schritte:
 7. letzten Kampf der Hinrunde und letzten Kampf des gesamten Kampfs prüfen.
 
 Kein Serverupdate erforderlich. Noch nicht unter Windows praktisch getestet.
+
+## 7ad. Server nur noch Verwaltung – V0.2.24
+
+Architekturkorrektur:
+- die öffentliche Serveroberfläche ist kein App-/Downloadportal mehr.
+- auf dem Server finden Verwaltung, Stammdatenpflege, Sync/Recovery und technische Status-/API-Funktionen statt.
+- Einzel- und Mannschaftskämpfe laufen weiterhin ausschließlich in der Desktop-/USB-App.
+
+Serveroberfläche:
+- Aufruf von `/` leitet direkt auf `/verwaltung` um.
+- auch direkte Aufrufe von `/index.html` und `/transfer.html` werden im Serverbetrieb auf `/verwaltung` umgeleitet.
+- der lokale Desktop-Modus bleibt davon unberührt und kann seine interne Startseite weiterhin verwenden.
+- in der Verwaltung wurden die Links `Startseite`, `Einzelmodus` und `Mannschaftsmodus` entfernt.
+- Navigation enthält nur noch `Verwaltung` und den technischen Status.
+- sichtbare Verwaltungsbegriffe wurden von `Matten` auf `Tatami` umgestellt.
+- neue Tatami-Bezeichnungen werden serverseitig als `Tatami 1`, `Tatami 2` usw. erzeugt.
+- XLSX-Export verwendet `Anzahl Tatami`; beim Import wird aus Kompatibilitätsgründen weiterhin auch die alte Spalte `Anzahl Matten` akzeptiert.
+
+V0.2.24 enthält außerdem unverändert die Desktop-Funktionen aus V0.2.23:
+- Tatami-Kopfzeile ab zwei Tatami.
+- festes Feld `NÄCHSTER KAMPF` auf dem Bedienmonitor.
+- Laufzeile `Nächster Kampf` auf dem sekundären Tatami-Monitor.
+
+Erforderliche Schritte:
+1. Linux-Testserver: aktuelle `01_SSH_GITHUB_Stand_aktualisieren.txt` ausführen.
+2. danach `02_SSH_SERVER_Stand_installieren.txt` ausführen.
+3. Windows: `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+4. Browser: `https://test-liga.paul-meschede.de/` muss direkt die Verwaltung öffnen.
+5. Desktop: Tatami-Kopfzeile und beide Anzeigen für den nächsten Kampf prüfen.
+
+Noch nicht auf dem Testserver ausgerollt und noch nicht unter Windows praktisch getestet.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
