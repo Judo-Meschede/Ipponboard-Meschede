@@ -156,8 +156,39 @@ async function importXlsx(type,file){
   await load();
  }catch(e){toast('XLSX-Import: '+e.message)}
 }
-$$('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
-$$('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
+$('.xlsx-export').forEach(b=>b.onclick=()=>exportXlsx(b.dataset.type));
+$('.xlsx-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importXlsx(i.dataset.type,f);i.value=''});
+
+async function exportRegistrationTemplate(type){
+ try{
+  const r=await fetch('/api/registration-template/'+encodeURIComponent(type));
+  if(!r.ok){let msg=r.statusText;try{msg=(await r.json()).error||msg}catch{}throw new Error(msg)}
+  const blob=await r.blob(),disposition=r.headers.get('Content-Disposition')||'';
+  const match=disposition.match(/filename="?([^"]+)"?/i);
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=match?match[1]:'Ipponboard_Meldeliste.xlsx';a.click();URL.revokeObjectURL(a.href);
+ }catch(e){toast('Blanko-Liste: '+e.message)}
+}
+async function importRegistrationTemplate(type,file){
+ if(!file)return;
+ if(!confirm('Ausgefüllte Meldeliste einlesen? Vorhandene Personen werden nur bei eindeutiger Übereinstimmung aktualisiert.'))return;
+ try{
+  const r=await fetch('/api/registration-template/'+encodeURIComponent(type),{method:'POST',headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:file});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||r.statusText);
+  const parts=[];
+  if(j.clubName)parts.push('Verein: '+j.clubName);
+  if(j.teamName)parts.push('Mannschaft: '+j.teamName);
+  parts.push((j.fightersCreated||0)+' Wettkämpfer neu');
+  parts.push((j.fightersUpdated||0)+' aktualisiert');
+  if(j.teamCreated)parts.push('Mannschaft neu angelegt');
+  if(j.teamUpdated)parts.push('Kader aktualisiert');
+  toast('Meldeliste importiert');
+  const warnings=Array.isArray(j.warnings)?j.warnings:[];
+  alert(parts.join('\n')+(warnings.length?'\n\nHinweise:\n'+warnings.slice(0,25).join('\n')+(warnings.length>25?'\n… weitere Hinweise':''):''));
+  await load();
+ }catch(e){toast('Meldelisten-Import: '+e.message)}
+}
+$('.registration-export').forEach(b=>b.onclick=()=>exportRegistrationTemplate(b.dataset.type));
+$('.registration-import').forEach(i=>i.onchange=async()=>{const f=i.files&&i.files[0];await importRegistrationTemplate(i.dataset.type,f);i.value=''});
 
 
 const nwjvBtn=$('#nwjvImportBtn');
