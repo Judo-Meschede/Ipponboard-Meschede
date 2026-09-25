@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.30**
+`CURRENT_VERSION.txt`: **0.2.31**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.30**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.31**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.30
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.31
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1179,6 +1179,25 @@ Erforderliche Schritte:
 7. kein Windows-Build erforderlich.
 
 Noch nicht praktisch gegen Excel und den laufenden Testserver getestet.
+
+## 7ak. Altersklassen flexibel erweitert – V0.2.31
+
+Umgesetzt:
+- Altersklassen bei Einzelturnieren nicht mehr auf wenige Standardklassen begrenzt.
+- feste Auswahl enthält jetzt lückenlos `U9` bis `U21`.
+- zusätzlich `Erwachsene`, `Ü30`, `Ü35`, `Ü40`, `Ü45`.
+- weitere Sonderklassen können frei ergänzt werden, z. B. `U8`, `Ü50` oder veranstalterspezifische Bezeichnungen.
+- frei ergänzte Altersklassen werden direkt ausgewählt und am Einzelturnier gespeichert.
+- bereits vorhandene individuelle AK aus Wettkämpfern/Gewichtsklassen erscheinen weiterhin automatisch.
+- Geschlecht bleibt bewusst separat als männlich/weiblich und wird nicht als Altersklasse doppelt geführt.
+- Gewichtsklassenfilter erkennt jetzt neben U-Klassen auch Ü-Klassen in den Gewichtsklassen-Stammdaten.
+
+Erforderliche Schritte:
+1. Linux-Testserver: `01_SSH_GITHUB_Stand_aktualisieren.txt`.
+2. danach `02_SSH_SERVER_Stand_installieren.txt`.
+3. Browser hart neu laden.
+4. Einzelturnier öffnen und AK-Auswahl prüfen.
+5. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
