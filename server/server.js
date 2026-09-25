@@ -6,7 +6,7 @@ const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
-const APP_VERSION='0.2.22';
+const APP_VERSION='0.2.24';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -80,6 +80,7 @@ let lastTick=Date.now();const sockets=new Set();
 const ctype=f=>({'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.zip':'application/zip','.json':'application/json; charset=utf-8'}[path.extname(f).toLowerCase()]||'application/octet-stream');
 function sendFile(res,f){fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':ctype(f),'Cache-Control':'no-store'});res.end(d)})}
 function json(res,obj,code=200){res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(obj))}
+function redirect(res,location){res.writeHead(302,{'Location':location,'Cache-Control':'no-store'});res.end()}
 function readBody(req){return new Promise((resolve,reject)=>{let s='';req.on('data',d=>{s+=d;if(s.length>8e6){reject(new Error('body too large'));req.destroy()}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}});req.on('error',reject)})}
 function readRawBody(req,limit=20e6){return new Promise((resolve,reject)=>{const chunks=[];let size=0;req.on('data',d=>{size+=d.length;if(size>limit){reject(new Error('file too large'));req.destroy();return}chunks.push(d)});req.on('end',()=>resolve(Buffer.concat(chunks)));req.on('error',reject)})}
 function sendBuffer(res,buffer,filename){res.writeHead(200,{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+filename+'"','Cache-Control':'no-store'});res.end(buffer)}
@@ -117,7 +118,7 @@ function cleanRecord(type,r){
   out.matCount=count;
   out.mats=Array.from({length:count},(_,i)=>{
    const previous=existing[i]||{};
-   return {id:String(previous.id||`mat-${i+1}`),name:String(previous.name||`Matte ${i+1}`)};
+   return {id:String(previous.id||`mat-${i+1}`),name:String(previous.name||`Tatami ${i+1}`)};
   });
  }
  return out;
@@ -152,7 +153,7 @@ const XLSX_META={
  clubs:{filename:'Ipponboard_Vereine.xlsx',sheet:'Vereine',columns:[['ID','id',38],['Vereinsname','name',34],['Kurzname','shortName',22],['Land','country',12],['Status','status',14],['Webseite','website',30],['Bemerkungen','notes',40],['Logo','logo',32],['Löschen','_delete',12]]},
  teams:{filename:'Ipponboard_Mannschaften.xlsx',sheet:'Mannschaften',columns:[['ID','id',38],['Mannschaftsname','name',34],['Kurzname','shortName',22],['Verein-ID','clubId',38],['Verein','clubName',34],['Kategorie / Liga','category',28],['Saison','season',12],['Status','status',14],['Kader-IDs','fighterIds',55],['Kader Pass-Nr.','fighterPassNumbers',55],['Kader','fighterNames',55],['Bemerkungen','notes',40],['Löschen','_delete',12]]},
  fighters:{filename:'Ipponboard_Wettkaempfer.xlsx',sheet:'Wettkämpfer',columns:[['ID','id',38],['Vorname','firstName',22],['Nachname','lastName',26],['Verein-ID','clubId',38],['Verein','clubName',34],['Pass-Nr.','passNumber',20],['Lizenz-Nr.','licenseNumber',20],['Geburtsdatum','birthDate',16],['Geschlecht','gender',14],['Nationalität','nationality',20],['Gewicht','weight',12],['Status','status',14],['Bemerkungen','notes',40],['Löschen','_delete',12]]},
- competitionDays:{filename:'Ipponboard_Kampftage.xlsx',sheet:'Kampftage',columns:[['ID','id',38],['Kampftag','name',38],['Datum','date',16],['Ausrichter-ID','hostClubId',38],['Ausrichter','hostClubName',34],['Ort','location',34],['Mannschaft-IDs','teamIds',60],['Mannschaften','teamNames',60],['Wettkampfmodus-ID','tournamentModeId',38],['Wettkampfmodus','tournamentModeName',34],['Anzahl Matten','matCount',14],['Status','status',14],['Liga','league',28],['Saison','season',12],['Kampftag-Nr.','matchDay',14],['Bemerkungen','notes',45],['Löschen','_delete',12]]},
+ competitionDays:{filename:'Ipponboard_Kampftage.xlsx',sheet:'Kampftage',columns:[['ID','id',38],['Kampftag','name',38],['Datum','date',16],['Ausrichter-ID','hostClubId',38],['Ausrichter','hostClubName',34],['Ort','location',34],['Mannschaft-IDs','teamIds',60],['Mannschaften','teamNames',60],['Wettkampfmodus-ID','tournamentModeId',38],['Wettkampfmodus','tournamentModeName',34],['Anzahl Tatami','matCount',14],['Status','status',14],['Liga','league',28],['Saison','season',12],['Kampftag-Nr.','matchDay',14],['Bemerkungen','notes',45],['Löschen','_delete',12]]},
  weightClasses:{filename:'Ipponboard_Gewichtsklassen.xlsx',sheet:'Gewichtsklassen',columns:[['ID','id',38],['Bezeichnung','name',22],['Kategorie','category',24],['Min. kg','minWeight',12],['Max. kg','maxWeight',12],['Reihenfolge','order',14],['Status','status',14],['Löschen','_delete',12]]}
 };
 const byId=(arr,id)=>arr.find(x=>String(x&&x.id||'')===String(id||''));
@@ -196,7 +197,7 @@ function recordFromXlsx(type,r,warnings,rowNo){
  if(type==='clubs')return {id:r['ID'],name:r['Vereinsname'],shortName:r['Kurzname'],country:r['Land'],status:r['Status'],website:r['Webseite'],notes:r['Bemerkungen'],logo:r['Logo']};
  if(type==='teams'){const fighterIds=[...new Set(splitList(r['Kader-IDs']).filter(id=>byId(master.fighters,id)))];if(!fighterIds.length)for(const pass of splitList(r['Kader Pass-Nr.'])){const id=fighterByPass(pass);if(id&&!fighterIds.includes(id))fighterIds.push(id);else if(pass)warnings.push('Zeile '+rowNo+': Pass-Nr. „'+pass+'“ nicht eindeutig gefunden.')}return {id:r['ID'],name:r['Mannschaftsname'],shortName:r['Kurzname'],clubId:resolveClub(r['Verein-ID'],r['Verein'],warnings,rowNo),category:r['Kategorie / Liga'],season:r['Saison'],status:r['Status'],fighterIds,notes:r['Bemerkungen']}};
  if(type==='fighters')return {id:r['ID'],firstName:r['Vorname'],lastName:r['Nachname'],clubId:resolveClub(r['Verein-ID'],r['Verein'],warnings,rowNo),passNumber:r['Pass-Nr.'],licenseNumber:r['Lizenz-Nr.'],birthDate:r['Geburtsdatum'],gender:r['Geschlecht'],nationality:r['Nationalität'],weight:numValue(r['Gewicht']),status:r['Status'],notes:r['Bemerkungen']};
- if(type==='competitionDays'){let tournamentModeId=r['Wettkampfmodus-ID']||'';if(!tournamentModeId&&r['Wettkampfmodus'])tournamentModeId=uniqueByLabel(master.tournamentModes,r['Wettkampfmodus'],'title');return {id:r['ID'],name:r['Kampftag'],date:r['Datum'],hostClubId:resolveClub(r['Ausrichter-ID'],r['Ausrichter'],warnings,rowNo),location:r['Ort'],teamIds:resolveTeams(r['Mannschaft-IDs'],r['Mannschaften'],warnings,rowNo),tournamentModeId,matCount:numValue(r['Anzahl Matten'])||1,status:r['Status'],league:r['Liga'],season:r['Saison'],matchDay:numValue(r['Kampftag-Nr.']),notes:r['Bemerkungen']}};
+ if(type==='competitionDays'){let tournamentModeId=r['Wettkampfmodus-ID']||'';if(!tournamentModeId&&r['Wettkampfmodus'])tournamentModeId=uniqueByLabel(master.tournamentModes,r['Wettkampfmodus'],'title');return {id:r['ID'],name:r['Kampftag'],date:r['Datum'],hostClubId:resolveClub(r['Ausrichter-ID'],r['Ausrichter'],warnings,rowNo),location:r['Ort'],teamIds:resolveTeams(r['Mannschaft-IDs'],r['Mannschaften'],warnings,rowNo),tournamentModeId,matCount:numValue(r['Anzahl Tatami']||r['Anzahl Matten'])||1,status:r['Status'],league:r['Liga'],season:r['Saison'],matchDay:numValue(r['Kampftag-Nr.']),notes:r['Bemerkungen']}};
  if(type==='weightClasses')return {id:r['ID'],name:r['Bezeichnung'],category:r['Kategorie'],minWeight:numValue(r['Min. kg']),maxWeight:numValue(r['Max. kg']),order:numValue(r['Reihenfolge']),status:r['Status']};
  return {};
 }
@@ -301,7 +302,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(u.pathname==='/api/sync/status'&&req.method==='GET')return json(res,{online:true,configured:true,masterRevision:master.revision,updatedAt:master.updatedAt,pending:0});
  if(u.pathname==='/api/action'&&req.method==='POST'){try{const a=await readBody(req);applyAction(a);return json(res,{state})}catch{return json(res,{error:'bad request'},400)}}
  let rel;
- if(u.pathname==='/') rel=process.env.IPPONBOARD_DESKTOP?'index.html':'transfer.html';
+ const desktopMode=Boolean(process.env.IPPONBOARD_DESKTOP);
+ if(!desktopMode&&(u.pathname==='/'||u.pathname==='/index.html'||u.pathname==='/transfer.html'))return redirect(res,'/verwaltung');
+ if(u.pathname==='/') rel='index.html';
  else if(u.pathname==='/verwaltung'||u.pathname==='/verwaltung/') rel='verwaltung.html';
  else if(u.pathname==='/display') rel='display.html';
  else rel=u.pathname.slice(1);
