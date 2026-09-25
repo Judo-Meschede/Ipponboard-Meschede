@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.24**
+`CURRENT_VERSION.txt`: **0.2.25**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.24**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.25**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.24
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.25
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -987,6 +987,22 @@ Erforderliche Schritte:
 5. Desktop: Tatami-Kopfzeile und beide Anzeigen für den nächsten Kampf prüfen.
 
 Noch nicht auf dem Testserver ausgerollt und noch nicht unter Windows praktisch getestet.
+
+## 7ae. Laufzeile größer + Mannschaftsnamen – V0.2.25
+
+Umgesetzt:
+- Laufzeile auf dem sekundären Tatami-Monitor von 20 pt auf 30 pt Calibri Bold vergrößert.
+- der bisherige Platzhalter `Team` entfällt.
+- für den nächsten Kampf werden die tatsächlich ausgewählten Mannschaftsnamen verwendet.
+- Format: `-73 kg | Ronald Kontek [Judoka Rauxel] – Patrick Neitzel [TV Wickede]`.
+- dieselbe zentrale Textquelle versorgt weiterhin auch das feste Feld `NÄCHSTER KAMPF` auf dem Bedienmonitor.
+
+Erforderliche Schritte:
+1. nur Windows `03_POWERSHELL_WINDOWS_App_bauen.txt` ausführen.
+2. Laufzeile auf Lesbarkeit prüfen.
+3. Zuordnung Heim/Gast zu den Mannschaftsnamen prüfen.
+
+Kein Serverupdate erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
