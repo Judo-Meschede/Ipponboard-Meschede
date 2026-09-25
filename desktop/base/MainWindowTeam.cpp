@@ -180,7 +180,8 @@ namespace
 				}
 				if (available == 0)
 					break;
-				QByteArray chunk(static_cast<int>(available), Qt::Uninitialized);
+				QByteArray chunk;
+				chunk.resize(static_cast<int>(available));
 				DWORD read = 0;
 				if (!WinHttpReadData(request, chunk.data(), available, &read))
 				{
