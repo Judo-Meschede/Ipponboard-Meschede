@@ -67,10 +67,10 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.31**
+`CURRENT_VERSION.txt`: **0.2.32**
 
 Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.31**
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.32**
 
 Server:
 - aktueller Server-Source liegt in `server/`
@@ -197,7 +197,7 @@ Webverwaltung:
 `server/public/verwaltung.html`
 `server/public/verwaltung.js`
 
-## 7a. Desktop-Mannschaftsmodus – Stand V0.2.31
+## 7a. Desktop-Mannschaftsmodus – Stand V0.2.32
 
 Neu umgesetzt:
 - Desktop liest den lokalen Offline-Snapshot `data/masterdata.json`.
@@ -1198,6 +1198,44 @@ Erforderliche Schritte:
 3. Browser hart neu laden.
 4. Einzelturnier öffnen und AK-Auswahl prüfen.
 5. kein Windows-Build erforderlich.
+
+## 7al. Gewichtsklassen je Einzelturnier manuell festlegen – V0.2.32
+
+Korrektur:
+- automatische Ableitung angeblich „offizieller“ Gewichtsklassen aus AK/Geschlecht wurde entfernt.
+- das System entscheidet nicht mehr selbst, welche GK zu U17, U15 usw. gehören.
+- dadurch werden auch Sonderturniere und abweichende Ausschreibungen korrekt abbildbar.
+
+Einzelturnier:
+- bei GK-Modus `offizielle Gewichtsklassen` erscheint jetzt eine eigene Auswahl für:
+  - männliche Gewichtsklassen
+  - weibliche Gewichtsklassen
+- Auswahl erfolgt per Checkbox.
+- zusätzlicher freier Eintrag je Geschlecht erlaubt Sonderklassen, z. B. `+83 kg`.
+- der Auswahlpool enthält verbreitete Gewichtsstufen sowie alle bereits gepflegten/benutzten Gewichtsklassen.
+- ausgewählt wird ausschließlich das, was dieses konkrete Turnier tatsächlich vorsieht.
+- bei `gewichtsnah` bleibt die GK-Auswahl ausgeblendet.
+- ein Einzelturnier mit ausgewähltem Geschlecht lässt sich im Modus `offizielle Gewichtsklassen` erst speichern, wenn für dieses Geschlecht mindestens eine GK ausgewählt wurde.
+
+Vereinsmeldung XLSX:
+- AK erzeugt keine Gewichtsklasse mehr automatisch.
+- männliche und weibliche GK werden getrennt aus der Eventkonfiguration übernommen.
+- steht in einer Zeile `männlich`, bietet das GK-Dropdown nur die beim Turnier für männlich freigegebenen Klassen.
+- steht dort `weiblich`, werden nur die weiblich freigegebenen Klassen angeboten.
+- bei Turnieren mit nur einem Geschlecht wird dessen GK-Liste direkt verwendet.
+- Import akzeptiert ebenfalls nur die für das jeweilige Geschlecht im konkreten Turnier freigegebenen GK.
+
+Datenmodell:
+- Einzelturniere speichern jetzt zusätzlich `maleWeightClasses` und `femaleWeightClasses`.
+- bestehende Einzelturniere werden kompatibel mit leeren Listen geladen und müssen einmal ergänzt werden, bevor eine neue Vereinsmeldung im Modus `offizielle Gewichtsklassen` erzeugt wird.
+
+Erforderliche Schritte:
+1. Linux-Testserver: `01_SSH_GITHUB_Stand_aktualisieren.txt`.
+2. danach `02_SSH_SERVER_Stand_installieren.txt`.
+3. Browser hart neu laden.
+4. bestehendes Einzelturnier öffnen und die vorgesehenen männlichen/weiblichen GK auswählen.
+5. Vereinsliste neu herunterladen und geschlechtsabhängige GK-Auswahl prüfen.
+6. kein Windows-Build erforderlich.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
