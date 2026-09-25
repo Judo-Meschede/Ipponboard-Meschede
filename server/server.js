@@ -353,7 +353,7 @@ async function importEventRegistrationTemplate(kind,eventId,buffer){
  }
  const clubName=excelCellText(ws.getCell('C2')).trim();if(!clubName)throw new Error('Verein fehlt im grauen Feld oben.');
  const club=registrationEnsureClub(clubName,warnings,'Einzelturnier');if(!club)throw new Error('Verein konnte nicht eindeutig zugeordnet werden.');
- const allowedGenders=(event.genders||[]).length?event.genders:['m','w'],allowedAges=(event.ageClasses||[]).map(String),allowedWeights=event.weightMode==='official'?individualWeightOptions(event):[];let registrationsAdded=0;
+ const allowedGenders=(event.genders||[]).length?event.genders:['m','w'],allowedAges=(event.ageClasses||[]).map(String),allowedWeights=event.weightMode==='official'?individualWeightOptions(event):[],importedRegistrations=[];
  for(let rowNo=9;rowNo<=ws.rowCount;rowNo++){
   const lastName=excelCellText(ws.getCell(rowNo,2)).trim(),firstName=excelCellText(ws.getCell(rowNo,3)).trim(),gender=registrationGender(excelCellText(ws.getCell(rowNo,4))),birthYear=registrationBirthYear(excelCellText(ws.getCell(rowNo,5))),ageClass=excelCellText(ws.getCell(rowNo,6)).trim(),weightRaw=excelCellText(ws.getCell(rowNo,7)).trim(),kyu=excelCellText(ws.getCell(rowNo,8)).trim();
   if(!lastName&&!firstName&&!gender&&!birthYear&&!ageClass&&!weightRaw&&!kyu)continue;
@@ -364,10 +364,12 @@ async function importEventRegistrationTemplate(kind,eventId,buffer){
   if(event.weightMode==='official'){weightClass=weightRaw;if(allowedWeights.length&&!allowedWeights.some(x=>normalizeKey(x)===normalizeKey(weightClass))){warnings.push('Zeile '+rowNo+': GK „'+weightClass+'“ passt nicht zur Turnierkonfiguration.');skipped++;continue}}
   else{const parsed=Number(String(weightRaw).replace(',','.'));if(!Number.isFinite(parsed)||parsed<=0){warnings.push('Zeile '+rowNo+': Gewicht ist keine gültige Zahl.');skipped++;continue}weight=parsed}
   const result=registrationUpsertFighter({firstName,lastName,birthYear,clubId:club.id,gender,ageClass,weightClass,weight,kyu},warnings,rowNo);if(result.created)fightersCreated++;else if(result.updated)fightersUpdated++;else{skipped++;continue}
-  if(result.fighter){event.registrations=Array.isArray(event.registrations)?event.registrations:[];const entry={fighterId:result.fighter.id,clubId:club.id,gender,ageClass,weightClass,weight,kyu,importedAt:new Date().toISOString(),source:'xlsx'},idx=event.registrations.findIndex(x=>x.fighterId===result.fighter.id);if(idx>=0)event.registrations[idx]=entry;else{event.registrations.push(entry);registrationsAdded++}}
+  if(result.fighter){const entry={fighterId:result.fighter.id,clubId:club.id,gender,ageClass,weightClass,weight,kyu,importedAt:new Date().toISOString(),source:'xlsx'},idx=importedRegistrations.findIndex(x=>x.fighterId===result.fighter.id);if(idx>=0)importedRegistrations[idx]=entry;else importedRegistrations.push(entry)}
  }
+ if(!importedRegistrations.length)throw new Error('Keine gültigen Meldungen in der Vereinsliste gefunden.');
+ event.registrations=(Array.isArray(event.registrations)?event.registrations:[]).filter(x=>x.clubId!==club.id).concat(importedRegistrations);
  const cleaned=cleanRecord('individualTournaments',event),eventIndex=master.individualTournaments.findIndex(x=>x.id===event.id);master.individualTournaments[eventIndex]=cleaned;saveMaster('Vereinsmeldung importiert: '+event.name+' / '+clubName);
- return {ok:true,kind,eventName:event.name,clubName,clubsCreated:master.clubs.length-clubsCreatedBefore,fightersCreated,fightersUpdated,registrationsAdded,skipped,warnings,revision:master.revision};
+ return {ok:true,kind,eventName:event.name,clubName,clubsCreated:master.clubs.length-clubsCreatedBefore,fightersCreated,fightersUpdated,registrationsAdded:importedRegistrations.length,skipped,warnings,revision:master.revision};
 }
 
 function recoveryKey(dayId,matId){return encodeURIComponent(String(dayId))+'::'+encodeURIComponent(String(matId))}
