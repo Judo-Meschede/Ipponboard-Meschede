@@ -12,6 +12,8 @@
 
 #include <memory>
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 class QTableView;
 class QPrinter;
