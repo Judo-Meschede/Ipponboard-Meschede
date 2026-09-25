@@ -1965,6 +1965,8 @@ void MainWindowTeam::on_actionNew_triggered()
 		QMessageBox::Yes,
 		QMessageBox::No) == QMessageBox::No) return;
 
+	ClearCompetitionDayFilter_();
+	QFile::remove(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
 	on_comboBox_mode_currentIndexChanged(m_pUi->comboBox_mode->currentIndex());
 }
 
@@ -2222,33 +2224,31 @@ void MainWindowTeam::on_button_pause_clicked()
 
 void MainWindowTeam::on_button_prev_clicked()
 {
-	//if (0 == m_pController->GetCurrentFightIndex())
-	//	return;
+	const int completedRound = m_pController->GetCurrentRound();
+	const int completedFight = m_pController->GetCurrentFight();
+	const bool wasSaved = m_pController->GetFight(completedRound, completedFight).is_saved;
 
 	m_pController->PrevFight();
-	//m_pController->SetCurrentFight(m_pController->GetCurrentFightIndex() - 1);
-	
-	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename)); // autosave
+
+	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
+	PersistCompetitionRecovery_(completedRound, completedFight,
+		wasSaved ? QStringLiteral("corrected") : QStringLiteral("completed"));
 }
 
 void MainWindowTeam::on_button_next_clicked()
 {
-	/*
-	if (m_pController->GetCurrentFightIndex() == m_pController->GetFightCount() - 1)
-	{
-		m_pController->SetCurrentFight(m_pController->GetCurrentFightIndex());
-	}
-	else
-	{
-		m_pController->SetCurrentFight(m_pController->GetCurrentFightIndex() + 1);
-	}
-	*/
+	const int completedRound = m_pController->GetCurrentRound();
+	const int completedFight = m_pController->GetCurrentFight();
+	const bool wasSaved = m_pController->GetFight(completedRound, completedFight).is_saved;
+
 	m_pController->NextFight();
 
 	// reset osaekomi view (to reset active colors of previous fight)
     m_pController->DoAction(eAction_ResetOsaeKomi, FighterEnum::Nobody, true /*doRevoke*/);
 
-	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename)); // autosave
+	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
+	PersistCompetitionRecovery_(completedRound, completedFight,
+		wasSaved ? QStringLiteral("corrected") : QStringLiteral("completed"));
 }
 
 void MainWindowTeam::on_comboBox_mode_currentIndexChanged(int i)
@@ -2332,6 +2332,31 @@ void MainWindowTeam::on_comboBox_mode_currentIndexChanged(int i)
 		m_pUi->label_final_sub_score->show();
 		m_pUi->lineEdit_score->show();
 		m_pUi->lineEdit_wins->show();
+	}
+
+	// A single-cell edit on an already saved fight is a correction.
+	// Broad model refreshes and live, unsaved fights are deliberately ignored.
+	for (int round = 0; round < m_pController->GetRoundCount(); ++round)
+	{
+		auto model = m_pController->GetTournamentScoreModel(round);
+		if (!model->property("competitionRecoveryBound").toBool())
+		{
+			connect(model.get(), &QAbstractItemModel::dataChanged, this,
+				[this, round](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>&)
+				{
+					if (m_restoringCompetitionState || m_currentCompetitionDayId.isEmpty() || m_currentMatId.isEmpty())
+						return;
+					if (!topLeft.isValid() || topLeft.row() != bottomRight.row() || topLeft.column() != bottomRight.column())
+						return;
+					const int fight = topLeft.row();
+					if (fight < 0 || fight >= m_pController->GetFightCount())
+						return;
+					if (!m_pController->GetFight(round, fight).is_saved)
+						return;
+					PersistCompetitionRecovery_(round, fight, QStringLiteral("corrected"));
+				});
+			model->setProperty("competitionRecoveryBound", true);
+		}
 	}
 
 	// set mode text as mat label
