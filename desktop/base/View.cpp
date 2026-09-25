@@ -13,6 +13,7 @@
 #include <QFontDatabase>
 #include <QMenu>
 #include <QInputDialog>
+#include <QLabel>
 
 using namespace Ipponboard;
 using Point = Score::Point;
@@ -43,6 +44,11 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 	, m_drawIppon(false)
 	, m_showInfoHeader(true)
     , m_pBlinkTimer(nullptr)
+	, m_pTickerTimer(nullptr)
+	, m_pTickerContainer(nullptr)
+	, m_pTickerLabel(nullptr)
+	, m_nextFightText()
+	, m_tickerX(0)
 //=========================================================
 {
 	// init widgets
@@ -153,6 +159,29 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 
 	m_pBlinkTimer = new QTimer(this);
 	connect(m_pBlinkTimer, SIGNAL(timeout()), this, SLOT(blink_()));
+
+	if (is_secondary())
+	{
+		m_pTickerContainer = new QWidget(this);
+		m_pTickerContainer->setObjectName(QStringLiteral("nextFightTickerContainer"));
+		m_pTickerContainer->setMinimumHeight(44);
+		m_pTickerContainer->setMaximumHeight(64);
+		m_pTickerContainer->setStyleSheet(QStringLiteral("background-color: black;"));
+		m_pTickerContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+		m_pTickerLabel = new QLabel(m_pTickerContainer);
+		m_pTickerLabel->setTextFormat(Qt::PlainText);
+		m_pTickerLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+		m_pTickerLabel->setStyleSheet(QStringLiteral("color: rgb(255,255,96); background: transparent;"));
+		m_pTickerLabel->setFont(QFont(QStringLiteral("Calibri"), 20, QFont::Bold));
+		m_pTickerLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+		ui->verticalLayout_main->addWidget(m_pTickerContainer, 0);
+
+		m_pTickerTimer = new QTimer(this);
+		m_pTickerTimer->setInterval(25);
+		connect(m_pTickerTimer, SIGNAL(timeout()), this, SLOT(scrollNextFightTicker_()));
+		m_pTickerTimer->start();
+	}
 }
 
 //=========================================================
@@ -463,6 +492,40 @@ void View::SetShowInfoHeader(bool show)
 	m_showInfoHeader = show;
 
 	UpdateView();
+}
+
+//=========================================================
+void View::SetNextFightText(const QString& text)
+//=========================================================
+{
+	if (!is_secondary() || !m_pTickerLabel || !m_pTickerContainer)
+		return;
+	if (m_nextFightText == text)
+		return;
+
+	m_nextFightText = text;
+	m_pTickerLabel->setText(text);
+	m_pTickerLabel->adjustSize();
+	m_pTickerLabel->setFixedHeight(m_pTickerContainer->height());
+	m_tickerX = m_pTickerContainer->width();
+	m_pTickerLabel->move(m_tickerX, 0);
+}
+
+//=========================================================
+void View::scrollNextFightTicker_()
+//=========================================================
+{
+	if (!m_pTickerLabel || !m_pTickerContainer || m_nextFightText.isEmpty())
+		return;
+
+	m_pTickerLabel->setFixedHeight(m_pTickerContainer->height());
+	m_pTickerLabel->adjustSize();
+	m_pTickerLabel->setFixedHeight(m_pTickerContainer->height());
+
+	m_tickerX -= 2;
+	if (m_tickerX + m_pTickerLabel->width() < 0)
+		m_tickerX = m_pTickerContainer->width();
+	m_pTickerLabel->move(m_tickerX, 0);
 }
 
 //=========================================================
