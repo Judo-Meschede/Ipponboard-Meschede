@@ -1431,8 +1431,11 @@ bool MainWindowTeam::LoadCompetitionDay_()
 		if (mat.value(QStringLiteral("id")).toString().isEmpty())
 			continue;
 		mats.append(mat);
-		matLabels.append(mat.value(QStringLiteral("name")).toString(
-			QStringLiteral("Tatami %1").arg(mats.size())));
+		QString label = mat.value(QStringLiteral("name")).toString(
+			QStringLiteral("Tatami %1").arg(mats.size()));
+		if (label.startsWith(QStringLiteral("Matte "), Qt::CaseInsensitive))
+			label = QStringLiteral("Tatami ") + label.mid(6);
+		matLabels.append(label);
 	}
 	if (mats.isEmpty())
 	{
@@ -1625,11 +1628,11 @@ QString MainWindowTeam::NextFightText_() const
 	const auto first = Ipponboard::FighterEnum::First;
 	const auto second = Ipponboard::FighterEnum::Second;
 	return QStringLiteral("%1 | %2: %3 – %4: %5")
-		.arg(weight,
-			displayClub(next.fighters[first].club),
-			displayName(next.fighters[first].name),
-			displayClub(next.fighters[second].club),
-			displayName(next.fighters[second].name));
+		.arg(weight)
+		.arg(displayClub(next.fighters[first].club))
+		.arg(displayName(next.fighters[first].name))
+		.arg(displayClub(next.fighters[second].club))
+		.arg(displayName(next.fighters[second].name));
 }
 
 void MainWindowTeam::UpdateNextFightPreview_()
