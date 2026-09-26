@@ -67,12 +67,12 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.33** - reiner Dokumentationsstand für Phase 1 / AP 01.
+`CURRENT_VERSION.txt`: **0.2.34** - reiner Dokumentationsstand für Phase 1 / AP 02.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
 - `server/server.js` → `APP_VERSION='0.2.32'`.
-- AP 01 ändert weder ausführbaren Code noch Buildskripte oder Daten.
+- AP 02 ändert weder ausführbaren Code noch Buildskripte oder Daten.
 - Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
 Verbindliche fachliche Grundlage für Einzelturniere:
@@ -84,7 +84,7 @@ Verbindliche fachliche Grundlage für Einzelturniere:
 Regel:
 - Entwicklung immer **V0.x**.
 - erste freigegebene Version **V1.0**.
-- V0.2.33 bezeichnet ausschließlich die Dokumentationsänderung; daraus entsteht keine neue Server-/Desktopfunktion.
+- V0.2.34 bezeichnet ausschließlich die Dokumentationsänderung; daraus entsteht keine neue Server-/Desktopfunktion.
 
 ## 4. Aktuelle Startseite
 
@@ -1268,10 +1268,34 @@ Erforderliche Schritte:
 - Dokumentation lesen; erst auf ein ausdrücklich benanntes Folgepaket warten.
 - Klärpunkte müssen vor der jeweils betroffenen Automatik aufgelöst werden; sie sind kein Auftrag zu zusätzlichen Arbeiten.
 
+## 7an. Phase 1 / AP 02 - Datenmodell Einzelturniere - V0.2.34
+
+Auftrag: Datenmodell für Einzelturnier, Kategorie, Meldung, Auslosung, Kampf und Platzierung festlegen. **Keine UI und keine Implementierung.**
+
+Ergebnis:
+- [AP02_EINZELTURNIERE_DATENMODELL.md](fachlich/AP02_EINZELTURNIERE_DATENMODELL.md), Dokumentrevision 1.0.
+- Sechs Kernobjekte mit stabilen IDs und klar getrennten Lebenszyklen definiert.
+- Kategorie bildet das tatsächlich auszulösende Starterfeld; keine automatische amtliche Ableitung aus AK/Geschlecht/GK.
+- Meldung trennt gemeldete Daten, Wiegen, Prüfstatus, Startfreigabe und endgültige Kategorie.
+- Auslosung ist versioniert/reproduzierbar; Freilos ist Struktur und kein Kampf.
+- Kampfwege können explizit aus Meldung, Poolrang, Sieger oder berechtigtem Verlierer vorheriger Kämpfe entstehen.
+- Kampf-Rohdaten, Platzierung, Medaille und Qualifikation bleiben getrennt.
+- Regel-, System- und Rangfolgeparameter sind als Snapshots für gestartete Kategorien vorgesehen.
+- Bestehende `individualTournaments[].registrations` bleiben unverändert; Migration ist ausdrücklich nicht Teil von AP 02.
+
+Prüfung:
+- AP 01 und bestehendes Servermodell gegen main gelesen.
+- Keine Änderung an Server-/Desktop-Quellcode, Daten, Endpunkten, UI oder Buildskripten.
+- Keine Softwaretests erforderlich, da ausschließlich Dokumentation geändert wurde.
+
+Erforderliche Schritte:
+- **01: nein. 02: nein. 03: nein.**
+- Erst auf das ausdrücklich benannte nächste Arbeitspaket warten.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 ist abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 und AP 02 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
