@@ -97,6 +97,19 @@ function ageClassTimeMap(row){
  for(const [key,value] of Object.entries(raw)){const sec=Number(value);if(Number.isFinite(sec)&&sec>0)out[ageClassKey(key)]=Math.round(sec)}
  return out;
 }
+function rememberedAgeClassTimes(){
+ const out={...((data.ageClassFightTimeDefaults&&typeof data.ageClassFightTimeDefaults==='object')?data.ageClassFightTimeDefaults:{})},items=[...(data.individualTournaments||[])].sort((a,b)=>String(b.updatedAt||b.date||'').localeCompare(String(a.updatedAt||a.date||'')));
+ for(const t of items){const times=ageClassTimeMap(t);for(const [key,sec] of Object.entries(times))if(!out[key])out[key]=sec}
+ return out;
+}
+function ruleFightTimeSuggestion(age,ruleSetId){
+ const remembered=rememberedAgeClassTimes()[ageClassKey(age)];if(remembered)return remembered;
+ const key=ageClassKey(age),rule=(data.ruleSets||[]).find(x=>x.id===ruleSetId);
+ if(rule&&rule.ageClassFightTimes&&typeof rule.ageClassFightTimes==='object'){const match=Object.entries(rule.ageClassFightTimes).find(([k])=>ageClassKey(k)===key);const sec=Number(match&&match[1]);if(sec>0)return sec}
+ if(String(ruleSetId||'').startsWith('IJF-')&&(key==='erwachsene'||/^u(18|19|20|21)$/.test(key)))return 240;
+ return '';
+}
+function currentRuleSetId(){return String(document.querySelector('#detailBody [data-field="ruleSetId"]')?.value||'IJF-2025')}
 function ageClassTimeText(seconds){const sec=Number(seconds);if(!Number.isFinite(sec)||sec<=0)return 'Zeit offen';const m=Math.floor(sec/60),s=Math.round(sec%60);return m+':'+String(s).padStart(2,'0')}
 function ageClassSelectionHtml(selectedValues,timeValues){
  const selected=[...new Map((Array.isArray(selectedValues)?selectedValues:[]).map(v=>[ageClassKey(v),String(v).trim()]).filter(x=>x[0])).values()],times=timeValues&&typeof timeValues==='object'?timeValues:{};
@@ -110,7 +123,7 @@ function ageClassPickerHtml(selectedValues,timeValues){
  const selected=[...new Map((Array.isArray(selectedValues)?selectedValues:[]).map(v=>[ageClassKey(v),String(v).trim()]).filter(x=>x[0])).values()],times=timeValues&&typeof timeValues==='object'?timeValues:{};
  const selectedKeys=new Set(selected.map(ageClassKey)),standard=ageClassOptions(),standardKeys=new Set(standard.map(ageClassKey));
  const custom=selected.filter(v=>!standardKeys.has(ageClassKey(v)));
- return '<div class="ageclass-toolbar"><button type="button" class="btn ghost" id="agePickerAllBtn">Standardklassen auswählen</button><button type="button" class="btn ghost" id="agePickerClearBtn">Auswahl aufheben</button></div><p class="muted">Kampfzeit wird je ausgewählter Altersklasse in Minuten gespeichert. Eine automatische Vorgabe aus dem Regelprofil folgt in einem späteren AP.</p><div class="ageclass-section"><b>Standardklassen</b><div id="agePickerStandardGrid" class="age-picker-grid">'+standard.map(v=>agePickerOption(v,selectedKeys.has(ageClassKey(v)),times[ageClassKey(v)])).join('')+'</div></div><div class="ageclass-section"><b>Sonderklassen</b><div id="agePickerCustomList" class="ageclass-custom-list">'+custom.map(v=>ageClassPickerCustomRow(v,times[ageClassKey(v)])).join('')+'</div><div class="ageclass-add"><input id="agePickerCustom" type="text" placeholder="z. B. U8, Ü50, Anfänger"><button id="agePickerAddBtn" type="button" class="btn ghost">Sonderklasse hinzufügen</button></div></div>';
+ return '<div class="ageclass-toolbar"><button type="button" class="btn ghost" id="agePickerAllBtn">Standardklassen auswählen</button><button type="button" class="btn ghost" id="agePickerClearBtn">Auswahl aufheben</button></div><p class="muted">Kampfzeit wird je ausgewählter Altersklasse in Minuten gespeichert. Vorschlag: zuletzt gespeicherte Zeit dieser Altersklasse, danach Regelprofil. Der Wert bleibt änderbar.</p><div class="ageclass-section"><b>Standardklassen</b><div id="agePickerStandardGrid" class="age-picker-grid">'+standard.map(v=>agePickerOption(v,selectedKeys.has(ageClassKey(v)),times[ageClassKey(v)]||ruleFightTimeSuggestion(v,currentRuleSetId()))).join('')+'</div></div><div class="ageclass-section"><b>Sonderklassen</b><div id="agePickerCustomList" class="ageclass-custom-list">'+custom.map(v=>ageClassPickerCustomRow(v,times[ageClassKey(v)]||ruleFightTimeSuggestion(v,currentRuleSetId()))).join('')+'</div><div class="ageclass-add"><input id="agePickerCustom" type="text" placeholder="z. B. U8, Ü50, Anfänger"><button id="agePickerAddBtn" type="button" class="btn ghost">Sonderklasse hinzufügen</button></div></div>';
 }
 function ageClassPickerCustomRow(value,seconds){return '<div class="ageclass-custom-row age-picker-custom">'+agePickerOption(value,true,seconds)+'<button type="button" class="iconbtn agePickerRemoveBtn" title="Sonderklasse entfernen">×</button></div>'}
 function selectedAgeClasses(){return [...document.querySelectorAll('#ageClassValueStore [data-array-field="ageClasses"]')].filter(x=>x.checked).map(x=>x.value)}
@@ -130,7 +143,7 @@ function applyAgeClassPicker(){
  const store=$('#ageClassValueStore');if(!store)return closeAgeClassPicker();
  store.innerHTML=chosen.map(v=>'<input type="checkbox" data-array-field="ageClasses" value="'+esc(v)+'" data-fight-seconds="'+esc(times[ageClassKey(v)])+'" checked>').join('');
  const summary=$('#ageClassSummary');if(summary)summary.textContent=chosen.length?chosen.map(v=>v+' – '+ageClassTimeText(times[ageClassKey(v)])).join(' | '):'Keine Altersklasse ausgewählt';const line=$('#ageSummaryLine');if(line)line.textContent=chosen.length?chosen.map(v=>v+' – '+ageClassTimeText(times[ageClassKey(v)])).join(' · '):'Noch keine Altersklasse ausgewählt';
- closeAgeClassPicker();
+ closeAgeClassPicker();refreshTournamentSetup({});
 }
 function ageClassCustomRow(value){return '<div class="ageclass-custom-row"><label class="check-option"><input type="checkbox" data-array-field="ageClasses" value="'+esc(value)+'" checked> <span>'+esc(value)+'</span></label><button type="button" class="iconbtn ageClassRemoveBtn" title="Sonderklasse entfernen">×</button></div>'}
 function genderLabel(v){return v==='w'?'weiblich':'männlich'}
@@ -181,7 +194,7 @@ function closeWeightConfigPicker(){$('#weightConfigPickerModal')?.classList.add(
 function applyWeightConfigPicker(){
  const ages=selectedAgeClasses(),genders=[...document.querySelectorAll('#detailBody [data-array-field="genders"]:checked')].map(x=>x.value),config={};
  for(const age of ages){const ak=ageClassKey(age);config[ak]={};for(const gender of genders){const group=$('#weightConfigPickerBody [data-weight-picker-group="'+CSS.escape(ak+'|'+gender)+'"]'),values=group?[...group.querySelectorAll('[data-weight-picker]:checked')].map(x=>String(x.value).trim()).filter(Boolean):[];if(!values.length){toast('Mindestens eine GK für '+age+' '+genderLabel(gender)+' auswählen');return}config[ak][gender]=values}}
- $('#weightConfigStore').value=JSON.stringify(config);$('#weightConfigSummary').textContent=weightConfigSummary(config,ages,genders);closeWeightConfigPicker();
+ $('#weightConfigStore').value=JSON.stringify(config);$('#weightConfigSummary').textContent=weightConfigSummary(config,ages,genders);closeWeightConfigPicker();refreshTournamentSetup({});
 }
 
 function readMultiValues(el){try{const v=JSON.parse(el&&el.value||'[]');return Array.isArray(v)?v.map(String).filter(Boolean):[]}catch{return []}}
@@ -277,7 +290,7 @@ function openTournamentModesPicker(){
  const row={ageClasses:selectedAgeClasses(),genders:[...document.querySelectorAll('#detailBody [data-array-field="genders"]:checked')].map(x=>x.value),weightMode:$('#weightModeSelect').value,weightClassConfig:currentWeightConfig(),categorySystemConfig:{}};
  document.querySelectorAll('#categorySystemStore [data-category-system]').forEach(x=>{if(x.value)row.categorySystemConfig[x.dataset.categorySystem]={systemProfileId:x.value}});
  const body=$('#tournamentModesPickerBody'),classes=classConfigKeys(row),cfg=categorySystemConfig(row);
- if(!classes.length){toast('Zuerst Altersklassen und Gewichtseinteilung festlegen');return}
+ if(!classes.length){toast(row.weightMode==='official'?'Zuerst Gewichtsklassen auswählen':'Zuerst Altersklassen und Geschlecht auswählen');return}
  body.innerHTML=classes.map(c=>'<label class="mode-picker-row"><span>'+esc(c.label)+'</span><select data-mode-picker="'+esc(c.key)+'">'+optionsTournamentMode(cfg[c.key]?.systemProfileId||'')+'</select></label>').join('');
  $('#tournamentModesPickerModal').classList.remove('hidden');
 }
