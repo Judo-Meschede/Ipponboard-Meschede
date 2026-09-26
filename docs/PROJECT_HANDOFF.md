@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.44** - AP 10: Gewichtsklassen strukturiert je Altersklasse und Geschlecht mit kompaktem Auswahldialog.
+`CURRENT_VERSION.txt`: **0.2.45** - AP 11: gewichtsnahe Ziel-Poolgröße und Wettkampfmodus je vorgesehener Wettkampfklasse strukturiert.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1579,10 +1579,36 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und feste GK mit mehreren AK sowie m/w prüfen.
 
+## 7ay. Phase 1 / AP 11 - Gewichtsnahe Einteilung und Modus je Wettkampfklasse - V0.2.45
+
+Auftrag bewusst größer als AP 08-10: zusammengehörende Konfiguration für gewichtsnahe Einteilung und Wettkampfmodus je Klasse in einem Paket abschließen. Noch keine automatische Poolbildung/Auslosung und keine Qt-Anbindung.
+
+Umgesetzt:
+- `weightNearConfig.targetPoolSize` am Einzelturnier, standardmäßig 4, zulässig 2 bis 16.
+- bei `gewichtsnahe Einteilung` erscheint im großen Turnierdialog die Ziel-Poolgröße mit fachlichem Hinweis, dass sie ein Ziel und keine harte Garantie ist.
+- feste GK-Auswahl und gewichtsnahe Konfiguration werden abhängig von der gewählten Einteilungsart kompakt ein-/ausgeblendet.
+- `categorySystemConfig` speichert den vorgesehenen Wettkampfmodus je vorgesehener Wettkampfklasse.
+- bei festen GK wird eine Konfigurationszeile je AK + Geschlecht + GK erzeugt.
+- bei gewichtsnaher Einteilung wird zunächst je AK + Geschlecht eine Modus-Konfiguration geführt; die endgültigen Pools/Kategorien entstehen erst nach Teilnehmer-Einteilung.
+- bestehende Wettkampfmodi aus `tournamentModes` werden als Auswahl verwendet.
+- `individualCategories` kann für `weight-near` zusätzlich eine `targetPoolSize` tragen.
+- Server bereinigt Ziel-Poolgröße und Modus-Konfiguration beim Speichern.
+- keine automatische Kategorieerzeugung aus Bestandsdaten und keine künstliche Migration bestehender Turniere.
+
+Bewusste Grenze:
+- noch kein Algorithmus zur gewichtsnahen Poolbildung.
+- noch keine automatische Erzeugung/Änderung von `individualCategories`.
+- noch keine manuelle Verschiebeoberfläche für vorgeschlagene Pools.
+- noch keine Draw-/KO-Logik und keine Desktop/Qt-Anbindung.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und sowohl feste GK als auch gewichtsnahe Einteilung mit Ziel-Poolgröße und Modusauswahl prüfen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 10 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 11: gewichtsnahe Einteilung strukturiert konfigurieren, einschließlich frei wählbarer Ziel-Poolgröße; noch ohne automatische Poolbildung.
+AP 01 bis AP 11 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes sinnvolles Umsetzungs-AP ist AP 12: strukturierte Regelprofile vervollständigen und Turnier-Regel-Snapshot erzeugen, einschließlich automatischer AK-Kampfzeit-Vorgaben. Danach kann die Kategorien-/Poolbildung auf belastbaren Regeln aufbauen.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
