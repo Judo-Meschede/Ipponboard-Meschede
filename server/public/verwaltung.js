@@ -94,11 +94,31 @@ function ageClassOptions(){
 function ageClassKey(v){return String(v||'').trim().toLocaleLowerCase('de-DE')}
 function ageClassSelectionHtml(selectedValues){
  const selected=[...new Map((Array.isArray(selectedValues)?selectedValues:[]).map(v=>[ageClassKey(v),String(v).trim()]).filter(x=>x[0])).values()];
+ return '<div class="ageclass-compact"><div id="ageClassSummary" class="selection-summary">'+esc(selected.length?selected.join(' · '):'Keine Altersklasse ausgewählt')+'</div><button type="button" class="btn ghost" id="ageClassOpenBtn">Altersklassen auswählen</button></div><div id="ageClassValueStore" class="hidden">'+selected.map(v=>'<input type="checkbox" data-array-field="ageClasses" value="'+esc(v)+'" checked>').join('')+'</div>';
+}
+function ageClassPickerHtml(selectedValues){
+ const selected=[...new Map((Array.isArray(selectedValues)?selectedValues:[]).map(v=>[ageClassKey(v),String(v).trim()]).filter(x=>x[0])).values()];
  const selectedKeys=new Set(selected.map(ageClassKey)),standard=ageClassOptions(),standardKeys=new Set(standard.map(ageClassKey));
  const custom=selected.filter(v=>!standardKeys.has(ageClassKey(v)));
- return '<div class="ageclass-toolbar"><button type="button" class="btn ghost" id="ageClassAllBtn">Standardklassen auswählen</button><button type="button" class="btn ghost" id="ageClassClearBtn">Auswahl aufheben</button></div>'+
-  '<div class="ageclass-section"><b>Standardklassen</b><div id="ageClassStandardGrid" class="check-grid ageclass-grid">'+standard.map(v=>'<label class="check-option"><input type="checkbox" data-array-field="ageClasses" value="'+esc(v)+'" '+(selectedKeys.has(ageClassKey(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+'</div></div>'+
-  '<div class="ageclass-section"><b>Sonderklassen</b><p class="muted">Freie Bezeichnungen gelten nur für dieses Turnier.</p><div id="ageClassCustomList" class="ageclass-custom-list">'+custom.map(v=>ageClassCustomRow(v)).join('')+'</div><div class="ageclass-add"><input id="ageClassCustom" type="text" placeholder="z. B. U8, Ü50, Anfänger"><button id="ageClassAddBtn" type="button" class="btn ghost">Sonderklasse hinzufügen</button></div></div>';
+ return '<div class="ageclass-toolbar"><button type="button" class="btn ghost" id="agePickerAllBtn">Standardklassen auswählen</button><button type="button" class="btn ghost" id="agePickerClearBtn">Auswahl aufheben</button></div><div class="ageclass-section"><b>Standardklassen</b><div id="agePickerStandardGrid" class="check-grid ageclass-grid">'+standard.map(v=>'<label class="check-option"><input type="checkbox" data-age-picker value="'+esc(v)+'" '+(selectedKeys.has(ageClassKey(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+'</div></div><div class="ageclass-section"><b>Sonderklassen</b><p class="muted">Freie Bezeichnungen gelten nur für dieses Turnier.</p><div id="agePickerCustomList" class="ageclass-custom-list">'+custom.map(v=>ageClassPickerCustomRow(v)).join('')+'</div><div class="ageclass-add"><input id="agePickerCustom" type="text" placeholder="z. B. U8, Ü50, Anfänger"><button id="agePickerAddBtn" type="button" class="btn ghost">Sonderklasse hinzufügen</button></div></div>';
+}
+function ageClassPickerCustomRow(value){return '<div class="ageclass-custom-row"><label class="check-option"><input type="checkbox" data-age-picker value="'+esc(value)+'" checked> <span>'+esc(value)+'</span></label><button type="button" class="iconbtn agePickerRemoveBtn" title="Sonderklasse entfernen">×</button></div>'}
+function selectedAgeClasses(){return [...document.querySelectorAll('#ageClassValueStore [data-array-field="ageClasses"]')].filter(x=>x.checked).map(x=>x.value)}
+function openAgeClassPicker(){
+ const modal=$('#ageClassPickerModal'),body=$('#ageClassPickerBody');if(!modal||!body)return;
+ body.innerHTML=ageClassPickerHtml(selectedAgeClasses());modal.classList.remove('hidden');
+ const bindRemove=()=>body.querySelectorAll('.agePickerRemoveBtn').forEach(x=>x.onclick=()=>x.closest('.ageclass-custom-row')?.remove());bindRemove();
+ $('#agePickerAllBtn').onclick=()=>body.querySelectorAll('#agePickerStandardGrid [data-age-picker]').forEach(x=>x.checked=true);
+ $('#agePickerClearBtn').onclick=()=>body.querySelectorAll('[data-age-picker]').forEach(x=>x.checked=false);
+ const input=$('#agePickerCustom'),add=$('#agePickerAddBtn');const addCustom=()=>{const value=String(input.value||'').trim();if(!value)return;const all=[...body.querySelectorAll('[data-age-picker]')],existing=all.find(x=>ageClassKey(x.value)===ageClassKey(value));if(existing){existing.checked=true;toast('Altersklasse bereits vorhanden');return}body.querySelector('#agePickerCustomList').insertAdjacentHTML('beforeend',ageClassPickerCustomRow(value));bindRemove();input.value=''};add.onclick=addCustom;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addCustom()}};
+}
+function closeAgeClassPicker(){$('#ageClassPickerModal')?.classList.add('hidden')}
+function applyAgeClassPicker(){
+ const chosen=[...document.querySelectorAll('#ageClassPickerBody [data-age-picker]')].filter(x=>x.checked).map(x=>String(x.value).trim()).filter(Boolean);
+ const store=$('#ageClassValueStore');if(!store)return closeAgeClassPicker();
+ store.innerHTML=chosen.map(v=>'<input type="checkbox" data-array-field="ageClasses" value="'+esc(v)+'" checked>').join('');
+ const summary=$('#ageClassSummary');if(summary)summary.textContent=chosen.length?chosen.join(' · '):'Keine Altersklasse ausgewählt';
+ closeAgeClassPicker();
 }
 function ageClassCustomRow(value){return '<div class="ageclass-custom-row"><label class="check-option"><input type="checkbox" data-array-field="ageClasses" value="'+esc(value)+'" checked> <span>'+esc(value)+'</span></label><button type="button" class="iconbtn ageClassRemoveBtn" title="Sonderklasse entfernen">×</button></div>'}
 function genderLabel(v){return v==='w'?'weiblich':'männlich'}
@@ -148,10 +168,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#multiModal').cla
 
 function bindIndividualTournamentForm(row){
  $('#saveBtn').onclick=saveForm;$('#cancelBtn').onclick=()=>{selectedId=null;document.querySelector('.workgrid')?.classList.remove('tournament-dialog-open');render()};const del=$('#deleteDetailBtn');if(del)del.onclick=()=>remove(row.id);
- const bindAgeRemove=()=>document.querySelectorAll('.ageClassRemoveBtn').forEach(b=>b.onclick=()=>b.closest('.ageclass-custom-row')?.remove());bindAgeRemove();
- $('#ageClassAllBtn').onclick=()=>document.querySelectorAll('#ageClassStandardGrid [data-array-field="ageClasses"]').forEach(x=>x.checked=true);
- $('#ageClassClearBtn').onclick=()=>document.querySelectorAll('#detailBody [data-array-field="ageClasses"]').forEach(x=>x.checked=false);
- const ageInput=$('#ageClassCustom'),ageAdd=$('#ageClassAddBtn');const addAge=()=>{const value=String(ageInput.value||'').trim();if(!value)return;const all=[...document.querySelectorAll('#detailBody [data-array-field="ageClasses"]')];if(all.some(x=>ageClassKey(x.value)===ageClassKey(value))){toast('Altersklasse bereits vorhanden');return}const preset=[...document.querySelectorAll('#ageClassStandardGrid [data-array-field="ageClasses"]')].find(x=>ageClassKey(x.value)===ageClassKey(value));if(preset)preset.checked=true;else{$('#ageClassCustomList').insertAdjacentHTML('beforeend',ageClassCustomRow(value));bindAgeRemove()}ageInput.value=''};ageAdd.onclick=addAge;ageInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addAge()}};
+ const ageOpen=$('#ageClassOpenBtn');if(ageOpen)ageOpen.onclick=openAgeClassPicker;
  const bindWeightRemove=()=>document.querySelectorAll('.weightClassRemoveBtn').forEach(b=>b.onclick=()=>b.closest('.ageclass-custom-row')?.remove());bindWeightRemove();
  document.querySelectorAll('.weightClassAllBtn').forEach(b=>b.onclick=()=>b.closest('.weightclass-group').querySelectorAll('.weightclass-grid [data-array-field="'+b.dataset.weightclassField+'"]').forEach(x=>x.checked=true));
  document.querySelectorAll('.weightClassClearBtn').forEach(b=>b.onclick=()=>b.closest('.weightclass-group').querySelectorAll('[data-array-field="'+b.dataset.weightclassField+'"]').forEach(x=>x.checked=false));
@@ -278,3 +295,11 @@ if(nwjvBtn)nwjvBtn.onclick=async()=>{
  }catch(e){toast('Importfehler: '+e.message)}
  finally{nwjvBtn.disabled=false}
 };
+
+const agePickerModal=document.createElement('div');
+agePickerModal.id='ageClassPickerModal';agePickerModal.className='multi-modal hidden';agePickerModal.setAttribute('role','dialog');agePickerModal.setAttribute('aria-modal','true');
+agePickerModal.innerHTML='<div class="multi-modal-card age-picker-card"><div class="multi-modal-head"><div><h2>Altersklassen auswählen</h2><div class="muted">Auswahl für dieses Einzelturnier</div></div><button id="agePickerClose" class="iconbtn" type="button">×</button></div><div id="ageClassPickerBody" class="age-picker-body"></div><div class="multi-modal-actions"><button id="agePickerCancel" class="btn ghost" type="button">Abbrechen</button><button id="agePickerApply" class="btn red" type="button">Auswahl übernehmen</button></div></div>';
+document.body.appendChild(agePickerModal);
+$('#agePickerClose').onclick=closeAgeClassPicker;$('#agePickerCancel').onclick=closeAgeClassPicker;$('#agePickerApply').onclick=applyAgeClassPicker;
+agePickerModal.onclick=e=>{if(e.target===agePickerModal)closeAgeClassPicker()};
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!agePickerModal.classList.contains('hidden'))closeAgeClassPicker()});
