@@ -1,6 +1,6 @@
 # Projektübergabe – Ipponboard-Meschede
 
-Stand: 24.09.2026
+Stand: 26.09.2026
 
 ## 1. Projektziel
 
@@ -67,18 +67,24 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.32**
+`CURRENT_VERSION.txt`: **0.2.33** - reiner Dokumentationsstand für Phase 1 / AP 01.
 
-Desktop:
-- `desktop/CMakeLists.txt` → Ipponboard-Meschede V0.2.32**
+Unveränderter Softwarestand:
+- `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
+- `server/server.js` → `APP_VERSION='0.2.32'`.
+- AP 01 ändert weder ausführbaren Code noch Buildskripte oder Daten.
+- Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
-Server:
-- aktueller Server-Source liegt in `server/`
-- `server/server.js` trägt intern noch `APP_VERSION='0.1.0'`
+Verbindliche fachliche Grundlage für Einzelturniere:
+- [AP 01 - Fachliche Grundlage](fachlich/AP01_EINZELTURNIERE_GRUNDLAGE.md).
+- Dokumentrevision **1.0**, Recherche vom **26.09.2026**.
+- Belegte Verbandsregeln, abgeleitete Projektvorgaben und offene Regelkonflikte sind getrennt.
+- Kein Folgepaket ist beauftragt oder begonnen.
 
 Regel:
-- Entwicklung immer **V0.x**
-- erste freigegebene Version **V1.0**
+- Entwicklung immer **V0.x**.
+- erste freigegebene Version **V1.0**.
+- V0.2.33 bezeichnet ausschließlich die Dokumentationsänderung; daraus entsteht keine neue Server-/Desktopfunktion.
 
 ## 4. Aktuelle Startseite
 
@@ -1237,11 +1243,41 @@ Erforderliche Schritte:
 5. Vereinsliste neu herunterladen und geschlechtsabhängige GK-Auswahl prüfen.
 6. kein Windows-Build erforderlich.
 
+## 7am. Phase 1 / AP 01 - Fachliche Grundlage Einzelturniere - V0.2.33
+
+Auftrag: relevante Wettkampfsysteme und Regeln für deutsche Judo-Einzelturniere aus belastbaren Quellen recherchieren und verbindlich im Projekt dokumentieren. **Keine Implementierung.**
+
+Ergebnis:
+- [AP01_EINZELTURNIERE_GRUNDLAGE.md](fachlich/AP01_EINZELTURNIERE_GRUNDLAGE.md), Dokumentrevision 1.0.
+- Offizielle Quellen: DJB, NWJV, IJF sowie Landesverbandslisten aus Schleswig-Holstein und Württemberg; Quellenstand 26.09.2026.
+- Systemkatalog: Pool, vorgepoolte Endrunde, Doppel-KO/Trostrundenvarianten, Qualifikationssysteme, direktes KO und zwei Teilnehmende; uneindeutige Namen nicht ungeprüft gleichgesetzt.
+- Klassenbildung, Turniersystem, Kampfregeln und Platzierungsregeln fachlich getrennt.
+- 21 verbindliche Projektvorgaben, sechs gezielte Klärpunkte und fachliche Prüffälle für spätere Pakete.
+- Unterschiede und Widersprüche bei Pool-Unterbewertung, Jugend-Pausenangaben und Listenvarianten ausdrücklich dokumentiert.
+- Manuell konfigurierte Gewichtsklassen aus V0.2.32 und die bestehende Offline-/Persistenzgrenze bleiben verbindlich.
+
+Prüfung:
+- main vor Bearbeitung: `5ad8c833c6fe0077a0fb22b82d7a0007a7f169a4`, V0.2.32.
+- Handoff, CURRENT_VERSION, Server-Einzelturnierfelder und Versionsangaben mit GitHub abgeglichen.
+- Offizielle Regeltexte gelesen; beide Seiten der NWJV-Jugendtabelle visuell einschließlich Fußnoten geprüft.
+- Keine Implementierung und keine Änderung an Server-/Desktop-Quellcode, Daten oder Buildskripten.
+- Keine Softwaretests oder Installation für diese Dokumentationsänderung; kein neuer Funktionsstand behauptet.
+
+Erforderliche Schritte:
+- **01: nein. 02: nein. 03: nein.**
+- Dokumentation lesen; erst auf ein ausdrücklich benanntes Folgepaket warten.
+- Klärpunkte müssen vor der jeweils betroffenen Automatik aufgelöst werden; sie sind kein Auftrag zu zusätzlichen Arbeiten.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
-Als Nächstes **nicht** zuerst weitere Optik bauen.
+Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
+AP 01 ist abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
-Priorität:
+Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
+Als Nächstes **nicht** automatisch weitere Optik oder Mannschaftsfunktionen bauen.
+
+Frühere Prioritäten:
 
 1. Mannschaftsverwaltung und Kaderauswahl im Desktop vollständig funktional machen.
 2. Datenmodell lokal und Server identisch halten.
