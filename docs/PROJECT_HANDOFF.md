@@ -1635,6 +1635,16 @@ Erforderliche Schritte:
 - Bestehende Turnierwerte bleiben erhalten und werden nicht überschrieben.
 - **01: ja. 02: ja. 03: nein.**
 
+
+## 7bb. Kampfzeit-Vorschläge Standard-AK - V0.2.48
+
+- Standardvorschläge auf Basis der DJB-Wettkampfordnung 2026/NWJV-Jugendregeln ergänzt.
+- Verbandsklassen: U11 2:00, U13 3:00, U15 3:00, U18/U21/Erwachsene 4:00, Ü30 30-59 3:00.
+- Freie Zwischenklassen erhalten als Arbeitshilfe die Zeit der passenden Altersstufe: U9/U10 2:00; U12-U15 3:00; U16-U21 4:00.
+- Ü35/Ü40/Ü45 erhalten 3:00 als Vorschlag; eine individuelle gespeicherte Zeit bleibt vorrangig.
+- Bereits gespeicherte AK-Zeiten haben weiterhin höchste Priorität und werden nicht überschrieben.
+- **01: ja. 02: ja. 03: nein.**
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
