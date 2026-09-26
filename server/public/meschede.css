@@ -35,3 +35,15 @@
 .age-picker-custom{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .age-picker-custom .age-picker-option{width:100%}
 @media(max-width:600px){.age-picker-grid{grid-template-columns:1fr}.age-picker-option{grid-template-columns:1fr}.age-time-label{padding-left:4px}}
+
+/* AP 10: Gewichtsklassen je Altersklasse und Geschlecht */
+.weight-config-compact{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.weight-picker-card{width:min(1100px,95vw);height:min(820px,90vh)}
+.weight-picker-body{overflow:auto;padding:18px 20px}
+.weight-picker-group{border:1px solid #3b3d42;border-radius:8px;padding:12px;margin-bottom:12px;background:#111214}
+.weight-picker-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.weight-picker-title>div{display:flex;gap:7px}
+.weight-picker-special{margin-top:10px}
+.weight-picker-custom{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;margin:5px 0}
+.legacy-weight-note{margin:8px 0 0}
+@media(max-width:680px){.weight-config-compact{grid-template-columns:1fr}.weight-config-compact .btn{width:100%}.weight-picker-title{align-items:flex-start;flex-direction:column}.weight-picker-title>div{flex-wrap:wrap}.weight-picker-card{width:100%;height:96vh}}
