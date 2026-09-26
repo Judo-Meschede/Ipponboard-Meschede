@@ -74,3 +74,14 @@
 .mode-picker-card{width:min(900px,94vw);height:min(720px,88vh)}.mode-picker-body{padding:16px 20px;overflow:auto}
 .mode-picker-row{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,340px);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #303237}
 @media(max-width:900px){.workgrid.tournament-workgrid.tournament-dialog-open .detail-card{inset:8px}.new-tournament-basics{grid-template-columns:1fr 1fr}.new-tournament-line{grid-template-columns:1fr}.new-tournament-line small{white-space:normal}.new-inline-checks,.new-line-actions{flex-wrap:wrap}.mode-picker-row{grid-template-columns:1fr}}
+
+/* V0.2.47: kompakte AK-Auswahl, kein horizontaler Scroll */
+.age-picker-card{width:min(980px,94vw)!important;height:min(760px,88vh)!important;overflow:hidden}
+.age-picker-body{overflow-y:auto!important;overflow-x:hidden!important;padding:14px 18px!important}
+.age-picker-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
+.age-picker-option{grid-template-columns:minmax(72px,1fr) auto!important;min-width:0!important;padding:6px 8px!important}
+.age-time-label{font-size:.8rem!important}.age-time-label input{width:58px!important}
+.ageclass-section{max-width:100%;overflow:hidden}.ageclass-add{grid-template-columns:minmax(0,1fr) auto!important}
+.age-picker-custom{min-width:0}.age-picker-custom .age-picker-option{min-width:0}
+@media(max-width:760px){.age-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:520px){.age-picker-grid{grid-template-columns:1fr!important}.age-picker-option{grid-template-columns:1fr auto!important}}
