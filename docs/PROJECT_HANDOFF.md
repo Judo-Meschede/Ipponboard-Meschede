@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.40** - Architekturentscheidung zu Turnieranlage, Regelhoheit, Offline-Korrekturen und PIN-Schutz dokumentiert.
+`CURRENT_VERSION.txt`: **0.2.41** - AP 07: Einzelturnier-Verwaltung als Vollbreitenliste mit großem Neu-/Bearbeitungsdialog.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1474,10 +1474,40 @@ Erforderliche Schritte:
 - **01: nein. 02: nein. 03: nein.**
 - Nächstes Umsetzungs-AP: Webverwaltung für Einzelturniere auf fensterfüllende Liste plus großen Neu-/Bearbeitungsdialog umstellen. Noch keine Regelmodell-/Desktop-Änderung in diesem AP.
 
+## 7au. Phase 1 / AP 07 - Einzelturnier-Verwaltung Liste und Dialog - V0.2.41
+
+Auftrag: Einzelturnier-Verwaltung auf die beschlossene Grundstruktur umstellen. Noch keine neue Regelmodell-, AK-Kampfzeit- oder Poollogik.
+
+Umgesetzt:
+- Bereich Einzelturniere zeigt die Turnierliste über die verfügbare Arbeitsbreite statt Liste plus dauerhaft schmalem Detailformular.
+- Standardsortierung der Einzelturniere ist Datum absteigend.
+- sichtbare Spalten: Datum, Turniername, Ort, Altersklassen, Status.
+- Suche bleibt als Filter über alle Turnierdaten erhalten.
+- Schaltfläche heißt im Bereich Einzelturniere ausdrücklich `Neues Einzelturnier`.
+- Klick auf eine Turnierzeile öffnet die bestehende Bearbeitungsmaske in einem nahezu fensterfüllenden Dialog.
+- Neuanlage verwendet denselben großen Dialog.
+- separate Bearbeiten-Schaltfläche in der Liste entfällt; rechts bleibt nur Löschen.
+- Schließen und Abbrechen führen zurück zur Vollbreitenliste.
+- bestehende AP-05-/AP-06-Formular-, Speicher-, Meldelisten- und Löschlogik bleibt erhalten.
+
+Unverändert:
+- Turnier-Datenmodell und Regelmodell.
+- AK-Kampfzeiten, GK je AK/Geschlecht und gewichtsnahe Poolgröße sind noch nicht implementiert.
+- Kampftage bleiben in AP 07 unverändert.
+- Desktop/Qt und Buildskripte unverändert.
+
+Prüfung:
+- Source-Verknüpfung von Liste, Zeilenklick, Neuanlage, Dialog, Speichern/Abbrechen und Löschen geprüft.
+- kein Browser-Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und Einzelturnier-Liste, Neuanlage, Zeilenklick und Rückkehr zur Liste praktisch prüfen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 06 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist die neue fensterfüllende Einzelturnier-Verwaltung (Liste plus großer Neu-/Bearbeitungsdialog).
+AP 01 bis AP 07 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 08: Inhalt des großen Einzelturnier-Dialogs auf die kompakte Grundstruktur mit AK-Auswahldialog umstellen; noch ohne Desktop-Regelsynchronisation.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
