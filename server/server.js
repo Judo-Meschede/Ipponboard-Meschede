@@ -6,7 +6,7 @@ const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
-const APP_VERSION='0.2.44';
+const APP_VERSION='0.2.45';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -175,7 +175,12 @@ function cleanRecord(type,r){
   out.tournamentId=String(out.tournamentId||'');out.name=String(out.name||'');out.ageClass=String(out.ageClass||'');out.gender=String(out.gender||'');
   out.classMode=['weight-class','weight-near','custom'].includes(out.classMode)?out.classMode:'custom';out.weightClass=String(out.weightClass||'');
   out.weightRange=out.weightRange&&typeof out.weightRange==='object'&&!Array.isArray(out.weightRange)?out.weightRange:null;
-  out.systemProfileId=String(out.systemProfileId||'');out.systemSnapshot=out.systemSnapshot&&typeof out.systemSnapshot==='object'&&!Array.isArray(out.systemSnapshot)?out.systemSnapshot:{};
+  out.targetPoolSize=out.classMode==='weight-near'?Math.max(2,Math.min(16,Number.parseInt(out.targetPoolSize,10)||4)):null;out.systemProfileId=String(out.systemProfileId||'');out.systemSnapshot=out.systemSnapshot&&typeof out.systemSnapshot==='object'&&!Array.isArray(out.systemSnapshot)?out.systemSnapshot:{};
+  const rawNear=out.weightNearConfig&&typeof out.weightNearConfig==='object'&&!Array.isArray(out.weightNearConfig)?out.weightNearConfig:{};
+  out.weightNearConfig={targetPoolSize:Math.max(2,Math.min(16,Number.parseInt(rawNear.targetPoolSize,10)||4))};
+  const rawSystems=out.categorySystemConfig&&typeof out.categorySystemConfig==='object'&&!Array.isArray(out.categorySystemConfig)?out.categorySystemConfig:{};
+  out.categorySystemConfig={};
+  for(const [key,value] of Object.entries(rawSystems)){if(value&&typeof value==='object'&&!Array.isArray(value)){const systemProfileId=String(value.systemProfileId||'');if(systemProfileId)out.categorySystemConfig[String(key)]={systemProfileId}}}
   out.ruleSetId=String(out.ruleSetId||'');out.ruleSnapshot=out.ruleSnapshot&&typeof out.ruleSnapshot==='object'&&!Array.isArray(out.ruleSnapshot)?out.ruleSnapshot:{};
   out.rankingProfileId=String(out.rankingProfileId||'');out.rankingSnapshot=out.rankingSnapshot&&typeof out.rankingSnapshot==='object'&&!Array.isArray(out.rankingSnapshot)?out.rankingSnapshot:{};
   out.status=['draft','confirmed','drawn','active','completed','locked'].includes(out.status)?out.status:'draft';
