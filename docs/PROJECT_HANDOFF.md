@@ -1655,6 +1655,14 @@ Erforderliche Schritte:
 - Gewichtsklassen-Dialog vollständig verdichtet: keine riesige Leerfläche, GK als kompakte Auswahl, kleiner Footer, nur vertikales Scrollen bei Bedarf.
 - **01: ja. 02: ja. 03: nein.**
 
+
+## 7bd. Regression GK-Auswahl - V0.2.50
+
+- JavaScript-Syntaxfehler in den V0.2.49-GK-Vorgaben behoben: Ü30/Ü35/Ü40/Ü45-Schlüssel sind korrekt als Strings definiert.
+- Dadurch wird das Verwaltungsskript wieder vollständig geladen und der Button „Gewichtsklassen auswählen“ reagiert wieder.
+- Keine fachliche oder optische Erweiterung gegenüber V0.2.49.
+- **01: ja. 02: ja. 03: nein.**
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
