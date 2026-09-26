@@ -1663,6 +1663,18 @@ Erforderliche Schritte:
 - Keine fachliche oder optische Erweiterung gegenüber V0.2.49.
 - **01: ja. 02: ja. 03: nein.**
 
+
+## 7be. Vollprüfung Gewichtsklassen 2026 - V0.2.51
+
+- Sämtliche angebotenen Standard-AK U9-U21 sowie Erwachsene/Ü30-Ü45 für männlich und weiblich geschlossen geprüft.
+- Reguläre DJB/NWJV-2026-Klassen übernommen: U11, U13, U15, U18, U21, Frauen/Männer.
+- NWJV-2026-Sichtungsklassen exakt übernommen: U10, U12, U14, U16, U17, U20.
+- U17 korrigiert: männlich -40/-43/-46/-50/-55/-60/-66/-73/-81/+81; weiblich -40/-44/-48/-52/-57/-63/-70/+70.
+- U9 hat keine eigene 2026-NWJV-Tabelle und verwendet U10 als editierbare Vorschlagsbasis. U19 verwendet entsprechend U20 als Vorschlagsbasis.
+- Ü30-Ü45 verwenden die DJB-Veteranen-Gewichtsklassen; Altersstaffel und Gewichtsklasse bleiben getrennt.
+- Keine automatisch erfundenen Zwischenlisten mehr.
+- **01: ja. 02: ja. 03: nein.**
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
