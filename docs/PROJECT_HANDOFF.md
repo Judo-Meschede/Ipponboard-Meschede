@@ -67,12 +67,12 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.35** - Backend-/Datenmodellstand für Phase 1 / AP 03.
+`CURRENT_VERSION.txt`: **0.2.36** - Einzelturnier-Grunddatenverwaltung für Phase 1 / AP 04.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
 - `server/server.js` → `APP_VERSION='0.2.32'`.
-- AP 03 ändert ausschließlich Server-Backend und Masterdata-Modell; keine UI- oder Desktopänderung.
+- AP 04 erweitert ausschließlich die Server-Webverwaltung der Einzelturnier-Grunddaten; Desktop bleibt unverändert.
 - Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
 Verbindliche fachliche Grundlage für Einzelturniere:
@@ -84,7 +84,7 @@ Verbindliche fachliche Grundlage für Einzelturniere:
 Regel:
 - Entwicklung immer **V0.x**.
 - erste freigegebene Version **V1.0**.
-- V0.2.35 erweitert das Server-Datenmodell für Einzelturniere; Desktop bleibt unverändert.
+- V0.2.36 ergänzt die vollständige Pflege der Turnier-Grunddaten auf Basis des AP-03-Modells.
 
 ## 4. Aktuelle Startseite
 
@@ -1318,10 +1318,46 @@ Erforderliche Schritte:
 - `01_SSH_GITHUB_Stand_aktualisieren.txt` und danach `02_SSH_SERVER_Stand_installieren.txt` auf dem Linux-Testserver ausführen.
 - Windows-Build ist nicht erforderlich.
 
+## 7ap. Phase 1 / AP 04 - Einzelturnier-Grunddatenverwaltung - V0.2.36
+
+Auftrag: Verwaltung der Einzelturniere so ausbauen, dass alle notwendigen Turnier-Grunddaten vollständig gepflegt werden können.
+
+Umgesetzt:
+- bestehende Grunddaten Name, Datum, Ausrichter, Ort, Altersklassen und Geschlecht bleiben pflegbar.
+- Gewichtsklassenmodus und getrennte manuelle männliche/weibliche GK-Auswahl bleiben erhalten.
+- Regelwerk bleibt auswählbar.
+- AP-02-`ruleScope` ist jetzt pflegbar: Verband/Regelgeber, Ebene/Turnierart, Regelstand/Jahr, Ausschreibung/Referenz und Sonderbestimmungen.
+- vollständige AP-02-Turnierstatus: `planned`, `registration`, `prepared`, `active`, `closed`, `archived`.
+- Pflichtprüfung für Turniername, Datum, mindestens eine Altersklasse und mindestens ein Geschlecht.
+- bei festen Gewichtsklassen bleibt die Pflichtprüfung je ausgewähltem Geschlecht erhalten.
+- neue Einzelturniere starten mit leeren AP-02-Beziehungslisten; Kategorien/Auslosung werden nicht vorweggenommen.
+- keine Kategorien-, Auslosungs-, Kampf- oder Platzierungs-UI ergänzt.
+
+Geänderte Dateien:
+- `server/public/verwaltung.js`
+- `server/server.js` nur Versionsstand
+- `CURRENT_VERSION.txt`
+- `docs/PROJECT_HANDOFF.md`
+
+Unverändert:
+- Desktop/Qt
+- Auslosungs- und Wettkampflogik
+- Buildskripte
+- bestehende Meldelistenfunktion
+
+Prüfung:
+- gespeicherten main-Stand und AP-03-Modell geprüft.
+- Felddefinition, Speichern/Lesen von `ruleScope`, Pflichtprüfungen und Statuswerte im Source abgeglichen.
+- kein Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und Einzelturnier-Grunddaten einmal praktisch speichern/neu öffnen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 03 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 bis AP 04 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
