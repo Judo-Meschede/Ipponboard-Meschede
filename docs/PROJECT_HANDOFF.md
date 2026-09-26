@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.45** - AP 11: gewichtsnahe Ziel-Poolgröße und Wettkampfmodus je vorgesehener Wettkampfklasse strukturiert.
+`CURRENT_VERSION.txt`: **0.2.46** - Einzelturnier-Anlage als eigenständige kompakte UI vollständig neu aufgebaut; Datenmodell AP 08-11 beibehalten.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1604,6 +1604,25 @@ Bewusste Grenze:
 Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und sowohl feste GK als auch gewichtsnahe Einteilung mit Ziel-Poolgröße und Modusauswahl prüfen.
+
+## 7az. Korrektur - Einzelturnier-Dialog vollständig neu aufgebaut - V0.2.46
+
+Nach Praxistest wurde der bisherige schrittweise umgebaute Formularaufbau verworfen.
+
+Neu:
+- Einzelturnier-UI eigenständig neu aufgebaut statt bestehende Kartenstruktur weiter zu patchen.
+- kompakte Grunddatenzeile oben.
+- darunter klare Funktionszeilen für Altersklassen, Geschlecht, Gewichtseinteilung, Gewichtsklassen, Wettkampfmodi und Regelwerk.
+- Detailauswahl für AK, GK und Wettkampfmodi erfolgt über separate Dialoge.
+- gewichtsnahe Ziel-Poolgröße steht direkt neben der Einteilungsart.
+- Vereinsmeldungen erscheinen bei bestehenden Turnieren als eine kompakte Funktionszeile.
+- technische ruleScope-Altangaben und Bemerkungen sind nicht mehr Bestandteil der normalen Oberfläche; Werte bleiben beim Speichern erhalten.
+- Footer mit Speichern/Abbrechen/Löschen gehört zum Dialogfluss und überdeckt keine Formularinhalte.
+- AP-08-bis-AP-11-Datenstrukturen bleiben erhalten; kein fachliches Datenmodell zurückgebaut.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- Browser danach hart neu laden.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
