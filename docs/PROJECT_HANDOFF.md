@@ -67,12 +67,12 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.37** - überarbeitete Altersklassenauswahl für Phase 1 / AP 05.
+`CURRENT_VERSION.txt`: **0.2.38** - überarbeitete geschlechtsspezifische Gewichtsklassen für Phase 1 / AP 06.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
 - `server/server.js` → `APP_VERSION='0.2.32'`.
-- AP 05 überarbeitet ausschließlich die Altersklassenauswahl der Einzelturnier-Webverwaltung; Desktop bleibt unverändert.
+- AP 06 überarbeitet ausschließlich die männlichen/weiblichen Gewichtsklassen der Einzelturnier-Webverwaltung; Desktop bleibt unverändert.
 - Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
 Verbindliche fachliche Grundlage für Einzelturniere:
@@ -84,7 +84,7 @@ Verbindliche fachliche Grundlage für Einzelturniere:
 Regel:
 - Entwicklung immer **V0.x**.
 - erste freigegebene Version **V1.0**.
-- V0.2.37 trennt feste Standard-Altersklassen und frei definierbare Sonderklassen sauber in der Einzelturnierverwaltung.
+- V0.2.38 trennt männliche und weibliche konfigurierte Gewichtsklassen sowie freie Sonder-GK sauber; automatische GK-Erfindung ist entfernt.
 
 ## 4. Aktuelle Startseite
 
@@ -1387,10 +1387,42 @@ Erforderliche Schritte:
 - danach Browser hart neu laden und bestehendes Einzelturnier mit Standard- und Sonderklasse einmal öffnen/speichern/neu öffnen.
 - Nachkorrektur AP 05: Die Datenquellen-Box zeigt nun `Version 0.2.37` statt der internen Masterdata-Revision. `/api/masterdata` liefert dafür zusätzlich die Softwareversion. Die interne Datenrevision bleibt technisch unverändert erhalten.
 
+## 7ar. Phase 1 / AP 06 - Gewichtsklassen Einzelturniere - V0.2.38
+
+Auftrag: männliche und weibliche Gewichtsklassen je Einzelturnier einschließlich freier Sonder-GK überarbeiten. Keine automatische Erfindung von Gewichtsklassen.
+
+Umgesetzt:
+- die bisher hart erzeugte Sammelliste aus zahlreichen Minus-/Plus-Gewichten ist vollständig entfernt.
+- keine Übernahme von GK aus anderen Einzelturnieren mehr.
+- männliche und weibliche Auswahl sind strikt getrennt.
+- als Vorgaben erscheinen nur aktiv konfigurierte Gewichtsklassen aus den Stammdaten, deren Kategorie dem jeweiligen Geschlecht zugeordnet ist.
+- vorhandene GK eines bestehenden Turniers, die nicht in den Vorgaben stehen, bleiben als Sonder-GK erhalten.
+- freie Sonder-GK können getrennt für männlich/weiblich angelegt und einzeln entfernt werden.
+- Dublettenprüfung unabhängig von Groß-/Kleinschreibung.
+- Vorgaben je Geschlecht gesammelt auswählbar; Auswahl je Geschlecht aufhebbar.
+- Speicherung bleibt in `maleWeightClasses[]` und `femaleWeightClasses[]`; keine Datenmigration erforderlich.
+- bestehende Pflichtprüfung je ausgewähltem Geschlecht bleibt bestehen.
+
+Unverändert:
+- gewichtsnaher Modus
+- Altersklassen aus AP 05
+- Kategorien/Auslosung/Kampflogik
+- Desktop/Qt und Buildskripte
+
+Prüfung:
+- aktueller main-Stand V0.2.37 vor Änderung geprüft.
+- Source geprüft: keine hart erzeugte GK-Liste und keine turnierübergreifende GK-Übernahme mehr vorhanden.
+- Trennung männlich/weiblich und Sonder-GK-Pfad im Source abgeglichen.
+- kein Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und männliche/weibliche Vorgaben sowie je eine Sonder-GK speichern/neu öffnen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 05 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 bis AP 06 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
