@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.39** - grundlegender UI-Umbau der Einzelturnier-Anlage nach AP 06.
+`CURRENT_VERSION.txt`: **0.2.40** - Architekturentscheidung zu Turnieranlage, Regelhoheit, Offline-Korrekturen und PIN-Schutz dokumentiert.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1449,10 +1449,35 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und die Einzelturniermaske praktisch prüfen.
 
+## 7at. Architekturentscheidung Turnieranlage und Regelhoheit - V0.2.40
+
+Auftrag: Die nach AP 06 gemeinsam getroffenen Grundsatzentscheidungen verbindlich dokumentieren. **Keine Implementierung.**
+
+Ergebnis:
+- neues Dokument [TURNIERANLAGE_REGELHOHEIT.md](fachlich/TURNIERANLAGE_REGELHOHEIT.md), Dokumentrevision 1.0.
+- Server/Turnier ist verbindliche Quelle der Regelkonfiguration; Desktop arbeitet offline mit vollständigem Regel-Snapshot.
+- Offline-Korrekturen sind zulässig und werden bei Verbindung zurücksynchronisiert; laufende Kämpfe behalten ihren Start-Snapshot.
+- verpflichtendes Regelprofil, standardmäßig aktuelles IJF-Profil; eigene Profile sind wiederverwendbar und nur durch Admin am Profil selbst änderbar.
+- Kampfzeit wird pro Altersklasse geführt und aus dem Regelprofil vorgeschlagen, bleibt turnierbezogen editierbar.
+- Gewichtsklassen werden je Altersklasse und Geschlecht geführt; gewichtsnahe Einteilung mit frei bestimmbarer Poolgröße ist vorgesehen.
+- Wettkampfmodus wird je gebildeter Wettkampfklasse festgelegt.
+- Einzelturniere und Kampftage erhalten fensterfüllende, sortier-/filterbare Listen und große Anlage-/Bearbeitungsdialoge.
+- Verwaltungsbereich erhält eine PIN-Schranke; initial `SSV!`, Änderung ausschließlich über Systemeinstellungen der Judo-App.
+- keine parallelen unabhängigen Regelwahrheiten zwischen Server und Desktop.
+
+Unverändert:
+- Server-/Desktop-Quellcode und bestehende Daten.
+- aktuelle Weboberfläche V0.2.39.
+- Build- und Installationsskripte.
+
+Erforderliche Schritte:
+- **01: nein. 02: nein. 03: nein.**
+- Nächstes Umsetzungs-AP: Webverwaltung für Einzelturniere auf fensterfüllende Liste plus großen Neu-/Bearbeitungsdialog umstellen. Noch keine Regelmodell-/Desktop-Änderung in diesem AP.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 06 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 bis AP 06 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist die neue fensterfüllende Einzelturnier-Verwaltung (Liste plus großer Neu-/Bearbeitungsdialog).
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
