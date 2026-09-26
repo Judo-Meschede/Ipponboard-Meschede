@@ -6,7 +6,7 @@ const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
-const APP_VERSION='0.2.43';
+const APP_VERSION='0.2.44';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -211,6 +211,10 @@ function cleanRecord(type,r){
   out.weightMode=out.weightMode==='weight-near'?'weight-near':'official';
   out.maleWeightClasses=Array.isArray(out.maleWeightClasses)?[...new Set(out.maleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
   out.femaleWeightClasses=Array.isArray(out.femaleWeightClasses)?[...new Set(out.femaleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
+  const rawWeightConfig=out.weightClassConfig&&typeof out.weightClassConfig==='object'&&!Array.isArray(out.weightClassConfig)?out.weightClassConfig:{};
+  out.weightClassConfig={};
+  for(const ageClass of out.ageClasses){const ageEntry=rawWeightConfig[ageClass]||Object.entries(rawWeightConfig).find(([k])=>String(k).trim().toLocaleLowerCase('de-DE')===ageClass.toLocaleLowerCase('de-DE'))?.[1];if(!ageEntry||typeof ageEntry!=='object'||Array.isArray(ageEntry))continue;const clean={};for(const gender of out.genders){clean[gender]=Array.isArray(ageEntry[gender])?[...new Set(ageEntry[gender].map(String).map(x=>x.trim()).filter(Boolean))]:[]}out.weightClassConfig[ageClass]=clean}
+
   out.ruleSetId=String(out.ruleSetId||'');
   out.status=['planned','registration','prepared','active','closed','archived'].includes(out.status)?out.status:'planned';
   out.ruleScope=out.ruleScope&&typeof out.ruleScope==='object'&&!Array.isArray(out.ruleScope)?out.ruleScope:{};
