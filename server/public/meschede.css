@@ -85,3 +85,18 @@
 .age-picker-custom{min-width:0}.age-picker-custom .age-picker-option{min-width:0}
 @media(max-width:760px){.age-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:520px){.age-picker-grid{grid-template-columns:1fr!important}.age-picker-option{grid-template-columns:1fr auto!important}}
+
+/* V0.2.49: Gewichtsklassen-Dialog kompakt und AK-bezogen */
+.weight-picker-card{width:min(980px,94vw)!important;height:auto!important;max-height:88vh!important;display:flex!important;flex-direction:column!important}
+.weight-picker-body{padding:14px 18px!important;overflow-y:auto!important;overflow-x:hidden!important}
+.weight-picker-group{padding:12px 14px!important;margin-bottom:10px!important}
+.weight-picker-title{margin-bottom:8px!important}
+.weight-picker-title>div{gap:6px!important}
+.weight-picker-title .btn{padding:7px 10px!important;min-height:34px!important}
+.weight-picker-group .weightclass-grid{display:flex!important;flex-wrap:wrap!important;gap:6px!important}
+.weight-picker-group .check-option{width:auto!important;min-width:92px!important;padding:7px 10px!important;margin:0!important}
+.weight-picker-special{margin-top:9px!important}
+.weight-picker-custom-list:empty{display:none!important}
+.weight-picker-special .ageclass-add{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important}
+.weight-picker-card .modal-actions{flex:0 0 auto!important;padding:12px 18px!important}
+.weight-picker-card .modal-actions .btn{min-height:40px!important;padding:9px 16px!important}
