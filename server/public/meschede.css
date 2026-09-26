@@ -25,3 +25,13 @@
 .age-picker-body .check-option{display:flex;align-items:center;gap:7px;margin:0;padding:9px 10px;border:1px solid #3b3d42;border-radius:6px;background:#151619;color:#eee}
 .age-picker-body .check-option input{width:auto;margin:0}
 @media(max-width:680px){.ageclass-compact{grid-template-columns:1fr}.ageclass-compact .btn{width:100%}.age-picker-card{width:100%;height:96vh}}
+
+/* AP 09: Kampfzeit je Altersklasse */
+.age-picker-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:10px}
+.age-picker-option{display:grid;grid-template-columns:minmax(90px,1fr) auto;gap:8px;align-items:center;border:1px solid #3b3d42;border-radius:7px;background:#151619;padding:7px}
+.age-picker-option .check-option{border:0!important;background:transparent!important;padding:4px!important}
+.age-time-label{display:flex;align-items:center;gap:5px;font-size:.86rem;color:#bbb;white-space:nowrap}
+.age-time-label input{width:66px;padding:6px 7px}
+.age-picker-custom{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.age-picker-custom .age-picker-option{width:100%}
+@media(max-width:600px){.age-picker-grid{grid-template-columns:1fr}.age-picker-option{grid-template-columns:1fr}.age-time-label{padding-left:4px}}
