@@ -67,12 +67,12 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.36** - Einzelturnier-Grunddatenverwaltung für Phase 1 / AP 04.
+`CURRENT_VERSION.txt`: **0.2.37** - überarbeitete Altersklassenauswahl für Phase 1 / AP 05.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
 - `server/server.js` → `APP_VERSION='0.2.32'`.
-- AP 04 erweitert ausschließlich die Server-Webverwaltung der Einzelturnier-Grunddaten; Desktop bleibt unverändert.
+- AP 05 überarbeitet ausschließlich die Altersklassenauswahl der Einzelturnier-Webverwaltung; Desktop bleibt unverändert.
 - Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
 Verbindliche fachliche Grundlage für Einzelturniere:
@@ -84,7 +84,7 @@ Verbindliche fachliche Grundlage für Einzelturniere:
 Regel:
 - Entwicklung immer **V0.x**.
 - erste freigegebene Version **V1.0**.
-- V0.2.36 ergänzt die vollständige Pflege der Turnier-Grunddaten auf Basis des AP-03-Modells.
+- V0.2.37 trennt feste Standard-Altersklassen und frei definierbare Sonderklassen sauber in der Einzelturnierverwaltung.
 
 ## 4. Aktuelle Startseite
 
@@ -1354,10 +1354,42 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und Einzelturnier-Grunddaten einmal praktisch speichern/neu öffnen.
 
+## 7aq. Phase 1 / AP 05 - Altersklassen Einzelturniere - V0.2.37
+
+Auftrag: Auswahl der Altersklassen bei Einzelturnieren vollständig überarbeiten, einschließlich freier Sonderklassen.
+
+Umgesetzt:
+- feste Standardauswahl U9 bis U21, Erwachsene, Ü30, Ü35, Ü40, Ü45.
+- Standardklassen werden nicht mehr automatisch aus Wettkämpfern oder Gewichtsklassen-Stammdaten erweitert.
+- eigene Sektion für freie Sonderklassen, z. B. U8, Ü50 oder veranstalterspezifische Bezeichnungen.
+- vorhandene Sonderklassen bestehender Turniere bleiben erhalten und werden beim Öffnen wieder angezeigt.
+- Sonderklassen können einzeln entfernt werden.
+- freie Eingabe per Schaltfläche oder Enter.
+- Dublettenprüfung unabhängig von Groß-/Kleinschreibung.
+- Eingabe einer vorhandenen Standardklasse aktiviert deren Checkbox statt eine zweite Sonderklasse anzulegen.
+- Schaltflächen für alle Standardklassen auswählen und komplette Auswahl aufheben.
+- Speicherung bleibt im bestehenden `ageClasses[]`-Feld, daher keine Datenmigration nötig.
+- bestehende Pflichtprüfung mindestens einer Altersklasse bleibt bestehen.
+
+Unverändert:
+- Backend-Datenformat `ageClasses[]`
+- Geschlechts- und Gewichtsklassenauswahl
+- Kategorien/Auslosung/Kampflogik
+- Desktop/Qt und Buildskripte
+
+Prüfung:
+- aktueller main-Stand V0.2.36 und AP-04-Verwaltung vor Änderung geprüft.
+- Source nach Änderung auf Standardliste, Sonderklassen-Erhalt, Dublettenprüfung, Entfernen und Speicherung abgeglichen.
+- kein Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und bestehendes Einzelturnier mit Standard- und Sonderklasse einmal öffnen/speichern/neu öffnen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 04 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 bis AP 05 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
