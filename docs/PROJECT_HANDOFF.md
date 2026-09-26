@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.42** - AP 08: kompakte Altersklassen-Auswahl im großen Einzelturnier-Dialog.
+`CURRENT_VERSION.txt`: **0.2.43** - AP 09: Kampfzeit je Altersklasse strukturiert im Einzelturnier gespeichert und im AK-Dialog bearbeitbar.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1532,10 +1532,32 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und AK-Auswahl bei Neu- und Bestands-Turnier praktisch prüfen.
 
+## 7aw. Phase 1 / AP 09 - Kampfzeit je Altersklasse - V0.2.43
+
+Auftrag: Kampfzeit je Altersklasse strukturiert ergänzen und im AK-Auswahldialog anzeigen/editieren. Noch keine Desktop-Regelsynchronisation.
+
+Umgesetzt:
+- Einzelturnier erhält strukturiertes Feld `ageClassFightTimes` mit Kampfzeit in Sekunden je ausgewählter Altersklasse.
+- AK-Auswahldialog zeigt für jede ausgewählte Standard- oder Sonderklasse ein Kampfzeitfeld in Minuten.
+- Übernahme der AK-Auswahl ist nur möglich, wenn jede ausgewählte AK eine positive Kampfzeit besitzt.
+- Hauptdialog fasst Auswahl als z. B. `U11 – 2:00 | U13 – 3:00` zusammen.
+- Server bereinigt `ageClassFightTimes` beim Speichern und behält nur Zeiten tatsächlich ausgewählter AK.
+- bestehende Turniere ohne dieses Feld bleiben lesbar; es werden ausdrücklich keine Kampfzeiten erfunden.
+- bestehende Zeiten bleiben beim erneuten Öffnen/Ändern der AK-Auswahl erhalten.
+
+Bewusste Grenze:
+- vorhandene Regelprofile enthalten noch keine belastbare AK→Kampfzeit-Konfiguration. AP 09 erfindet deshalb keine Standardzeiten.
+- automatische Vorbelegung aus dem gewählten Regelprofil folgt erst mit dem strukturierten Regelprofil-AP.
+- Desktop/Qt verwendet die neuen AK-Zeiten noch nicht.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und Neu-/Bestandsturnier mit mehreren AK und unterschiedlichen Kampfzeiten prüfen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 08 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 09: Kampfzeit je Altersklasse strukturiert ergänzen und im AK-Auswahldialog anzeigen/editieren; noch ohne Desktop-Regelsynchronisation.
+AP 01 bis AP 09 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 10: Gewichtsklassen-Auswahl auf Altersklasse plus Geschlecht umstellen und als kompakten Auswahldialog führen; noch ohne Poolbildung.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
