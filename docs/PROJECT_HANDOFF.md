@@ -1645,6 +1645,16 @@ Erforderliche Schritte:
 - Bereits gespeicherte AK-Zeiten haben weiterhin höchste Priorität und werden nicht überschrieben.
 - **01: ja. 02: ja. 03: nein.**
 
+
+## 7bc. AK-/Geschlechts-bezogene Gewichtsklassen und Dialogkorrektur - V0.2.49
+
+- Gewichtsklassen werden im Einzelturnier nicht mehr aus einer allgemeinen Erwachsenenliste vorgeschlagen.
+- Vorschläge sind jetzt abhängig von Altersklasse und Geschlecht.
+- DJB/NWJV-2026-Klassen für U11, U13, U15, U18, U21 und Erwachsene sind hinterlegt; NWJV-Sichtungsklassen bzw. passende Altersstufen werden für die freien Zwischen-AK als editierbare Vorschläge verwendet.
+- Sonder-GK und bereits im Turnier gespeicherte Abweichungen bleiben erhalten.
+- Gewichtsklassen-Dialog vollständig verdichtet: keine riesige Leerfläche, GK als kompakte Auswahl, kleiner Footer, nur vertikales Scrollen bei Bedarf.
+- **01: ja. 02: ja. 03: nein.**
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
