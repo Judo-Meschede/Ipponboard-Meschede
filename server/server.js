@@ -6,7 +6,7 @@ const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
-const APP_VERSION='0.2.46';
+const APP_VERSION='0.2.47';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -23,7 +23,7 @@ function defaultRuleSets(){return [
  {id:'Classic',name:'Classic',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:false,shidoAddsPoint:true,shidoScoreCounts:true,maxShidoCount:3,maxWazaariCount:2,osaekomiYukoSeconds:15,osaekomiWazaariSeconds:20,osaekomiIpponSeconds:25,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''}
 ];}
 function newState(){const mode='BL-M',cfg=modes[mode];return {version:APP_VERSION,revision:0,mode,teams:[{id:'A',name:'Team A'},{id:'B',name:'Team B'},{id:'C',name:'Team C'}],matches:[{id:'AB',home:'A',guest:'B'},{id:'BC',home:'B',guest:'C'},{id:'CA',home:'C',guest:'A'}],matchIndex:0,fightIndex:0,fights:cfg.weights.map(w=>mkFight(w,cfg.fightSeconds)),teamScore:{A:0,B:0,C:0},lastAction:'Systemstart',updatedAt:new Date().toISOString()};}
-function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],individualCategories:[],individualRegistrations:[],individualDraws:[],individualBouts:[],individualPlacements:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets()};}
+function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],individualCategories:[],individualRegistrations:[],individualDraws:[],individualBouts:[],individualPlacements:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets(),ageClassFightTimeDefaults:{}};}
 function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return fallback()}}
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
@@ -33,7 +33,7 @@ let recoveryStore=readJson(RECOVERY_FILE,newRecoveryStore);
 if(!recoveryStore||recoveryStore.schema!=='ipponboard-competition-recovery-1'||typeof recoveryStore.entries!=='object'||Array.isArray(recoveryStore.entries))recoveryStore=newRecoveryStore();
 function ensureMasterCollections(){
  for(const name of ['clubs','teams','fighters','competitionDays','individualTournaments','individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements','weightClasses','tournamentModes'])if(!Array.isArray(master[name]))master[name]=[];
- if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();
+ if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();if(!master.ageClassFightTimeDefaults||typeof master.ageClassFightTimeDefaults!=='object'||Array.isArray(master.ageClassFightTimeDefaults))master.ageClassFightTimeDefaults={};
 }
 ensureMasterCollections();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
@@ -233,7 +233,7 @@ function cleanRecord(type,r){
  }
  return out;
 }
-function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);if(name==='individualTournaments')migrateIndividualTournamentModel();saveMaster(`${name} gespeichert`);return item}
+function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);if(name==='individualTournaments'){migrateIndividualTournamentModel();for(const [age,sec] of Object.entries(item.ageClassFightTimes||{})){const n=Number(sec);if(Number.isFinite(n)&&n>0)master.ageClassFightTimeDefaults[String(age).trim().toLocaleLowerCase('de-DE')]=Math.round(n)}}saveMaster(`${name} gespeichert`);return item}
 function deleteRecoveryForCompetitionDay(id){
  let changed=false;
  for(const [key,entry] of Object.entries(recoveryStore.entries||{})){
