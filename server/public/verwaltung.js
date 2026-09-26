@@ -149,7 +149,36 @@ function applyAgeClassPicker(){
 function ageClassCustomRow(value){return '<div class="ageclass-custom-row"><label class="check-option"><input type="checkbox" data-array-field="ageClasses" value="'+esc(value)+'" checked> <span>'+esc(value)+'</span></label><button type="button" class="iconbtn ageClassRemoveBtn" title="Sonderklasse entfernen">×</button></div>'}
 function genderLabel(v){return v==='w'?'weiblich':'männlich'}
 function weightClassKey(v){return String(v||'').trim().toLocaleLowerCase('de-DE')}
-function configuredWeightClassOptions(gender){
+function officialWeightClassPresets2026(age,gender){
+ const key=ageClassKey(age);
+ const male={
+  u9:['-23 kg','-25 kg','-27 kg','-29 kg','-31 kg','-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','+46 kg'],
+  u10:['-21 kg','-23 kg','-25 kg','-27 kg','-29 kg','-31 kg','-34 kg','-37 kg','-40 kg','-43 kg','+43 kg'],
+  u11:['-23 kg','-25 kg','-27 kg','-29 kg','-31 kg','-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','+46 kg'],
+  u12:['-25 kg','-28 kg','-31 kg','-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','-50 kg','+50 kg'],
+  u13:['-28 kg','-31 kg','-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','-50 kg','-55 kg','+55 kg'],
+  u14:['-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','-50 kg','-55 kg','-60 kg','-66 kg','+66 kg'],
+  u15:['-34 kg','-37 kg','-40 kg','-43 kg','-46 kg','-50 kg','-55 kg','-60 kg','-66 kg','+66 kg'],
+  u16:['-46 kg','-50 kg','-55 kg','-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','+90 kg'],
+  u17:['-46 kg','-50 kg','-55 kg','-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','+90 kg'],
+  u18:['-46 kg','-50 kg','-55 kg','-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','+90 kg'],
+  u19:['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],u20:['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],u21:['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],erwachsene:['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],'ü30':['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],'ü35':['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],'ü40':['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg'],'ü45':['-60 kg','-66 kg','-73 kg','-81 kg','-90 kg','-100 kg','+100 kg']
+ };
+ const female={
+  u9:['-22 kg','-24 kg','-26 kg','-28 kg','-30 kg','-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','+48 kg'],
+  u10:['-20 kg','-22 kg','-24 kg','-26 kg','-28 kg','-30 kg','-33 kg','-36 kg','-40 kg','-44 kg','+44 kg'],
+  u11:['-22 kg','-24 kg','-26 kg','-28 kg','-30 kg','-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','+48 kg'],
+  u12:['-24 kg','-27 kg','-30 kg','-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','-52 kg','+52 kg'],
+  u13:['-27 kg','-30 kg','-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','+57 kg'],
+  u14:['-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','-63 kg','+63 kg'],
+  u15:['-33 kg','-36 kg','-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','-63 kg','+63 kg'],
+  u16:['-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],u17:['-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],u18:['-40 kg','-44 kg','-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],
+  u19:['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],u20:['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],u21:['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],erwachsene:['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],'ü30':['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],'ü35':['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],'ü40':['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg'],'ü45':['-48 kg','-52 kg','-57 kg','-63 kg','-70 kg','-78 kg','+78 kg']
+ };
+ return (gender==='w'?female:male)[key]||[];
+}
+function configuredWeightClassOptions(gender,age){
+ const official=officialWeightClassPresets2026(age,gender);if(official.length)return official;
  const genderWord=gender==='w'?'weib':'männ';
  return (data.weightClasses||[]).filter(w=>w&&w.status!=='inactive'&&w.name&&String(w.category||'').toLocaleLowerCase('de-DE').includes(genderWord)).map(w=>String(w.name).trim()).filter(Boolean).filter((v,i,a)=>a.findIndex(x=>weightClassKey(x)===weightClassKey(v))===i);
 }
@@ -182,8 +211,8 @@ function weightConfigStoreHtml(row){
 }
 function currentWeightConfig(){try{const raw=JSON.parse($('#weightConfigStore')?.value||'{}');return raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{}}catch{return {}}}
 function weightPickerRow(age,gender,selected){
- const options=configuredWeightClassOptions(gender),selectedValues=Array.isArray(selected)?selected:[],selectedKeys=new Set(selectedValues.map(weightClassKey)),optionKeys=new Set(options.map(weightClassKey)),custom=selectedValues.filter(v=>!optionKeys.has(weightClassKey(v))),key=ageClassKey(age)+'|'+gender;
- return '<section class="weight-picker-group" data-weight-picker-group="'+esc(key)+'"><div class="weight-picker-title"><b>'+esc(age)+' · '+esc(genderLabel(gender))+'</b><div><button type="button" class="btn ghost weightPickerAll">Vorgaben auswählen</button><button type="button" class="btn ghost weightPickerClear">Auswahl aufheben</button></div></div><div class="check-grid weightclass-grid">'+(options.length?options.map(v=>'<label class="check-option"><input type="checkbox" data-weight-picker value="'+esc(v)+'" '+(selectedKeys.has(weightClassKey(v))?'checked':'')+'> '+esc(v)+'</label>').join(''):'<div class="muted">Keine konfigurierte Vorgabe vorhanden.</div>')+'</div><div class="weight-picker-special"><div class="weight-picker-custom-list">'+custom.map(v=>'<div class="weight-picker-custom"><label class="check-option"><input type="checkbox" data-weight-picker value="'+esc(v)+'" checked> '+esc(v)+'</label><button type="button" class="iconbtn weightPickerRemove">×</button></div>').join('')+'</div><div class="ageclass-add"><input type="text" data-weight-picker-input placeholder="Sonder-GK, z. B. -41 kg"><button type="button" class="btn ghost weightPickerAdd">Sonder-GK hinzufügen</button></div></div></section>';
+ const options=configuredWeightClassOptions(gender,age),selectedValues=Array.isArray(selected)?selected:[],selectedKeys=new Set(selectedValues.map(weightClassKey)),optionKeys=new Set(options.map(weightClassKey)),custom=selectedValues.filter(v=>!optionKeys.has(weightClassKey(v))),key=ageClassKey(age)+'|'+gender;
+ return '<section class="weight-picker-group" data-weight-picker-group="'+esc(key)+'"><div class="weight-picker-title"><b>'+esc(age)+' · '+esc(genderLabel(gender))+'</b><div><button type="button" class="btn ghost weightPickerAll">Alle auswählen</button><button type="button" class="btn ghost weightPickerClear">Auswahl aufheben</button></div></div><div class="check-grid weightclass-grid">'+(options.length?options.map(v=>'<label class="check-option"><input type="checkbox" data-weight-picker value="'+esc(v)+'" '+(selectedKeys.has(weightClassKey(v))?'checked':'')+'> '+esc(v)+'</label>').join(''):'<div class="muted">Keine Vorgabe für diese Altersklasse vorhanden.</div>')+'</div><div class="weight-picker-special"><div class="weight-picker-custom-list">'+custom.map(v=>'<div class="weight-picker-custom"><label class="check-option"><input type="checkbox" data-weight-picker value="'+esc(v)+'" checked> '+esc(v)+'</label><button type="button" class="iconbtn weightPickerRemove">×</button></div>').join('')+'</div><div class="ageclass-add"><input type="text" data-weight-picker-input placeholder="Sonder-GK, z. B. -41 kg"><button type="button" class="btn ghost weightPickerAdd">Sonder-GK hinzufügen</button></div></div></section>';
 }
 function openWeightConfigPicker(){
  const ages=selectedAgeClasses(),genders=[...document.querySelectorAll('#detailBody [data-array-field="genders"]:checked')].map(x=>x.value),modal=$('#weightConfigPickerModal'),body=$('#weightConfigPickerBody');if(!modal||!body)return;
