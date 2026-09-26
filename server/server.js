@@ -6,7 +6,7 @@ const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
-const APP_VERSION='0.2.32';
+const APP_VERSION='0.2.35';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
@@ -23,7 +23,7 @@ function defaultRuleSets(){return [
  {id:'Classic',name:'Classic',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:false,shidoAddsPoint:true,shidoScoreCounts:true,maxShidoCount:3,maxWazaariCount:2,osaekomiYukoSeconds:15,osaekomiWazaariSeconds:20,osaekomiIpponSeconds:25,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''}
 ];}
 function newState(){const mode='BL-M',cfg=modes[mode];return {version:APP_VERSION,revision:0,mode,teams:[{id:'A',name:'Team A'},{id:'B',name:'Team B'},{id:'C',name:'Team C'}],matches:[{id:'AB',home:'A',guest:'B'},{id:'BC',home:'B',guest:'C'},{id:'CA',home:'C',guest:'A'}],matchIndex:0,fightIndex:0,fights:cfg.weights.map(w=>mkFight(w,cfg.fightSeconds)),teamScore:{A:0,B:0,C:0},lastAction:'Systemstart',updatedAt:new Date().toISOString()};}
-function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets()};}
+function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],individualCategories:[],individualRegistrations:[],individualDraws:[],individualBouts:[],individualPlacements:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets()};}
 function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return fallback()}}
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
@@ -32,7 +32,7 @@ function newRecoveryStore(){return {schema:'ipponboard-competition-recovery-1',r
 let recoveryStore=readJson(RECOVERY_FILE,newRecoveryStore);
 if(!recoveryStore||recoveryStore.schema!=='ipponboard-competition-recovery-1'||typeof recoveryStore.entries!=='object'||Array.isArray(recoveryStore.entries))recoveryStore=newRecoveryStore();
 function ensureMasterCollections(){
- for(const name of ['clubs','teams','fighters','competitionDays','individualTournaments','weightClasses','tournamentModes'])if(!Array.isArray(master[name]))master[name]=[];
+ for(const name of ['clubs','teams','fighters','competitionDays','individualTournaments','individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements','weightClasses','tournamentModes'])if(!Array.isArray(master[name]))master[name]=[];
  if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();
 }
 ensureMasterCollections();
@@ -59,12 +59,61 @@ function migrateLegacyCompetitions(target=master){
 }
 const startupMigrated=migrateLegacyCompetitions();
 if(startupMigrated)saveMaster(startupMigrated+' alte Wettkämpfe nach Kampftage migriert');
+function legacyRegistrationId(tournamentId,fighterId,clubId,index){
+ return 'registration-'+crypto.createHash('sha256').update([tournamentId,fighterId,clubId,index].join('|')).digest('hex').slice(0,24);
+}
+function cleanIndividualRegistration(raw,tournamentId=''){
+ const now=new Date().toISOString(),r={...(raw||{})};
+ const enteredWeight=r.enteredWeightKg!==undefined?r.enteredWeightKg:r.weight;
+ return {
+  id:String(r.id||legacyRegistrationId(tournamentId||r.tournamentId||'',r.fighterId||'',r.clubId||'',r._legacyIndex||0)),
+  tournamentId:String(r.tournamentId||tournamentId||''),fighterId:String(r.fighterId||''),clubId:String(r.clubId||''),source:String(r.source||''),
+  enteredAgeClass:String(r.enteredAgeClass!==undefined?r.enteredAgeClass:(r.ageClass||'')),
+  enteredGender:['m','w'].includes(r.enteredGender)?r.enteredGender:(['m','w'].includes(r.gender)?r.gender:''),
+  enteredWeightClass:String(r.enteredWeightClass!==undefined?r.enteredWeightClass:(r.weightClass||'')),
+  enteredWeightKg:enteredWeight===''||enteredWeight==null?null:Number(enteredWeight),
+  weighInWeightKg:r.weighInWeightKg===''||r.weighInWeightKg==null?null:Number(r.weighInWeightKg),
+  weighInAt:r.weighInAt?String(r.weighInAt):null,
+  eligibilityStatus:['open','approved','rejected'].includes(r.eligibilityStatus)?r.eligibilityStatus:'open',
+  documentStatus:['open','approved','rejected','not-required'].includes(r.documentStatus)?r.documentStatus:'open',
+  weighInStatus:['open','passed','failed','not-required'].includes(r.weighInStatus)?r.weighInStatus:'open',
+  startStatus:['registered','confirmed','withdrawn','excluded','no-show'].includes(r.startStatus)?r.startStatus:'registered',
+  categoryId:String(r.categoryId||''),seed:r.seed&&typeof r.seed==='object'&&!Array.isArray(r.seed)?r.seed:null,
+  notes:String(r.notes||''),kyu:String(r.kyu||''),importedAt:String(r.importedAt||''),
+  createdAt:String(r.createdAt||r.importedAt||now),updatedAt:now
+ };
+}
+function migrateIndividualTournamentModel(target=master){
+ ensureMasterCollections();
+ let changed=0;
+ const byRegistrationId=new Map(target.individualRegistrations.map(r=>[String(r&&r.id||''),r]));
+ for(const tournament of target.individualTournaments){
+  if(!tournament||!tournament.id)continue;
+  const ids=new Set(Array.isArray(tournament.registrationIds)?tournament.registrationIds.map(String):[]);
+  const legacy=Array.isArray(tournament.registrations)?tournament.registrations:[];
+  legacy.forEach((raw,index)=>{
+   if(!raw||!raw.fighterId)return;
+   const normalized=cleanIndividualRegistration({...raw,_legacyIndex:index},String(tournament.id));
+   const existing=byRegistrationId.get(normalized.id);
+   if(existing)Object.assign(existing,{...normalized,createdAt:existing.createdAt||normalized.createdAt});
+   else{target.individualRegistrations.push(normalized);byRegistrationId.set(normalized.id,normalized);changed++}
+   ids.add(normalized.id);
+  });
+  const next=[...ids].filter(id=>{const r=byRegistrationId.get(id);return r&&r.tournamentId===String(tournament.id)});
+  if(JSON.stringify(tournament.registrationIds||[])!==JSON.stringify(next)){tournament.registrationIds=next;changed++}
+  if(!Array.isArray(tournament.categoryIds)){tournament.categoryIds=[];changed++}
+  if(!tournament.ruleScope||typeof tournament.ruleScope!=='object'||Array.isArray(tournament.ruleScope)){tournament.ruleScope={};changed++}
+ }
+ return changed;
+}
+const startupIndividualMigrated=migrateIndividualTournamentModel();
+if(startupIndividualMigrated)saveMaster(startupIndividualMigrated+' Einzelturnier-Daten nach AP 02 migriert');
 function mergeMasterData(incoming){
  if(!incoming||!Array.isArray(incoming.clubs))throw new Error('invalid masterdata');
  const normalized={...incoming};
  if(Array.isArray(normalized.competitions)&&normalized.competitions.length)normalized.competitionDays=[...(Array.isArray(normalized.competitionDays)?normalized.competitionDays:[]),...normalized.competitions.map(competitionToDay)];
  delete normalized.competitions;
- const names=['clubs','teams','fighters','competitionDays','individualTournaments','weightClasses','tournamentModes','ruleSets'];
+ const names=['clubs','teams','fighters','competitionDays','individualTournaments','individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements','weightClasses','tournamentModes','ruleSets'];
  for(const name of names){
   const source=Array.isArray(normalized[name])?normalized[name]:[];
   if(!Array.isArray(master[name]))master[name]=[];
@@ -102,7 +151,7 @@ case 'next-fight': if(state.fightIndex<state.fights.length-1){state.fightIndex++
 case 'prev-fight': if(state.fightIndex>0){state.fightIndex--;touch('Vorheriger Kampf')} break;
 case 'team-point': if(Object.prototype.hasOwnProperty.call(state.teamScore,a.team)){state.teamScore[a.team]=Math.max(0,state.teamScore[a.team]+Number(a.delta||1));touch('Mannschaftswertung geändert')} break;
 }}
-function collectionName(raw){return ({clubs:'clubs',teams:'teams',fighters:'fighters',competitionDays:'competitionDays',individualTournaments:'individualTournaments',weightClasses:'weightClasses',tournamentModes:'tournamentModes',ruleSets:'ruleSets'})[raw]||null}
+function collectionName(raw){return ({clubs:'clubs',teams:'teams',fighters:'fighters',competitionDays:'competitionDays',individualTournaments:'individualTournaments',individualCategories:'individualCategories',individualRegistrations:'individualRegistrations',individualDraws:'individualDraws',individualBouts:'individualBouts',individualPlacements:'individualPlacements',weightClasses:'weightClasses',tournamentModes:'tournamentModes',ruleSets:'ruleSets'})[raw]||null}
 function cleanRecord(type,r){
  const out={...(r||{})};
  out.id=String(out.id||`${type.slice(0,-1)}-${crypto.randomUUID()}`);
@@ -121,6 +170,36 @@ function cleanRecord(type,r){
    return {id:String(previous.id||`mat-${i+1}`),name:String(previous.name||`Tatami ${i+1}`)};
   });
  }
+ if(type==='individualRegistrations')return cleanIndividualRegistration(out,String(out.tournamentId||''));
+ if(type==='individualCategories'){
+  out.tournamentId=String(out.tournamentId||'');out.name=String(out.name||'');out.ageClass=String(out.ageClass||'');out.gender=String(out.gender||'');
+  out.classMode=['weight-class','weight-near','custom'].includes(out.classMode)?out.classMode:'custom';out.weightClass=String(out.weightClass||'');
+  out.weightRange=out.weightRange&&typeof out.weightRange==='object'&&!Array.isArray(out.weightRange)?out.weightRange:null;
+  out.systemProfileId=String(out.systemProfileId||'');out.systemSnapshot=out.systemSnapshot&&typeof out.systemSnapshot==='object'&&!Array.isArray(out.systemSnapshot)?out.systemSnapshot:{};
+  out.ruleSetId=String(out.ruleSetId||'');out.ruleSnapshot=out.ruleSnapshot&&typeof out.ruleSnapshot==='object'&&!Array.isArray(out.ruleSnapshot)?out.ruleSnapshot:{};
+  out.rankingProfileId=String(out.rankingProfileId||'');out.rankingSnapshot=out.rankingSnapshot&&typeof out.rankingSnapshot==='object'&&!Array.isArray(out.rankingSnapshot)?out.rankingSnapshot:{};
+  out.status=['draft','confirmed','drawn','active','completed','locked'].includes(out.status)?out.status:'draft';
+  out.registrationIds=Array.isArray(out.registrationIds)?[...new Set(out.registrationIds.map(String).filter(Boolean))]:[];out.drawId=String(out.drawId||'');out.placementIds=Array.isArray(out.placementIds)?[...new Set(out.placementIds.map(String).filter(Boolean))]:[];
+ }
+ if(type==='individualDraws'){
+  out.tournamentId=String(out.tournamentId||'');out.categoryId=String(out.categoryId||'');out.revision=Math.max(1,Number.parseInt(out.revision,10)||1);
+  out.status=['draft','published','superseded','locked'].includes(out.status)?out.status:'draft';out.systemProfileId=String(out.systemProfileId||'');
+  out.systemSnapshot=out.systemSnapshot&&typeof out.systemSnapshot==='object'&&!Array.isArray(out.systemSnapshot)?out.systemSnapshot:{};
+  for(const key of ['participantRegistrationIds','seedAssignments','slots','boutIds'])if(!Array.isArray(out[key]))out[key]=[];
+  out.generatedAt=String(out.generatedAt||'');out.generatedBy=String(out.generatedBy||'');out.supersedesDrawId=String(out.supersedesDrawId||'');out.publishedAt=out.publishedAt?String(out.publishedAt):null;
+ }
+ if(type==='individualBouts'){
+  for(const key of ['tournamentId','categoryId','drawId','stage','groupId','tatamiId','whiteRegistrationId','blueRegistrationId'])out[key]=String(out[key]||'');
+  out.whiteSource=out.whiteSource&&typeof out.whiteSource==='object'&&!Array.isArray(out.whiteSource)?out.whiteSource:{};out.blueSource=out.blueSource&&typeof out.blueSource==='object'&&!Array.isArray(out.blueSource)?out.blueSource:{};
+  out.status=['pending','ready','active','completed','corrected','void'].includes(out.status)?out.status:'pending';out.result=out.result&&typeof out.result==='object'&&!Array.isArray(out.result)?out.result:null;
+  out.revision=Math.max(0,Number.parseInt(out.revision,10)||0);out.completedAt=out.completedAt?String(out.completedAt):null;out.correctedFromRevision=out.correctedFromRevision==null?null:Number(out.correctedFromRevision);
+ }
+ if(type==='individualPlacements'){
+  for(const key of ['tournamentId','categoryId','registrationId'])out[key]=String(out[key]||'');out.rank=out.rank==null?null:out.rank;
+  out.medal=['gold','silver','bronze'].includes(out.medal)?out.medal:null;out.qualification=out.qualification&&typeof out.qualification==='object'&&!Array.isArray(out.qualification)?out.qualification:null;
+  out.status=['provisional','confirmed','revoked'].includes(out.status)?out.status:'provisional';out.basis=out.basis&&typeof out.basis==='object'&&!Array.isArray(out.basis)?out.basis:{};
+  out.reason=String(out.reason||'');out.confirmedAt=out.confirmedAt?String(out.confirmedAt):null;
+ }
  if(type==='individualTournaments'){
   out.hostClubId=String(out.hostClubId||'');
   out.ageClasses=Array.isArray(out.ageClasses)?[...new Set(out.ageClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
@@ -129,7 +208,10 @@ function cleanRecord(type,r){
   out.maleWeightClasses=Array.isArray(out.maleWeightClasses)?[...new Set(out.maleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
   out.femaleWeightClasses=Array.isArray(out.femaleWeightClasses)?[...new Set(out.femaleWeightClasses.map(String).map(x=>x.trim()).filter(Boolean))]:[];
   out.ruleSetId=String(out.ruleSetId||'');
-  out.status=['planned','active','closed'].includes(out.status)?out.status:'planned';
+  out.status=['planned','registration','prepared','active','closed','archived'].includes(out.status)?out.status:'planned';
+  out.ruleScope=out.ruleScope&&typeof out.ruleScope==='object'&&!Array.isArray(out.ruleScope)?out.ruleScope:{};
+  out.categoryIds=Array.isArray(out.categoryIds)?[...new Set(out.categoryIds.map(String).filter(Boolean))]:[];
+  out.registrationIds=Array.isArray(out.registrationIds)?[...new Set(out.registrationIds.map(String).filter(Boolean))]:[];
   out.registrations=Array.isArray(out.registrations)?out.registrations.filter(x=>x&&x.fighterId).map(x=>({
    fighterId:String(x.fighterId),clubId:String(x.clubId||''),gender:['m','w'].includes(x.gender)?x.gender:'',ageClass:String(x.ageClass||''),
    weightClass:String(x.weightClass||''),weight:x.weight===''||x.weight==null?'':Number(x.weight),kyu:String(x.kyu||''),
@@ -416,7 +498,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{masterdata:master,modes});
  if(u.pathname==='/api/sync/snapshot'&&req.method==='GET')return json(res,{ok:true,schema:master.schema,revision:master.revision,updatedAt:master.updatedAt,masterdata:master});
- if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));master.individualTournaments=master.individualTournaments.map(x=>cleanRecord('individualTournaments',x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
+ if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));master.individualTournaments=master.individualTournaments.map(x=>cleanRecord('individualTournaments',x));migrateIndividualTournamentModel();for(const name of ['individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements'])master[name]=master[name].map(x=>cleanRecord(name,x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/merge'&&req.method==='POST'){try{const b=await readBody(req);const incoming=b&&b.masterdata?b.masterdata:b;return json(res,{ok:true,masterdata:mergeMasterData(incoming)})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/tournamentModes'&&req.method==='PUT'){try{
   const b=await readBody(req),items=Array.isArray(b&&b.tournamentModes)?b.tournamentModes:null;
@@ -454,9 +536,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   }
   return json(res,{error:'method not allowed'},405);
  }
- const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|individualTournaments|weightClasses|tournamentModes|ruleSets)$/);
+ const saveMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|individualTournaments|individualCategories|individualRegistrations|individualDraws|individualBouts|individualPlacements|weightClasses|tournamentModes|ruleSets)$/);
  if(saveMatch&&req.method==='POST'){try{const b=await readBody(req);const item=saveRecord(saveMatch[1],b);return json(res,{ok:true,item,masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
- const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|individualTournaments|weightClasses|tournamentModes|ruleSets)\/([^/]+)$/);
+ const delMatch=u.pathname.match(/^\/api\/masterdata\/(clubs|teams|fighters|competitionDays|individualTournaments|individualCategories|individualRegistrations|individualDraws|individualBouts|individualPlacements|weightClasses|tournamentModes|ruleSets)\/([^/]+)$/);
  if(delMatch&&req.method==='DELETE'){try{return json(res,{ok:deleteRecord(delMatch[1],decodeURIComponent(delMatch[2])),masterdata:master})}catch(e){return json(res,{error:e.message},400)}}
  const registrationMatch=u.pathname.match(/^\/api\/registration-template\/(team|individual)\/([^/]+)$/);
  if(registrationMatch&&req.method==='GET'){try{const kind=registrationMatch[1],eventId=decodeURIComponent(registrationMatch[2]),result=await buildEventRegistrationTemplate(kind,eventId);return sendBuffer(res,result.buffer,result.filename)}catch(e){return json(res,{error:e.message||'Meldeliste konnte nicht erstellt werden'},500)}}
