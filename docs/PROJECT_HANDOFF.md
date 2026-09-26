@@ -1385,6 +1385,7 @@ Prüfung:
 Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und bestehendes Einzelturnier mit Standard- und Sonderklasse einmal öffnen/speichern/neu öffnen.
+- Nachkorrektur AP 05: Die Datenquellen-Box zeigt nun `Version 0.2.37` statt der internen Masterdata-Revision. `/api/masterdata` liefert dafür zusätzlich die Softwareversion. Die interne Datenrevision bleibt technisch unverändert erhalten.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
