@@ -220,7 +220,7 @@ function cleanRecord(type,r){
  }
  return out;
 }
-function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);saveMaster(`${name} gespeichert`);return item}
+function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);if(name==='individualTournaments')migrateIndividualTournamentModel();saveMaster(`${name} gespeichert`);return item}
 function deleteRecoveryForCompetitionDay(id){
  let changed=false;
  for(const [key,entry] of Object.entries(recoveryStore.entries||{})){
@@ -234,6 +234,7 @@ function deleteRecordNoSave(type,id){
  if(name==='fighters'){
   master.teams.forEach(t=>t.fighterIds=Array.isArray(t.fighterIds)?t.fighterIds.filter(fid=>fid!==id):[]);
   master.individualTournaments.forEach(t=>t.registrations=Array.isArray(t.registrations)?t.registrations.filter(r=>r.fighterId!==id):[]);
+  const removedRegistrationIds=new Set(master.individualRegistrations.filter(r=>r.fighterId===id).map(r=>r.id));master.individualRegistrations=master.individualRegistrations.filter(r=>r.fighterId!==id);master.individualTournaments.forEach(t=>t.registrationIds=Array.isArray(t.registrationIds)?t.registrationIds.filter(rid=>!removedRegistrationIds.has(rid)):[]);master.individualCategories.forEach(c=>c.registrationIds=Array.isArray(c.registrationIds)?c.registrationIds.filter(rid=>!removedRegistrationIds.has(rid)):[]);
  }
  if(name==='teams')master.competitionDays.forEach(d=>d.teamIds=Array.isArray(d.teamIds)?d.teamIds.filter(tid=>tid!==id):[]);
  if(name==='clubs'){
@@ -242,7 +243,14 @@ function deleteRecordNoSave(type,id){
   const remainingTeamIds=new Set(master.teams.map(t=>t.id));
   master.competitionDays.forEach(d=>{if(d.hostClubId===id)d.hostClubId='';d.teamIds=Array.isArray(d.teamIds)?d.teamIds.filter(tid=>remainingTeamIds.has(tid)):[]});
   master.individualTournaments.forEach(t=>{if(t.hostClubId===id)t.hostClubId='';t.registrations=Array.isArray(t.registrations)?t.registrations.filter(r=>r.clubId!==id):[]});
+  const removedRegistrationIds=new Set(master.individualRegistrations.filter(r=>r.clubId===id).map(r=>r.id));master.individualRegistrations=master.individualRegistrations.filter(r=>r.clubId!==id);master.individualTournaments.forEach(t=>t.registrationIds=Array.isArray(t.registrationIds)?t.registrationIds.filter(rid=>!removedRegistrationIds.has(rid)):[]);master.individualCategories.forEach(c=>c.registrationIds=Array.isArray(c.registrationIds)?c.registrationIds.filter(rid=>!removedRegistrationIds.has(rid)):[]);
  }
+ if(name==='individualTournaments'){
+  const categoryIds=new Set(master.individualCategories.filter(x=>x.tournamentId===id).map(x=>x.id)),registrationIds=new Set(master.individualRegistrations.filter(x=>x.tournamentId===id).map(x=>x.id)),drawIds=new Set(master.individualDraws.filter(x=>x.tournamentId===id).map(x=>x.id));
+  master.individualCategories=master.individualCategories.filter(x=>x.tournamentId!==id);master.individualRegistrations=master.individualRegistrations.filter(x=>x.tournamentId!==id);master.individualDraws=master.individualDraws.filter(x=>x.tournamentId!==id);master.individualBouts=master.individualBouts.filter(x=>x.tournamentId!==id);master.individualPlacements=master.individualPlacements.filter(x=>x.tournamentId!==id);
+ }
+ if(name==='individualCategories'){master.individualTournaments.forEach(t=>t.categoryIds=Array.isArray(t.categoryIds)?t.categoryIds.filter(cid=>cid!==id):[]);master.individualDraws=master.individualDraws.filter(x=>x.categoryId!==id);master.individualBouts=master.individualBouts.filter(x=>x.categoryId!==id);master.individualPlacements=master.individualPlacements.filter(x=>x.categoryId!==id)}
+ if(name==='individualRegistrations'){master.individualTournaments.forEach(t=>t.registrationIds=Array.isArray(t.registrationIds)?t.registrationIds.filter(rid=>rid!==id):[]);master.individualCategories.forEach(c=>c.registrationIds=Array.isArray(c.registrationIds)?c.registrationIds.filter(rid=>rid!==id):[])}
  if(name==='competitionDays')deleteRecoveryForCompetitionDay(id);
  if(name==='tournamentModes')master.competitionDays.forEach(d=>{if(d.tournamentModeId===id)d.tournamentModeId=''});
  if(name==='ruleSets'){
@@ -459,7 +467,7 @@ async function importEventRegistrationTemplate(kind,eventId,buffer){
  }
  if(!importedRegistrations.length)throw new Error('Keine gültigen Meldungen in der Vereinsliste gefunden.');
  event.registrations=(Array.isArray(event.registrations)?event.registrations:[]).filter(x=>x.clubId!==club.id).concat(importedRegistrations);
- const cleaned=cleanRecord('individualTournaments',event),eventIndex=master.individualTournaments.findIndex(x=>x.id===event.id);master.individualTournaments[eventIndex]=cleaned;saveMaster('Vereinsmeldung importiert: '+event.name+' / '+clubName);
+ const cleaned=cleanRecord('individualTournaments',event),eventIndex=master.individualTournaments.findIndex(x=>x.id===event.id);master.individualTournaments[eventIndex]=cleaned;migrateIndividualTournamentModel();saveMaster('Vereinsmeldung importiert: '+event.name+' / '+clubName);
  return {ok:true,kind,eventName:event.name,clubName,clubsCreated:master.clubs.length-clubsCreatedBefore,fightersCreated,fightersUpdated,registrationsAdded:importedRegistrations.length,skipped,warnings,revision:master.revision};
 }
 
