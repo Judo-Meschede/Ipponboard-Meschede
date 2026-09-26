@@ -67,12 +67,12 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.34** - reiner Dokumentationsstand für Phase 1 / AP 02.
+`CURRENT_VERSION.txt`: **0.2.35** - Backend-/Datenmodellstand für Phase 1 / AP 03.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
 - `server/server.js` → `APP_VERSION='0.2.32'`.
-- AP 02 ändert weder ausführbaren Code noch Buildskripte oder Daten.
+- AP 03 ändert ausschließlich Server-Backend und Masterdata-Modell; keine UI- oder Desktopänderung.
 - Die zuvor hier genannte Serverversion `0.1.0` war veraltet; geprüft gegen main am 26.09.2026.
 
 Verbindliche fachliche Grundlage für Einzelturniere:
@@ -84,7 +84,7 @@ Verbindliche fachliche Grundlage für Einzelturniere:
 Regel:
 - Entwicklung immer **V0.x**.
 - erste freigegebene Version **V1.0**.
-- V0.2.34 bezeichnet ausschließlich die Dokumentationsänderung; daraus entsteht keine neue Server-/Desktopfunktion.
+- V0.2.35 erweitert das Server-Datenmodell für Einzelturniere; Desktop bleibt unverändert.
 
 ## 4. Aktuelle Startseite
 
@@ -1292,10 +1292,36 @@ Erforderliche Schritte:
 - **01: nein. 02: nein. 03: nein.**
 - Erst auf das ausdrücklich benannte nächste Arbeitspaket warten.
 
+## 7ao. Phase 1 / AP 03 - Backend-Datenmodell Einzelturniere - V0.2.35
+
+Auftrag: bestehendes `individualTournaments`-Modell aus V0.2.32 passend zu AP 02 bereinigen. Nur Backend/Datenmodell, keine UI.
+
+Umgesetzt:
+- neue Masterdata-Sammlungen `individualCategories`, `individualRegistrations`, `individualDraws`, `individualBouts`, `individualPlacements`.
+- `individualTournaments` erhält AP-02-Felder `ruleScope`, `categoryIds`, `registrationIds` und die erweiterten Statuswerte.
+- bestehende eingebettete Meldungen werden beim Serverstart idempotent in `individualRegistrations` migriert.
+- bestehende `fighterId`, `clubId`, Geschlecht, AK, GK, Gewicht, Kyu, Importzeit und Quelle bleiben erhalten.
+- Legacy-Meldungen erhalten deterministische stabile IDs; es werden keine Kategorien, Auslosungen, Kämpfe oder Platzierungen erfunden.
+- bestehende eingebettete `registrations` bleiben vorerst als Kompatibilitätsschicht erhalten, damit die unveränderte V0.2.32-Weboberfläche weiterarbeiten kann.
+- Speichern und XLSX-Meldungsimport synchronisieren die neuen Meldungsobjekte.
+- Löschen von Turnier, Kämpfer, Verein, Kategorie oder Meldung bereinigt die neuen Beziehungen.
+- neue Kernobjekte werden serverseitig normalisiert und sind über die bestehende Masterdata-API verfügbar.
+
+Prüfung:
+- AP 02 und aktueller `server/server.js` gegen main geprüft.
+- neue Sammlungen, Migration und Synchronisationspfade im gespeicherten main-Stand erneut geprüft.
+- keine UI-, Desktop- oder Buildskript-Datei geändert.
+- kein Laufzeittest auf dem Testserver durchgeführt; dafür ist das Serverupdate erforderlich.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- `01_SSH_GITHUB_Stand_aktualisieren.txt` und danach `02_SSH_SERVER_Stand_installieren.txt` auf dem Linux-Testserver ausführen.
+- Windows-Build ist nicht erforderlich.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 und AP 02 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
+AP 01 bis AP 03 sind abgeschlossen. Es wird auf das nächste konkret genannte Arbeitspaket gewartet.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
