@@ -1624,6 +1624,17 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - Browser danach hart neu laden.
 
+
+## 7ba. Korrektur Einzelturnier-Auswahl - V0.2.47
+
+- AK-Auswahldialog kompakter aufgebaut; horizontales Scrollen entfernt.
+- Kampfzeit-Vorschläge lernen aus gespeicherten Turnieren: zuletzt gespeicherter AK-Wert wird beim nächsten Turnier vorgeschlagen.
+- Zusätzlich werden die zuletzt gespeicherten AK-Zeiten serverseitig in `ageClassFightTimeDefaults` gehalten.
+- Priorität: gespeicherter AK-Wert, danach explizite AK-Zeit im Regelprofil, danach nur für IJF-nahe U18-U21/Erwachsene 4:00; für jüngere AK werden keine IJF-Zeiten erfunden.
+- Gewichtsklassen-Auswahl und Moduszuordnung der neuen V0.2.46-Oberfläche korrigiert/verbunden.
+- Bestehende Turnierwerte bleiben erhalten und werden nicht überschrieben.
+- **01: ja. 02: ja. 03: nein.**
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
