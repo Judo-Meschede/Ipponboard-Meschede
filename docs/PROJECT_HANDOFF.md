@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.41** - AP 07: Einzelturnier-Verwaltung als Vollbreitenliste mit großem Neu-/Bearbeitungsdialog.
+`CURRENT_VERSION.txt`: **0.2.42** - AP 08: kompakte Altersklassen-Auswahl im großen Einzelturnier-Dialog.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1504,10 +1504,38 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und Einzelturnier-Liste, Neuanlage, Zeilenklick und Rückkehr zur Liste praktisch prüfen.
 
+## 7av. Phase 1 / AP 08 - Kompakte Altersklassen-Auswahl - V0.2.42
+
+Auftrag: Inhalt des großen Einzelturnier-Dialogs in einem kleinen Schritt kompakter machen; Altersklassen aus der dauerhaften Checkbox-Wand in einen Auswahldialog verlagern. Noch keine Kampfzeiten oder neue Regelmodelllogik.
+
+Umgesetzt:
+- Altersklassen werden im Hauptdialog nur noch kompakt zusammengefasst angezeigt.
+- Schaltfläche `Altersklassen auswählen` öffnet einen eigenen großen Auswahl-Dialog.
+- Standardklassen U9 bis U21, Erwachsene, Ü30, Ü35, Ü40 und Ü45 bleiben erhalten.
+- freie Sonderklassen bleiben erhalten und können im Auswahl-Dialog hinzugefügt/entfernt werden.
+- Standardklassen gesammelt auswählen und komplette Auswahl aufheben bleiben verfügbar.
+- `Auswahl übernehmen` aktualisiert die kompakte Zusammenfassung im Turnierdialog.
+- `Abbrechen`, X und Klick auf den Hintergrund verwerfen Änderungen des noch offenen AK-Auswahldialogs.
+- Speicherung bleibt vollständig kompatibel im bestehenden Feld `ageClasses[]`.
+- bestehende Einzelturniere werden ohne Migration weiter gelesen.
+
+Unverändert:
+- keine AK-Kampfzeiten in AP 08.
+- Gewichtsklassen-Auswahl aus AP 06 noch unverändert.
+- Regelmodell, Poolbildung, Kampftage und Desktop/Qt unverändert.
+
+Prüfung:
+- Sourcepfade für Öffnen, Abbrechen, Übernehmen, Sonderklasse und Speicherung über `ageClasses[]` geprüft.
+- kein Browser-Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und AK-Auswahl bei Neu- und Bestands-Turnier praktisch prüfen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 07 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 08: Inhalt des großen Einzelturnier-Dialogs auf die kompakte Grundstruktur mit AK-Auswahldialog umstellen; noch ohne Desktop-Regelsynchronisation.
+AP 01 bis AP 08 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 09: Kampfzeit je Altersklasse strukturiert ergänzen und im AK-Auswahldialog anzeigen/editieren; noch ohne Desktop-Regelsynchronisation.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
