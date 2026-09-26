@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.38** - überarbeitete geschlechtsspezifische Gewichtsklassen für Phase 1 / AP 06.
+`CURRENT_VERSION.txt`: **0.2.39** - grundlegender UI-Umbau der Einzelturnier-Anlage nach AP 06.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1418,6 +1418,36 @@ Prüfung:
 Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und männliche/weibliche Vorgaben sowie je eine Sonder-GK speichern/neu öffnen.
+
+## 7as. Korrekturpaket nach AP 06 - Einzelturnier-Anlage neu strukturiert - V0.2.39
+
+Anlass: Die schmale, linear verlängerte Detailmaske war trotz funktionaler AP 04-06 unübersichtlich und auf großen Bildschirmen schlecht nutzbar.
+
+Umgesetzt:
+- Einzelturnier erhält eine eigene breite Arbeitsmaske; Liste links kompakt, Bearbeitung nutzt den verfügbaren Hauptbereich.
+- klare Abschnitte `Grunddaten`, `Klassen`, `Regeln & Besonderheiten`, optional `Vereinsmeldungen`.
+- Grunddaten zweispaltig statt langer Einspaltenkette.
+- Altersklassen und Geschlecht/Gewichtseinteilung werden fachlich zusammen im Klassenbereich gezeigt.
+- männliche und weibliche GK stehen auf breiten Bildschirmen nebeneinander.
+- Begriff `offizielle Gewichtsklassen` in der Turniermaske durch `festgelegte Gewichtsklassen` ersetzt.
+- technische Erläuterungen deutlich zurückgenommen.
+- Regelwerk und Bemerkungen bleiben direkt sichtbar; Verband/Regelgeber, Ebene, Regelstand, Ausschreibungsreferenz und Sonderbestimmungen liegen eingeklappt unter `Erweiterte Angaben / Sonderbestimmungen`.
+- Status wird in der normalen Turniermaske nicht mehr als manuelles Anlagefeld gezeigt; bestehender Backend-Status bleibt erhalten.
+- Speichern/Abbrechen/Löschen in einer gemeinsamen unteren Aktionsleiste.
+- AP-05-/AP-06-Auswahl- und Speicherlogik bleibt erhalten.
+
+Unverändert:
+- Backend-Datenmodell und bestehende Turnierdaten
+- Kategorien/Auslosung/Kampflogik
+- Desktop/Qt
+
+Prüfung:
+- Source-Verknüpfung der neuen Maske mit bestehender `saveForm`-Logik geprüft.
+- kein Browser-Laufzeittest auf dem Testserver durchgeführt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und die Einzelturniermaske praktisch prüfen.
 
 ## 8. Nächster fachlicher Schwerpunkt
 
