@@ -106,7 +106,8 @@ function ruleFightTimeSuggestion(age,ruleSetId){
  const remembered=rememberedAgeClassTimes()[ageClassKey(age)];if(remembered)return remembered;
  const key=ageClassKey(age),rule=(data.ruleSets||[]).find(x=>x.id===ruleSetId);
  if(rule&&rule.ageClassFightTimes&&typeof rule.ageClassFightTimes==='object'){const match=Object.entries(rule.ageClassFightTimes).find(([k])=>ageClassKey(k)===key);const sec=Number(match&&match[1]);if(sec>0)return sec}
- if(String(ruleSetId||'').startsWith('IJF-')&&(key==='erwachsene'||/^u(18|19|20|21)$/.test(key)))return 240;
+ const standardSeconds={u9:120,u10:120,u11:120,u12:180,u13:180,u14:180,u15:180,u16:240,u17:240,u18:240,u19:240,u20:240,u21:240,erwachsene:240,'ü30':180,'ü35':180,'ü40':180,'ü45':180};
+ if(String(ruleSetId||'').startsWith('IJF-')&&standardSeconds[key])return standardSeconds[key];
  return '';
 }
 function currentRuleSetId(){return String(document.querySelector('#detailBody [data-field="ruleSetId"]')?.value||'IJF-2025')}
