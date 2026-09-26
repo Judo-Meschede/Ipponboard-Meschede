@@ -56,3 +56,21 @@
 .category-system-row{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,360px);gap:12px;align-items:center;padding:9px 11px;border:1px solid #3b3d42;border-radius:7px;background:#111214}
 .category-system-row span{font-weight:600}
 @media(max-width:700px){.category-system-row{grid-template-columns:1fr}}
+
+/* V0.2.46: Einzelturnier-UI vollständig neu aufgebaut */
+.workgrid.tournament-workgrid.tournament-dialog-open .detail-card{inset:6vh 7vw;max-width:1500px;margin:auto}
+.workgrid.tournament-workgrid.tournament-dialog-open .detail-body{padding:0;overflow:hidden}
+.new-tournament-form{height:100%;display:flex;flex-direction:column;background:#101113}
+.new-tournament-main{flex:1;overflow:auto;padding:22px 26px}
+.new-tournament-basics{display:grid;grid-template-columns:2fr 1fr 1.3fr 1.3fr;gap:14px;padding-bottom:20px;border-bottom:1px solid #34363a}
+.new-tournament-field{display:grid;gap:6px}.new-tournament-field span{font-size:.82rem;color:#b9bbc0;font-weight:600}
+.new-tournament-lines{margin-top:6px}
+.new-tournament-line{min-height:72px;display:grid;grid-template-columns:minmax(280px,1fr) auto;gap:18px;align-items:center;border-bottom:1px solid #2d2f33;padding:10px 2px}
+.new-tournament-line>div:first-child{min-width:0}.new-tournament-line b{display:block;font-size:1rem}.new-tournament-line small{display:block;color:#9ea1a8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new-inline-checks,.new-line-actions{display:flex;gap:18px;align-items:center}.new-inline-checks label{white-space:nowrap}
+.new-pool-size{display:flex;align-items:center;gap:7px}.new-pool-size input{width:72px}.new-pool-size span{font-size:.85rem;color:#aaa}
+.new-tournament-footer{flex:0 0 auto;display:flex;gap:10px;padding:14px 26px;border-top:1px solid #34363a;background:#17181b}.new-delete{margin-left:auto}
+.new-tournament-line select{min-width:230px}.new-tournament-line>.btn{min-width:150px}
+.mode-picker-card{width:min(900px,94vw);height:min(720px,88vh)}.mode-picker-body{padding:16px 20px;overflow:auto}
+.mode-picker-row{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,340px);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #303237}
+@media(max-width:900px){.workgrid.tournament-workgrid.tournament-dialog-open .detail-card{inset:8px}.new-tournament-basics{grid-template-columns:1fr 1fr}.new-tournament-line{grid-template-columns:1fr}.new-tournament-line small{white-space:normal}.new-inline-checks,.new-line-actions{flex-wrap:wrap}.mode-picker-row{grid-template-columns:1fr}}
