@@ -67,7 +67,7 @@ Nicht mehr primäre Quellcodequelle.
 
 ## 3. Aktueller Versionsstand
 
-`CURRENT_VERSION.txt`: **0.2.43** - AP 09: Kampfzeit je Altersklasse strukturiert im Einzelturnier gespeichert und im AK-Dialog bearbeitbar.
+`CURRENT_VERSION.txt`: **0.2.44** - AP 10: Gewichtsklassen strukturiert je Altersklasse und Geschlecht mit kompaktem Auswahldialog.
 
 Unveränderter Softwarestand:
 - `desktop/CMakeLists.txt` → Ipponboard-Meschede **V0.2.32**.
@@ -1554,10 +1554,35 @@ Erforderliche Schritte:
 - **01: ja. 02: ja. 03: nein.**
 - danach Browser hart neu laden und Neu-/Bestandsturnier mit mehreren AK und unterschiedlichen Kampfzeiten prüfen.
 
+## 7ax. Phase 1 / AP 10 - Gewichtsklassen je AK und Geschlecht - V0.2.44
+
+Auftrag: Gewichtsklassen-Auswahl auf Altersklasse plus Geschlecht umstellen und als kompakten Auswahldialog führen. Noch keine Poolbildung.
+
+Umgesetzt:
+- neues strukturiertes Turnierfeld `weightClassConfig`: Gewichtsklassen getrennt je ausgewählter Altersklasse und Geschlecht.
+- Hauptdialog zeigt nur noch eine kompakte Zusammenfassung plus `Gewichtsklassen auswählen`.
+- Auswahl-Dialog erzeugt getrennte Bereiche z. B. `U15 · männlich`, `U15 · weiblich`, `U18 · männlich`.
+- vorhandene konfigurierte geschlechtsspezifische GK dienen weiterhin ausschließlich als auswählbare Vorgaben.
+- Sonder-GK können je AK/Geschlecht ergänzt und entfernt werden.
+- für festgelegte Gewichtsklassen verlangt Speichern mindestens eine GK für jede Kombination aus ausgewählter AK und ausgewähltem Geschlecht.
+- Server bereinigt die Struktur gegen die tatsächlich ausgewählten AK und Geschlechter.
+- alte `maleWeightClasses[]` und `femaleWeightClasses[]` bleiben zur Verlustfreiheit erhalten, werden aber ausdrücklich nicht automatisch allen AK zugeordnet.
+- keine erfundenen offiziellen AK-Gewichtsklassen und keine automatische fachliche Migration.
+
+Unverändert:
+- gewichtsnahe Einteilung und Poolbildung.
+- Ziel-Poolgröße.
+- Regelprofile und automatische GK-Vorgaben daraus.
+- Desktop/Qt.
+
+Erforderliche Schritte:
+- **01: ja. 02: ja. 03: nein.**
+- danach Browser hart neu laden und feste GK mit mehreren AK sowie m/w prüfen.
+
 ## 8. Nächster fachlicher Schwerpunkt
 
 Aktueller Arbeitsrahmen: **Phase 1 - Fachliche und technische Grundlage für Einzelturniere**.
-AP 01 bis AP 09 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 10: Gewichtsklassen-Auswahl auf Altersklasse plus Geschlecht umstellen und als kompakten Auswahldialog führen; noch ohne Poolbildung.
+AP 01 bis AP 10 sowie die Architekturentscheidung V0.2.40 sind abgeschlossen. Nächstes Umsetzungs-AP ist AP 11: gewichtsnahe Einteilung strukturiert konfigurieren, einschließlich frei wählbarer Ziel-Poolgröße; noch ohne automatische Poolbildung.
 Die Grundlage in Abschnitt 7am ist vor einer Einzelturnier-Umsetzung zu beachten.
 
 Die folgende frühere Schwerpunktliste bleibt als Hintergrund erhalten und ist **kein aktueller Umsetzungsauftrag**.
