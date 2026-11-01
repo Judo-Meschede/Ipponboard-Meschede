@@ -117,6 +117,18 @@ void FighterManagerDlg::on_pushButton_add_pressed()
 	}
 
 	Ipponboard::Fighter fighter = dlg.GetFighter();
+	if (fighter.club.trimmed().isEmpty() || fighter.first_name.trimmed().isEmpty() || fighter.last_name.trimmed().isEmpty()) {
+		QMessageBox::warning(this, tr("Missing information"), tr("Club and full name are required."));
+		return;
+	}
+	for (const auto& entry : m_manager.m_fighters) {
+		if (entry.club.compare(fighter.club, Qt::CaseInsensitive) == 0 &&
+			entry.first_name.compare(fighter.first_name, Qt::CaseInsensitive) == 0 &&
+			entry.last_name.compare(fighter.last_name, Qt::CaseInsensitive) == 0) {
+			QMessageBox::warning(this, tr("Duplicate fighter"), tr("This fighter is already registered for the club."));
+			return;
+		}
+	}
 	m_manager.m_fighters.insert(fighter);
 
 	QStringList contents;
