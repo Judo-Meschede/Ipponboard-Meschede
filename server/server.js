@@ -552,7 +552,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    }
    const templatePath=process.env.IPPONBOARD_USB_TEMPLATE||path.join(DATA_DIR,'usb-template.zip');
    const buffer=createUsbZip({master,mode,selected:requested,templatePath});
-   const filename='Ipponboard-Meschede_USB_'+mode+'.zip';
+   const filename='Ipponboard-Meschede_USB_'+({gift:'Vereinsneutral',selected:'Auswahl',full:'Vollstaendig'}[mode])+'.zip';
    res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="'+filename+'"','Content-Length':buffer.length,'Cache-Control':'no-store'});
    return res.end(buffer);
   }catch(e){return json(res,{error:e.message||'USB-Paket konnte nicht erstellt werden'},500)}
