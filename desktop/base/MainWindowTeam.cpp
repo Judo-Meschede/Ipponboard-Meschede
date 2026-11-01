@@ -102,9 +102,9 @@ namespace
 				}
 			}
 
-			const QString fallback = QDir(fm::GetAppDataDir()).filePath(QStringLiteral("runtime"));
-			QDir().mkpath(fallback);
-			return fallback;
+			// Never silently redirect offline competition data to the local PC.
+			// On a read-only USB drive, subsequent QSaveFile operations fail visibly.
+			return portable;
 		}();
 		return result;
 	}
