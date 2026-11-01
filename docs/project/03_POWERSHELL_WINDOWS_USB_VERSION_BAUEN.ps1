@@ -97,7 +97,8 @@ start "" "%~dp0app\Ipponboard-Meschede.exe"
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
 if (!(Test-Path $csc)) { throw 'Windows .NET Framework C# compiler fehlt.' }
 $launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
-& $csc /nologo /target:winexe /out:(Join-Path $package 'Ipponboard-Meschede.exe') /reference:System.Windows.Forms.dll $launcher
+$launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
+& $csc /nologo /target:winexe "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
 Check 'Portable EXE Starter'
 if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
