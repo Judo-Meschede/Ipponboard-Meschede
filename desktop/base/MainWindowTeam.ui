@@ -1360,7 +1360,7 @@
   </action>
   <action name="actionManage_Clubs">
    <property name="text">
-    <string>Clubs</string>
+    <string>Vereine / Mannschaften</string>
    </property>
    <property name="toolTip">
     <string>Manage Clubs</string>
