@@ -135,7 +135,7 @@ SplashScreen::SplashScreen(Data const& data, QWidget* parent) : QDialog(parent),
 {
     Q_UNUSED(data);
     ui->setupUi(this);
-    ui->label_info->setText(QStringLiteral("Ipponboard-Meschede V0.1.6"));
+    ui->label_info->setText(QStringLiteral("Ipponboard-Meschede V%1").arg(QCoreApplication::applicationVersion()));
     setWindowFlags(Qt::Window);
     resize(1536, 982);
 
