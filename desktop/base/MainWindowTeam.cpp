@@ -160,6 +160,18 @@ namespace
 	bool http_json_request(const wchar_t* method, const QString& requestPath, const QByteArray& payload,
 		QByteArray& response, DWORD& status)
 	{
+
+		// A gifted or event-scoped USB copy must never contact the Meschede server.
+		const QString profileFile = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
+		const QJsonObject profile = read_json_document(profileFile).object();
+		if (profile.contains(QStringLiteral("serverSyncAllowed")) &&
+			!profile.value(QStringLiteral("serverSyncAllowed")).toBool())
+		{
+			response.clear();
+			status = 0;
+			return false;
+		}
+
 		response.clear();
 		status = 0;
 		HINTERNET session = WinHttpOpen(L"Ipponboard-Meschede", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
@@ -797,6 +809,15 @@ static QJsonArray TournamentModesToJson(const Ipponboard::TournamentMode::List& 
 
 bool MainWindowTeam::UploadTournamentModes_(const Ipponboard::TournamentMode::List& modes, QString& errorMsg)
 {
+	const QJsonObject profile = read_json_document(QDir(QCoreApplication::applicationDirPath())
+		.absoluteFilePath(QStringLiteral("../data/usb-profile.json"))).object();
+	if (profile.contains(QStringLiteral("serverSyncAllowed")) &&
+		!profile.value(QStringLiteral("serverSyncAllowed")).toBool())
+	{
+		errorMsg = QStringLiteral("Serverzugriff ist für diese USB-Version dauerhaft gesperrt.");
+		return false;
+	}
+
 	errorMsg.clear();
 	QJsonObject root;
 	root.insert(QStringLiteral("tournamentModes"), TournamentModesToJson(modes));
