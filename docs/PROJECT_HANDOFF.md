@@ -1768,3 +1768,10 @@ Danach sollte der neue Chat zuerst GitHub lesen und erst dann Änderungen vorneh
 - Ausführung erfolgt auf dem vorhandenen Windows-Buildrechner; **noch kein Windows-Build ausgeführt, keine USB-Funktion auf Fremdrechner geprüft**.
 - Keine Serveränderung. 01: nein; 02: nein; 03: neues USB-Skript ausführen.
 - Bei fehlender `env_cfg.bat` muss die vorhandene lokale Buildkonfiguration bereitgestellt werden. Windows-Smart-App-Control kann unsignierte EXE weiterhin blockieren.
+
+## 7bg. USB-Build MSVC-Laufzeitkorrektur V0.2.53
+
+- `desktop/base/CMakeLists.txt`: MSVC-Laufzeit-DLLs werden nicht mehr fest aus `VC143.CRT` einzeln kopiert, sondern als vollständiger CRT-Ordner passend zum Toolset v142/v143. Dies vermeidet fehlende v143-Dateien beim v142-Build.
+- USB-Buildskript auf 0.2.53 aktualisiert. Vorhandener USB-Build kann mit erneuter CMake-Konfiguration weitergebaut werden.
+- Änderungen nur am Windows-Build, keine Server- oder Scoreboard-Funktionsänderungen. Nicht auf Windows ausgeführt; USB-Portabilität noch nicht verifiziert.
+- 01: nein; 02: nein; 03: USB-Skript erneut herunterladen und ausführen.
