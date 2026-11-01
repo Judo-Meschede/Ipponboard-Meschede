@@ -63,7 +63,7 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(!fs.existsSync(offlinePage))throw new Error('Lokale Verwaltungsseite fehlt');
   zip.addFile('verwaltung-offline.html',fs.readFileSync(offlinePage));
  }
- const required=['app/Ipponboard-Meschede.exe','app/TournamentModes.ini','runtime/node.exe','local-server/server.js','START_IPPONBOARD_MESCHEDE.cmd'];
+ const required=['app/Ipponboard-Meschede.exe','app/TournamentModes.ini','runtime/node.exe','local-server/server.js','START_IPPONBOARD_MESCHEDE.cmd','Ipponboard-Meschede.exe'];
  for(const requiredFile of required)
   if(!zip.getEntry(requiredFile))
    throw new Error('USB-Vorlage unvollständig: '+requiredFile+'. Bitte neue Windows-Vorlage hochladen.');
