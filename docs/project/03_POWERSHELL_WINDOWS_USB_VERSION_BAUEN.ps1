@@ -93,6 +93,13 @@ set "HOST=127.0.0.1"
 start "" /B "%~dp0runtime\node.exe" "%~dp0local-server\server.js" >NUL 2>&1
 start "" "%~dp0app\Ipponboard-Meschede.exe"
 '@ | Set-Content (Join-Path $package 'START_IPPONBOARD_MESCHEDE.cmd') -Encoding Ascii
+# Build a GUI launcher without requiring installation on the target machine.
+$csc = Join-Path $env:WINDIR 'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
+if (!(Test-Path $csc)) { throw 'Windows .NET Framework C# compiler fehlt.' }
+$launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
+& $csc /nologo /target:winexe /out:(Join-Path $package 'Ipponboard-Meschede.exe') /reference:System.Windows.Forms.dll $launcher
+Check 'Portable EXE Starter'
+if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
 # Preserve the downloaded masterdata snapshot for an offline-first USB test.
 $dataDir = Join-Path $package 'data'
