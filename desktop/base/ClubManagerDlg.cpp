@@ -34,6 +34,9 @@ ClubManagerDlg::ClubManagerDlg(
 			return;
 		}
 		on_pushButton_save_pressed();
+		Ipponboard::Club savedClub;
+		if (!m_pClubMgr->GetClub(m_SelectedClub, savedClub) || savedClub.name != clubName)
+			return;
 		FighterManagerDlg dlg(m_fighters, this);
 		dlg.SetFilter(FighterManagerDlg::eColumn_club, clubName);
 		dlg.exec();
@@ -186,6 +189,29 @@ void ClubManagerDlg::on_pushButton_save_pressed()
 			return;
 		}
 	}
+	Ipponboard::Club previous;
+	if (!m_pClubMgr->GetClub(m_SelectedClub, previous))
+		return;
+	if (previous.name != club.name)
+	{
+		// Rebuild rather than mutate set keys in place.
+		auto updatedFighters = m_fighters.m_fighters;
+		for (const auto& fighter : m_fighters.m_fighters)
+		{
+			if (fighter.club != previous.name)
+				continue;
+			updatedFighters.erase(fighter);
+			Ipponboard::Fighter renamed = fighter;
+			renamed.club = club.name;
+			if (!updatedFighters.insert(renamed).second)
+			{
+				QMessageBox::warning(this, tr("Verein"),
+					tr("Umbenennung abgebrochen: Kämpfer würde doppelt angelegt."));
+				return;
+			}
+		}
+		m_fighters.m_fighters.swap(updatedFighters);
+	}
 	m_pClubMgr->UpdateClub(m_SelectedClub, club);
 
 	// update club view in list
@@ -199,6 +225,18 @@ void ClubManagerDlg::on_pushButton_remove_pressed()
 	if (m_SelectedClub < 0)
 		return;
 
+	Ipponboard::Club selected;
+	if (!m_pClubMgr->GetClub(m_SelectedClub, selected))
+		return;
+	for (const auto& fighter : m_fighters.m_fighters)
+	{
+		if (fighter.club == selected.name)
+		{
+			QMessageBox::warning(this, tr("Verein"),
+				tr("Verein kann nicht gelöscht werden, solange Kämpfer zugeordnet sind."));
+			return;
+		}
+	}
 	m_pClubMgr->RemoveClub(m_SelectedClub);
 	ui->comboBox_club->removeItem(m_SelectedClub);
 }
