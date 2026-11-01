@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $root = 'C:\Users\LokalAdmin_2\Ipponboard-Meschede-Build'
-$source = Join-Path $root 'Source'
+$source = Join-Path $root 'USB-Source'
 $out = Join-Path $root 'Ausgabe'
 $version = '0.2.52'
 $package = Join-Path $out "Ipponboard-Meschede_V${version}_Portable"
@@ -17,7 +17,7 @@ if (Test-Path (Join-Path $source '.git')) {
 $desktop = Join-Path $source 'desktop'
 $envCfg = Join-Path $desktop 'env_cfg.bat'
 if (!(Test-Path $envCfg)) {
-  $existing = Get-ChildItem -Path $root -Filter env_cfg.bat -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -ne $envCfg } | Select-Object -First 1
+  $existing = Get-Item (Join-Path $root 'Source\Ipponboard-Meschede\env_cfg.bat') -ErrorAction SilentlyContinue
   if ($existing) { Copy-Item $existing.FullName $envCfg }
 }
 if (!(Test-Path $envCfg)) { throw 'env_cfg.bat fehlt. Bitte die vorhandene Build-Konfiguration in desktop\env_cfg.bat bereitstellen.' }
