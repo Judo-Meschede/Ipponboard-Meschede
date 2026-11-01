@@ -2839,6 +2839,12 @@ void MainWindowTeam::on_button_prev_clicked()
 	const int completedFight = m_pController->GetCurrentFight();
 	const bool wasSaved = m_pController->GetFight(completedRound, completedFight).is_saved;
 
+	const QString before = SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
+	if (!before.isEmpty())
+	{
+		QMessageBox::critical(this, QStringLiteral("Kampf nicht gewechselt"), before);
+		return;
+	}
 	m_pController->PrevFight();
 
 	const QString after = SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
@@ -2864,7 +2870,12 @@ void MainWindowTeam::on_button_next_clicked()
 	// reset osaekomi view (to reset active colors of previous fight)
     m_pController->DoAction(eAction_ResetOsaeKomi, FighterEnum::Nobody, true /*doRevoke*/);
 
-	SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
+	const QString after = SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
+	if (!after.isEmpty())
+	{
+		QMessageBox::critical(this, QStringLiteral("Speicherfehler nach Kampfwechsel"), after);
+		return;
+	}
 	PersistCompetitionRecovery_(completedRound, completedFight,
 		wasSaved ? QStringLiteral("corrected") : QStringLiteral("completed"));
 }
