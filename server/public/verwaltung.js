@@ -516,3 +516,40 @@ $('#tournamentModesPickerClose').onclick=closeTournamentModesPicker;$('#tourname
  });
  draw();
 })();
+
+(function initOfflineResults(){
+ const exportButton=document.querySelector('#offlineResultsExport');
+ const importButton=document.querySelector('#offlineResultsImport');
+ const fileInput=document.querySelector('#offlineResultsFile');
+ const status=document.querySelector('#offlineResultsStatus');
+ if(!exportButton||!importButton||!fileInput||!status)return;
+ exportButton.onclick=async()=>{
+  status.textContent='Ergebnisse werden vorbereitet …';
+  try{
+   const response=await fetch('/api/offline-results/export',{cache:'no-store'});
+   if(!response.ok)throw new Error((await response.json()).error||('HTTP '+response.status));
+   const url=URL.createObjectURL(await response.blob()),a=document.createElement('a');
+   a.href=url;a.download='Ipponboard-Ergebnisse.json';document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+   status.textContent='Ergebnisdatei gespeichert.';
+  }catch(e){status.textContent='Ergebnisexport: '+e.message}
+ };
+ importButton.onclick=async()=>{
+  const file=fileInput.files&&fileInput.files[0];
+  if(!file){status.textContent='Ergebnisdatei auswählen.';return}
+  const token=document.querySelector('#usbToken').value;
+  if(!token){status.textContent='Freigabeschlüssel fehlt.';return}
+  let payload;
+  try{payload=JSON.parse(await file.text())}catch{status.textContent='Ungültige JSON-Datei.';return}
+  if(payload.schema!=='ipponboard-offline-results-1'||!Array.isArray(payload.entries)){status.textContent='Keine gültige Ergebnisdatei.';return}
+  if(!confirm('Ergebnisse für '+payload.entries.length+' Matten importieren? Bestehende Ergebnisse werden nicht überschrieben.'))return;
+  importButton.disabled=true;
+  try{
+   const response=await fetch('/api/offline-results/import',{method:'POST',headers:{'Content-Type':'application/json','X-USB-Export-Token':token},body:JSON.stringify(payload)});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error||('HTTP '+response.status));
+   status.textContent=result.imported+' Mattenergebnisse importiert.';
+  }catch(e){status.textContent='Ergebnisimport abgelehnt: '+e.message}
+  finally{importButton.disabled=false}
+ };
+})();
