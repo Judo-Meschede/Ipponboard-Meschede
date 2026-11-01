@@ -56,7 +56,7 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungueltiger Pfad in USB-Vorlage');
   if(/^(data\/|app\/data\/|offline-tournaments\/|app\/offline-tournaments\/)/i.test(name))continue;
   if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv|clubs\.config|fighters\.config|tournament.*\.json|.*\.autosave)$/i.test(name))continue;
-  if(mode==='gift' && /^(app\/runtime\/|runtime\/|app\/clubs\/|app\/config\/)/i.test(name))continue;
+  if(mode==='gift' && /^(app\/runtime\/|app\/clubs\/|app\/config\/)/i.test(name))continue;
   zip.addFile(name,entry.getData());
  }
  const offlinePage=path.join(__dirname,'public','verwaltung-offline.html');
@@ -64,6 +64,10 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(!fs.existsSync(offlinePage))throw new Error('Lokale Verwaltungsseite fehlt');
   zip.addFile('verwaltung-offline.html',fs.readFileSync(offlinePage));
  }
+ const required=['app/Ipponboard-Meschede.exe','app/TournamentModes.ini','runtime/node.exe','local-server/server.js','START_IPPONBOARD_MESCHEDE.cmd'];
+ for(const requiredFile of required)
+  if(!zip.getEntry(requiredFile))
+   throw new Error('USB-Vorlage unvollständig: '+requiredFile+'. Bitte neue Windows-Vorlage hochladen.');
  const data=snapshot(master,mode,selected||{});
  zip.addFile('data/masterdata.json',Buffer.from(JSON.stringify({version:'0.2.54',masterdata:data},null,2),'utf8'));
  zip.addFile('data/usb-profile.json',Buffer.from(JSON.stringify({mode,serverSyncAllowed:mode==='full',createdAt:new Date().toISOString()},null,2),'utf8'));
