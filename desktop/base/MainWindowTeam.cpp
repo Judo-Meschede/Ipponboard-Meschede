@@ -606,6 +606,8 @@ void MainWindowTeam::read_specific_settings(QSettings& settings)
 
 void MainWindowTeam::on_actionManageFighters_triggered()
 {
+	// Read changes made by local web administration before opening an editor.
+	LoadMasterDataCache_();
 	if (!m_usingMasterData)
 	{
 		MainWindowBase::on_actionManageFighters_triggered();
@@ -2588,6 +2590,8 @@ void MainWindowTeam::on_actionManageModes_triggered()
 
 void MainWindowTeam::on_actionManage_Clubs_triggered()
 {
+	// Read changes made by local web administration before opening an editor.
+	LoadMasterDataCache_();
 	if (!m_usingMasterData)
 	{
 		ClubManagerDlg dlg(m_pClubManager, m_fighterManager, this);
