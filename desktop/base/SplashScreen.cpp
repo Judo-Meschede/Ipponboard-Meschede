@@ -179,14 +179,7 @@ void SplashScreen::on_commandLinkButton_admin_pressed()
 {
     if (OfflineUsbProfile())
     {
-        const QString localPage = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../verwaltung-offline.html"));
-        if (!QFileInfo::exists(localPage))
-        {
-            QMessageBox::warning(this, QStringLiteral("Lokale Verwaltung"),
-                QStringLiteral("Die lokale Verwaltungsseite fehlt auf diesem USB-Stick."));
-            return;
-        }
-        QDesktopServices::openUrl(QUrl::fromLocalFile(localPage));
+        QDesktopServices::openUrl(QUrl(QStringLiteral("http://127.0.0.1:43181/verwaltung")));
         return;
     }
     QDesktopServices::openUrl(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/verwaltung")));
