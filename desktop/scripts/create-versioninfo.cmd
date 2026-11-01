@@ -16,15 +16,15 @@ echo Using: BASE_DIR=%BASE_DIR%
 
 :: --> CHANGE VERSION HERE:
 SET VER1=0
-SET VER2=1
-SET VER3=0
-SET "TAG="
+SET VER2=2
+SET VER3=54
+SET "TAG=preview"
 :: that's it. <--
 
-git log -1 --format=%%h > %BASE_DIR%\.revision
+git -C "%~dp0..\.." log -1 --format=%%h > %BASE_DIR%\.revision
 SET /P REV=<%BASE_DIR%\.revision
 
-git log -1 --format=%%ci > %BASE_DIR%\.date
+git -C "%~dp0..\.." log -1 --format=%%ci > %BASE_DIR%\.date
 SET /P REV_DATE=<%BASE_DIR%\.date
 
 SET FILENAME_NO_EXT=%BASE_DIR%\versioninfo
@@ -32,15 +32,10 @@ IF NOT EXIST %BASE_DIR%\.buildnr (
 	SET VER4=0
 ) ELSE (
 	SET /P VER4=<%BASE_DIR%\.buildnr
-	IF NOT EXIST %FILENAME_NO_EXT%.h SET /A VER4+=1 >nul
+	SET /A VER4+=1 >nul
 	)
 )
 echo %VER4% >%BASE_DIR%\.buildnr
-
-IF EXIST %FILENAME_NO_EXT%.h (
-	echo --^> version info up to date: %VER1%.%VER2%.%VER3%.%VER4%
-	goto the_end
-)
 
 SET IPPONBOARD_VERSION=%VER1%.%VER2%.%VER3%.%VER4%
 
