@@ -1,6 +1,7 @@
 'use strict';
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const ExcelJS=require('exceljs');
+const {createUsbZip}=require('./usb-export');
 const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROOT=path.join(__dirname,'public');
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
@@ -518,6 +519,34 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(u.pathname==='/api/health')return json(res,{ok:true,name:'Ipponboard-Meschede',version:APP_VERSION,revision:state.revision,masterRevision:master.revision,masterUpdatedAt:master.updatedAt});
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{version:APP_VERSION,masterdata:master,modes});
+
+ if(u.pathname==='/api/usb-export'&&req.method==='POST'){
+  try{
+   const expected=process.env.IPPONBOARD_USB_EXPORT_TOKEN;
+   if(!expected)return json(res,{error:'USB-Export ist nicht konfiguriert'},503);
+   const presented=req.headers['x-usb-export-token'];
+   if(typeof presented!=='string'||Buffer.byteLength(presented)!==Buffer.byteLength(expected)||
+      !crypto.timingSafeEqual(Buffer.from(presented),Buffer.from(expected)))
+    return json(res,{error:'USB-Export nicht autorisiert'},403);
+   const body=await readBody(req),mode=body&&body.mode;
+   if(!['gift','selected','full'].includes(mode))return json(res,{error:'Ungültiger USB-Modus'},400);
+   const requested=body&&body.selected||{};
+   const dayIds=new Set((master.competitionDays||[]).map(x=>x.id));
+   const individualIds=new Set((master.individualTournaments||[]).map(x=>x.id));
+   if(mode==='selected'){
+    if(!Array.isArray(requested.competitionDays)||!Array.isArray(requested.individualTournaments)||
+       ![...requested.competitionDays].every(id=>dayIds.has(id))||
+       ![...requested.individualTournaments].every(id=>individualIds.has(id)))
+     return json(res,{error:'Unbekannte Turniere oder Kampftage'},400);
+   }
+   const templatePath=process.env.IPPONBOARD_USB_TEMPLATE||path.join(DATA_DIR,'usb-template.zip');
+   const buffer=createUsbZip({master,mode,selected:requested,templatePath});
+   const filename='Ipponboard-Meschede_USB_'+mode+'.zip';
+   res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="'+filename+'"','Content-Length':buffer.length,'Cache-Control':'no-store'});
+   return res.end(buffer);
+  }catch(e){return json(res,{error:e.message||'USB-Paket konnte nicht erstellt werden'},500)}
+ }
+
  if(u.pathname==='/api/sync/snapshot'&&req.method==='GET')return json(res,{ok:true,schema:master.schema,revision:master.revision,updatedAt:master.updatedAt,masterdata:master});
  if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));master.individualTournaments=master.individualTournaments.map(x=>cleanRecord('individualTournaments',x));migrateIndividualTournamentModel();for(const name of ['individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements'])master[name]=master[name].map(x=>cleanRecord(name,x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/merge'&&req.method==='POST'){try{const b=await readBody(req);const incoming=b&&b.masterdata?b.masterdata:b;return json(res,{ok:true,masterdata:mergeMasterData(incoming)})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
