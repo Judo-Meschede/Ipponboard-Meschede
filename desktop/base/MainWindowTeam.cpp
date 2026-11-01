@@ -2099,12 +2099,10 @@ int MainWindowTeam::LoadTournamentFromJson_(QJsonDocument& doc, bool loadWithInc
 QString MainWindowTeam::SaveTournamentToFile_(QString const& filename)
 
 {
-	QFile file = QFile(filename);
+	QSaveFile file(filename);
 	auto jsonDoc = GetTournamentAsJson_();
-	if (file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(jsonDoc) > 0)
+	if (file.open(QIODevice::WriteOnly) && file.write(jsonDoc) == jsonDoc.size() && file.commit())
 	{
-		file.flush();
-		file.close();
 		qDebug() << "Saved tournament successfully to" << filename;
 		return QString();
 	}
@@ -2118,7 +2116,7 @@ QString MainWindowTeam::SaveTournamentToFile_(QString const& filename)
 
 void MainWindowTeam::load_autosave_if_available()
 {
-	const auto autoSavePath = fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename);
+	const auto autoSavePath = QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename));
 	QJsonDocument document;
 	QString errorMessage;
 	const auto status = TournamentSerialization::ReadSaveFile(
@@ -2843,7 +2841,8 @@ void MainWindowTeam::on_button_prev_clicked()
 
 	m_pController->PrevFight();
 
-	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
+	const QString after = SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
+	if (!after.isEmpty()) QMessageBox::critical(this, QStringLiteral("Speicherfehler"), after);
 	PersistCompetitionRecovery_(completedRound, completedFight,
 		wasSaved ? QStringLiteral("corrected") : QStringLiteral("completed"));
 }
@@ -2854,12 +2853,18 @@ void MainWindowTeam::on_button_next_clicked()
 	const int completedFight = m_pController->GetCurrentFight();
 	const bool wasSaved = m_pController->GetFight(completedRound, completedFight).is_saved;
 
+	const QString before = SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
+	if (!before.isEmpty())
+	{
+		QMessageBox::critical(this, QStringLiteral("Kampf nicht gewechselt"), before);
+		return;
+	}
 	m_pController->NextFight();
 
 	// reset osaekomi view (to reset active colors of previous fight)
     m_pController->DoAction(eAction_ResetOsaeKomi, FighterEnum::Nobody, true /*doRevoke*/);
 
-	SaveTournamentToFile_(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
+	SaveTournamentToFile_(QDir(runtime_data_dir()).filePath(QString::fromLatin1(TournamentSerialization::AutoSaveFilename)));
 	PersistCompetitionRecovery_(completedRound, completedFight,
 		wasSaved ? QStringLiteral("corrected") : QStringLiteral("completed"));
 }
