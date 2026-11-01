@@ -469,3 +469,50 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!weightConfigPickerMo
 
 const tournamentModesPickerModal=document.createElement('div');tournamentModesPickerModal.id='tournamentModesPickerModal';tournamentModesPickerModal.className='multi-modal hidden';tournamentModesPickerModal.innerHTML='<div class="multi-modal-card mode-picker-card"><div class="multi-modal-head"><h2>Wettkampfmodi zuordnen</h2><button id="tournamentModesPickerClose" class="iconbtn">×</button></div><div id="tournamentModesPickerBody" class="mode-picker-body"></div><div class="multi-modal-actions"><button id="tournamentModesPickerCancel" class="btn ghost">Abbrechen</button><button id="tournamentModesPickerApply" class="btn red">Übernehmen</button></div></div>';document.body.appendChild(tournamentModesPickerModal);
 $('#tournamentModesPickerClose').onclick=closeTournamentModesPicker;$('#tournamentModesPickerCancel').onclick=closeTournamentModesPicker;$('#tournamentModesPickerApply').onclick=applyTournamentModesPicker;tournamentModesPickerModal.onclick=e=>{if(e.target===tournamentModesPickerModal)closeTournamentModesPicker()};
+
+
+// USB-Paket-Export: Der Server verwendet eine administrativ bereitgestellte Windows-Vorlage.
+(function initUsbExport(){
+ const mode=$('#usbMode'),events=$('#usbEventSelection'),list=$('#usbEventList'),button=$('#usbExportBtn'),status=$('#usbExportStatus');
+ if(!mode||!events||!list||!button||!status)return;
+ function draw(){
+  const isSelected=mode.value==='selected';
+  events.classList.toggle('hidden',!isSelected);
+  events.style.display=isSelected?'block':'none';
+  list.replaceChildren();
+  if(!isSelected)return;
+  for(const [key,title] of [['competitionDays','Kampftage'],['individualTournaments','Einzelturniere']]){
+   const heading=document.createElement('h4');heading.textContent=title;list.appendChild(heading);
+   const collection=Array.isArray(data[key])?data[key]:[];
+   if(!collection.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='Keine Einträge';list.appendChild(empty)}
+   for(const entry of collection){
+    const label=document.createElement('label');
+    label.style.cssText='display:block;margin:5px 0';
+    const input=document.createElement('input');input.type='checkbox';input.dataset.usbType=key;input.value=String(entry.id||'');
+    label.append(input,document.createTextNode(' '+(entry.date||'')+' – '+(entry.name||entry.id)));
+    list.appendChild(label);
+   }
+  }
+ }
+ mode.addEventListener('change',draw);
+ button.addEventListener('click',async()=>{
+  const selected={competitionDays:[],individualTournaments:[]};
+  for(const checkbox of list.querySelectorAll('input[data-usb-type]:checked'))selected[checkbox.dataset.usbType].push(checkbox.value);
+  const token=$('#usbToken').value;
+  if(!token){status.textContent='Freigabeschlüssel fehlt.';return}
+  button.disabled=true;status.textContent='USB-Paket wird erstellt …';
+  try{
+   const response=await fetch('/api/usb-export',{method:'POST',
+    headers:{'Content-Type':'application/json','X-USB-Export-Token':token},
+    body:JSON.stringify({mode:mode.value,selected})});
+   if(!response.ok){let reason='HTTP '+response.status;try{reason=(await response.json()).error||reason}catch{}throw new Error(reason)}
+   const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='Ipponboard-Meschede_USB_'+mode.value+'.zip';
+   document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+   status.textContent='ZIP-Paket heruntergeladen. Noch nicht auf USB übertragen.';
+  }catch(error){status.textContent='USB-Export fehlgeschlagen: '+error.message}
+  finally{button.disabled=false}
+ });
+ draw();
+})();
