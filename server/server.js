@@ -558,6 +558,63 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   }catch(e){return json(res,{error:e.message||'USB-Paket konnte nicht erstellt werden'},500)}
  }
 
+ // Offline results are transported as a file, never synchronized silently.
+ if(u.pathname==='/api/offline-results/export'&&req.method==='GET'){
+  if(process.env.IPPONBOARD_USB_OFFLINE!=='1')return json(res,{error:'Only available on an offline USB instance'},403);
+  const profile=readJson(path.join(DATA_DIR,'usb-profile.json'),()=>({}));
+  if(profile.mode!=='selected')return json(res,{error:'Only selected competition exports can return results'},403);
+  const days=new Set((master.competitionDays||[]).map(x=>String(x.id)));
+  const entries={...recoveryStore.entries};
+  const dir=path.join(DATA_DIR,'competition-states');
+  if(fs.existsSync(dir))for(const name of fs.readdirSync(dir)){
+   if(!name.endsWith('.json'))continue;
+   const file=readJson(path.join(dir,name),()=>null);
+   if(!file||!days.has(String(file.competitionDayId))||!file.matId||!file.snapshot)continue;
+   const key=recoveryKey(file.competitionDayId,file.matId);
+   entries[key]={competitionDayId:file.competitionDayId,matId:file.matId,updatedAt:file.updatedAt||'',snapshot:sanitizeRecoverySnapshot(file.snapshot)};
+  }
+  const valid=Object.values(entries).filter(x=>x&&days.has(String(x.competitionDayId))&&x.snapshot);
+  const payload={schema:'ipponboard-offline-results-1',createdAt:new Date().toISOString(),entries:valid};
+  const buffer=Buffer.from(JSON.stringify(payload,null,2));
+  res.writeHead(200,{'Content-Type':'application/json','Content-Disposition':'attachment; filename="Ipponboard-Ergebnisse.json"','Content-Length':buffer.length,'Cache-Control':'no-store'});
+  return res.end(buffer);
+ }
+ if(u.pathname==='/api/offline-results/import'&&req.method==='POST'){
+  if(process.env.IPPONBOARD_USB_OFFLINE==='1')return json(res,{error:'Offline import disabled'},403);
+  const expected=process.env.IPPONBOARD_USB_EXPORT_TOKEN||'',provided=req.headers['x-usb-export-token'];
+  if(!expected||typeof provided!=='string'||Buffer.byteLength(expected)!==Buffer.byteLength(provided)||!crypto.timingSafeEqual(Buffer.from(expected),Buffer.from(provided)))return json(res,{error:'Unauthorized'},403);
+  try{
+   const payload=await readBody(req);
+   if(payload.schema!=='ipponboard-offline-results-1'||!Array.isArray(payload.entries)||payload.entries.length>100)return json(res,{error:'Invalid result file'},400);
+   const staged=[];
+   for(const raw of payload.entries){
+    if(!raw||typeof raw!=='object'||typeof raw.competitionDayId!=='string'||typeof raw.matId!=='string'||raw.matId.length>128)return json(res,{error:'Invalid result entry'},400);
+    const day=master.competitionDays.find(d=>String(d.id)===raw.competitionDayId);
+    if(!day||!Array.isArray(day.mats)||!day.mats.some(m=>String(m.id)===raw.matId))return json(res,{error:'Unknown competition or mat: '+raw.competitionDayId},409);
+    const key=recoveryKey(raw.competitionDayId,raw.matId);
+    if(recoveryStore.entries[key])return json(res,{error:'Results already exist for '+raw.competitionDayId+' / '+raw.matId},409);
+    const snapshot=sanitizeRecoverySnapshot(raw.snapshot);
+    const fights={};
+    for(let ri=0;ri<(snapshot.Rounds||[]).length;ri++){
+     const round=snapshot.Rounds[ri];
+     if(!Array.isArray(round))continue;
+     for(let fi=0;fi<round.length;fi++){
+      const fight=recoveryEventFight(snapshot,ri,fi);
+      if(fight)fights[ri+':'+fi]={round:ri,fight:fi,revision:1,updatedAt:new Date().toISOString(),reason:'offline-import',data:fight};
+     }
+    }
+    if(!Object.keys(fights).length)return json(res,{error:'No completed fights in file'},400);
+    staged.push([key,{competitionDayId:raw.competitionDayId,matId:raw.matId,revision:1,updatedAt:new Date().toISOString(),lastReason:'offline-import',fights,snapshot}]);
+   }
+   if(!staged.length)return json(res,{error:'No result entries'},400);
+   const previous=recoveryStore.entries;
+   recoveryStore.entries={...previous,...Object.fromEntries(staged)};
+   try{atomicWrite(RECOVERY_FILE,{...recoveryStore,revision:Number(recoveryStore.revision||0)+1,updatedAt:new Date().toISOString()})}
+   catch(e){recoveryStore.entries=previous;throw e}
+   recoveryStore.revision=Number(recoveryStore.revision||0)+1;
+   return json(res,{ok:true,imported:staged.length});
+  }catch(e){return json(res,{error:e.message||'Invalid results'},400)}
+ }
  if(u.pathname==='/api/sync/snapshot'&&req.method==='GET')return json(res,{ok:true,schema:master.schema,revision:master.revision,updatedAt:master.updatedAt,masterdata:master});
  if(u.pathname==='/api/masterdata/import'&&req.method==='POST'){try{const b=await readBody(req);if(!b||!b.masterdata||!Array.isArray(b.masterdata.clubs))return json(res,{error:'invalid masterdata'},400);master={...b.masterdata,schema:'ipponboard-meschede-masterdata-1'};ensureMasterCollections();migrateLegacyCompetitions();master.competitionDays=master.competitionDays.map(x=>cleanRecord('competitionDays',x));master.individualTournaments=master.individualTournaments.map(x=>cleanRecord('individualTournaments',x));migrateIndividualTournamentModel();for(const name of ['individualCategories','individualRegistrations','individualDraws','individualBouts','individualPlacements'])master[name]=master[name].map(x=>cleanRecord(name,x));saveMaster('Stammdaten importiert');return json(res,{ok:true,masterdata:master})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
  if(u.pathname==='/api/masterdata/merge'&&req.method==='POST'){try{const b=await readBody(req);const incoming=b&&b.masterdata?b.masterdata:b;return json(res,{ok:true,masterdata:mergeMasterData(incoming)})}catch(e){return json(res,{error:e.message||'bad request'},400)}}
