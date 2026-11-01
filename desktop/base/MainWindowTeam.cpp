@@ -101,7 +101,7 @@ namespace
 	{
 		static const QString result = []()
 		{
-			const QString portable = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("runtime"));
+			const QString portable = QDir(QCoreApplication::applicationDirPath()).filePath(QFile::exists(QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"))) ? QStringLiteral("../data") : QStringLiteral("runtime"));
 			if (QDir().mkpath(portable))
 			{
 				const QString testPath = QDir(portable).filePath(QStringLiteral(".write-test"));
@@ -677,7 +677,8 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	m_masterClubs = master.value(QStringLiteral("clubs")).toArray();
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
 	// Local changes are stored separately: the synchronized server snapshot remains intact.
-	const QJsonDocument localMaster = read_json_document(QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json")));
+	const bool usbMode = QFile::exists(QDir(appDir).absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
+	const QJsonDocument localMaster = usbMode ? QJsonDocument() : read_json_document(QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json")));
 	if (localMaster.isObject())
 	{
 		const QJsonObject local = localMaster.object();
@@ -2718,12 +2719,33 @@ void MainWindowTeam::on_actionManage_Clubs_triggered()
 			}
 			if (!found) { QJsonObject entry; entry.insert(QStringLiteral("id"), id); entry.insert(QStringLiteral("name"), name); entry.insert(QStringLiteral("status"), QStringLiteral("active")); entry.insert(QStringLiteral("fighterIds"), rosters.value(id)); teams.append(entry); }
 		}
-		// Keep all other global master data untouched.
-		const QString localPath = QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json"));
+		// A USB device uses the same masterdata.json as its local web administration.
+		const bool usbMode = QFile::exists(QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
+		const QString localPath = usbMode
+			? QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/masterdata.json"))
+			: QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json"));
 		QJsonObject root;
-		root.insert(QStringLiteral("clubs"), clubs);
-		root.insert(QStringLiteral("teams"), teams);
-		root.insert(QStringLiteral("fighters"), editedFighters);
+		if (usbMode)
+		{
+			root = read_json_document(localPath).object();
+			QJsonObject master = root.value(QStringLiteral("masterdata")).toObject();
+			if (master.isEmpty())
+			{
+				QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("USB-Stammdaten fehlen oder sind ungültig."));
+				return;
+			}
+			master.insert(QStringLiteral("clubs"), clubs);
+			master.insert(QStringLiteral("teams"), teams);
+			master.insert(QStringLiteral("fighters"), editedFighters);
+			master.insert(QStringLiteral("revision"), master.value(QStringLiteral("revision")).toInt() + 1);
+			root.insert(QStringLiteral("masterdata"), master);
+		}
+		else
+		{
+			root.insert(QStringLiteral("clubs"), clubs);
+			root.insert(QStringLiteral("teams"), teams);
+			root.insert(QStringLiteral("fighters"), editedFighters);
+		}
 		if (!write_json_atomic(localPath, QJsonDocument(root)))
 		{
 			QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("Lokale Stammdaten konnten nicht gespeichert werden."));
