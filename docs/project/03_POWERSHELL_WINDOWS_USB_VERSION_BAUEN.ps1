@@ -8,7 +8,11 @@ function Check($label) { if ($LASTEXITCODE -ne 0) { throw "$label fehlgeschlagen
 if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git fehlt.' }
 if (!(Get-Command cmake -ErrorAction SilentlyContinue)) { throw 'CMake fehlt.' }
 New-Item -ItemType Directory -Force -Path $root,$out | Out-Null
-if (!(Test-Path (Join-Path $source '.git'))) { throw "GitHub-Arbeitskopie fehlt: $source" }
+if (!(Test-Path (Join-Path $source '.git'))) {
+  New-Item -ItemType Directory -Force -Path (Split-Path $source) | Out-Null
+  git clone https://github.com/Judo-Meschede/Ipponboard-Meschede.git $source
+  Check 'GitHub-Arbeitskopie erstellen'
+}
 # Never reset/fetch here: release must reflect the exact locally tested commit.
 $dirty = git -C $source status --porcelain
 Check 'Git status'
