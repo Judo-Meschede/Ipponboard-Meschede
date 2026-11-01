@@ -120,7 +120,7 @@ $graphics.FillRectangle($red, 0, 0, 64, 10)
 $fmt = New-Object System.Drawing.StringFormat
 $fmt.Alignment = [System.Drawing.StringAlignment]::Center
 $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
-$graphics.DrawString('IM', $font, $white, (New-Object System.Drawing.RectangleF(0,9,64,55)), $fmt)
+$graphics.DrawString('IM', $font, $white, ([System.Drawing.RectangleF]::new(0,9,64,55)), $fmt)
 $graphics.Dispose()
 $ico = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
 $stream = [System.IO.File]::Create($iconPath)
