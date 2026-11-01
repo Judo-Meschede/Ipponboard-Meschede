@@ -2624,7 +2624,19 @@ void MainWindowTeam::on_actionManage_Clubs_triggered()
 	}
 	clubLayout.addWidget(&clubTable);
 	QPushButton addClub(QStringLiteral("Verein hinzufügen"), &clubPage);
-	clubLayout.addWidget(&addClub);
+	QPushButton editClub(QStringLiteral("Verein bearbeiten"), &clubPage);
+	QHBoxLayout clubButtons;
+	clubButtons.addWidget(&addClub);
+	clubButtons.addWidget(&editClub);
+	clubLayout.addLayout(&clubButtons);
+	connect(&editClub, &QPushButton::clicked, &dialog, [&]() {
+		const int row = clubTable.currentRow();
+		if (row < 0 || !clubTable.item(row, 0)) return;
+		bool ok = false;
+		const QString name = QInputDialog::getText(&dialog, QStringLiteral("Verein bearbeiten"),
+			QStringLiteral("Vereinsname:"), QLineEdit::Normal, clubTable.item(row, 0)->text(), &ok).trimmed();
+		if (ok && !name.isEmpty()) clubTable.item(row, 0)->setText(name);
+	});
 	tabs.addTab(&clubPage, QStringLiteral("Vereine"));
 	connect(&addClub, &QPushButton::clicked, &dialog, [&]()
 	{
