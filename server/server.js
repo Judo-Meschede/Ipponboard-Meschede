@@ -24,7 +24,7 @@ function defaultRuleSets(){return [
  {id:'Classic',name:'Classic',status:'active',hasYuko:true,awaseteIppon:true,openEndGoldenScore:false,shidoAddsPoint:true,shidoScoreCounts:true,maxShidoCount:3,maxWazaariCount:2,osaekomiYukoSeconds:15,osaekomiWazaariSeconds:20,osaekomiIpponSeconds:25,ipponTeamPoints:10,wazaariTeamPoints:7,yukoTeamPoints:5,shidoTeamPoints:1,ipponLabel:'Ippon',wazaariLabel:'Waza-ari',yukoLabel:'Yuko',shidoLabel:'Shido',hansokumakeLabel:'Hansoku-make',notes:''}
 ];}
 function newState(){const mode='BL-M',cfg=modes[mode];return {version:APP_VERSION,revision:0,mode,teams:[{id:'A',name:'Team A'},{id:'B',name:'Team B'},{id:'C',name:'Team C'}],matches:[{id:'AB',home:'A',guest:'B'},{id:'BC',home:'B',guest:'C'},{id:'CA',home:'C',guest:'A'}],matchIndex:0,fightIndex:0,fights:cfg.weights.map(w=>mkFight(w,cfg.fightSeconds)),teamScore:{A:0,B:0,C:0},lastAction:'Systemstart',updatedAt:new Date().toISOString()};}
-function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],individualCategories:[],individualRegistrations:[],individualDraws:[],individualBouts:[],individualPlacements:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets(),ageClassFightTimeDefaults:{}};}
+function newMaster(){const now=new Date().toISOString();return {schema:'ipponboard-meschede-masterdata-1',revision:1,updatedAt:now,clubs:process.env.IPPONBOARD_USB_OFFLINE==='1'?[]:[{id:'club-ssv-meschede',name:'SSV Meschede Judo',shortName:'Meschede',country:'GER',status:'active',website:'',notes:'',logo:'/assets/branding/ssv_meschede_logo.png',updatedAt:now}],teams:[],fighters:[],competitionDays:[],individualTournaments:[],individualCategories:[],individualRegistrations:[],individualDraws:[],individualBouts:[],individualPlacements:[],weightClasses:[],tournamentModes:[],ruleSets:defaultRuleSets(),ageClassFightTimeDefaults:{}};}
 function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return fallback()}}
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
@@ -516,6 +516,15 @@ function wsAccept(k){return crypto.createHash('sha1').update(k+'258EAFA5-E914-47
 function frame(o){const p=Buffer.from(JSON.stringify(o));if(p.length<126)return Buffer.concat([Buffer.from([0x81,p.length]),p]);const h=Buffer.alloc(4);h[0]=0x81;h[1]=126;h.writeUInt16BE(p.length,2);return Buffer.concat([h,p])}
 function broadcast(){for(const s of sockets){try{s.write(frame({type:'state',state}))}catch{}}}
 const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host||'localhost'}`);
+ if(process.env.IPPONBOARD_USB_OFFLINE==='1'){
+  const allowedHost='127.0.0.1:'+PORT;
+  if(req.headers.host!==allowedHost)return json(res,{error:'Local access only'},403);
+  if(!['GET','HEAD','OPTIONS'].includes(req.method||'')){
+   const origin=req.headers.origin;
+   if(origin && origin!=='http://'+allowedHost)return json(res,{error:'Cross-origin write denied'},403);
+  }
+ }
+
  if(u.pathname==='/api/health')return json(res,{ok:true,name:'Ipponboard-Meschede',version:APP_VERSION,revision:state.revision,masterRevision:master.revision,masterUpdatedAt:master.updatedAt});
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{version:APP_VERSION,masterdata:master,modes});
