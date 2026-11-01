@@ -59,6 +59,11 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(mode==='gift' && /^(app\/runtime\/|runtime\/|app\/clubs\/|app\/config\/)/i.test(name))continue;
   zip.addFile(name,entry.getData());
  }
+ const offlinePage=path.join(__dirname,'public','verwaltung-offline.html');
+ if(mode!=='full'){
+  if(!fs.existsSync(offlinePage))throw new Error('Lokale Verwaltungsseite fehlt');
+  zip.addFile('verwaltung-offline.html',fs.readFileSync(offlinePage));
+ }
  const data=snapshot(master,mode,selected||{});
  zip.addFile('data/masterdata.json',Buffer.from(JSON.stringify({version:'0.2.54',masterdata:data},null,2),'utf8'));
  zip.addFile('data/usb-profile.json',Buffer.from(JSON.stringify({mode,serverSyncAllowed:mode==='full',createdAt:new Date().toISOString()},null,2),'utf8'));
