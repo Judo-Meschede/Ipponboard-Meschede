@@ -817,11 +817,18 @@ bool MainWindowTeam::UploadTournamentModes_(const Ipponboard::TournamentMode::Li
 {
 	const QJsonObject profile = read_json_document(QDir(QCoreApplication::applicationDirPath())
 		.absoluteFilePath(QStringLiteral("../data/usb-profile.json"))).object();
-	if (profile.contains(QStringLiteral("serverSyncAllowed")) &&
-		!profile.value(QStringLiteral("serverSyncAllowed")).toBool())
+	if (!profile.isEmpty())
 	{
-		errorMsg = QStringLiteral("Serverzugriff ist für diese USB-Version dauerhaft gesperrt.");
-		return false;
+		const QString dataFile = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/masterdata.json"));
+		QJsonObject root = read_json_document(dataFile).object();
+		QJsonObject master = root.value(QStringLiteral("masterdata")).toObject();
+		if (master.isEmpty()) { errorMsg = QStringLiteral("USB-Stammdaten fehlen."); return false; }
+		master.insert(QStringLiteral("tournamentModes"), TournamentModesToJson(modes));
+		master.insert(QStringLiteral("revision"), master.value(QStringLiteral("revision")).toInt() + 1);
+		root.insert(QStringLiteral("masterdata"), master);
+		if (!write_json_atomic(dataFile, QJsonDocument(root))) { errorMsg = QStringLiteral("Wettkampfmodi konnten nicht auf dem USB gespeichert werden."); return false; }
+		errorMsg.clear();
+		return true;
 	}
 
 	errorMsg.clear();
@@ -2470,7 +2477,8 @@ void MainWindowTeam::on_actionManageModes_triggered()
 		}
 
 		m_masterTournamentModes = TournamentModesToJson(dlg.Result());
-		SaveTournamentModesToCache_(dlg.Result());
+		const bool usbMode = QFile::exists(QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
+		if (!usbMode) SaveTournamentModesToCache_(dlg.Result());
 		LoadModes(dlg.Result(), m_currentMode); // global server state accepted
 	}
 }
