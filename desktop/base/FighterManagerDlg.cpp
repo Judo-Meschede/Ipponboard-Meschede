@@ -14,6 +14,7 @@
 #include <QMessageBox>
 #include <QRegExp>
 #include <QPlainTextEdit>
+#include <QTimer>
 
 //using namespace Ipponboard;
 
@@ -389,13 +390,11 @@ void FighterManagerDlg::on_treeWidget_fighters_itemChanged(
 
 		if (!m_manager.AddFighter(changedFighter))
 		{
-			ui->treeWidget_fighters->takeTopLevelItem(
-				ui->treeWidget_fighters->indexOfTopLevelItem(pItem));
-
-			// due to duplicate entry
-			qDebug("removed changed entry due to duplicate: %s %s",
-                   changedFighter.first_name.toLatin1().data(),
-                   changedFighter.last_name.toLatin1().data());
+			// A rejected edit must never delete the original fighter.
+			m_manager.AddFighter(originalFighter);
+			QMessageBox::warning(this, tr("Duplicate fighter"),
+				tr("The change conflicts with an existing fighter and was not saved."));
+			QTimer::singleShot(0, this, [this]() { populate_view(); });
 		}
 	}
 }
