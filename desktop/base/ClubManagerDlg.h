@@ -10,7 +10,7 @@
 
 // forwards
 namespace Ui { class ClubManagerDlg; }
-namespace Ipponboard { class ClubManager; }
+namespace Ipponboard { class ClubManager; class FighterManager; }
 class QListWidgetItem;
 
 class ClubManagerDlg : public QDialog
@@ -19,6 +19,7 @@ class ClubManagerDlg : public QDialog
 public:
 	ClubManagerDlg(
 		std::shared_ptr<Ipponboard::ClubManager> pMgr,
+		Ipponboard::FighterManager& fighters,
 		QWidget* parent = nullptr);
 	~ClubManagerDlg();
 
@@ -31,6 +32,7 @@ private:
 
 	Ui::ClubManagerDlg* ui;
 	std::shared_ptr<Ipponboard::ClubManager> m_pClubMgr;
+	Ipponboard::FighterManager& m_fighters;
 	int m_SelectedClub;
 
 private slots:
