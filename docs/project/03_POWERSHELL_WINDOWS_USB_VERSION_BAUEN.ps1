@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$root = 'C:\Users\LokalAdmin_2\Ipponboard-Meschede-Build'
+$root = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Ipponboard-Meschede-Build'
 $source = Join-Path $root 'GitHub\Ipponboard-Meschede'
 $out = Join-Path $root 'Ausgabe'
 $version = '0.2.54-preview'
@@ -81,13 +81,16 @@ Check 'USB-Webserver-Abhängigkeiten'
 @echo off
 setlocal
 cd /d "%~dp0"
-if exist "data\usb-profile.json" (
-  set "IPPONBOARD_USB_OFFLINE=1"
-  set "IPPONBOARD_DATA_DIR=%~dp0data"
-  set "PORT=43181"
-  set "HOST=127.0.0.1"
-  start "Ipponboard lokale Verwaltung" /MIN "%~dp0runtime\node.exe" "%~dp0local-server\server.js"
+if not exist "data\usb-profile.json" (
+  echo USB-Profil fehlt. Bitte eine der drei USB-Exportvarianten verwenden.
+  pause
+  exit /b 1
 )
+set "IPPONBOARD_USB_OFFLINE=1"
+set "IPPONBOARD_DATA_DIR=%~dp0data"
+set "PORT=43181"
+set "HOST=127.0.0.1"
+start "" /B "%~dp0runtime\node.exe" "%~dp0local-server\server.js" >NUL 2>&1
 start "" "%~dp0app\Ipponboard-Meschede.exe"
 '@ | Set-Content (Join-Path $package 'START_IPPONBOARD_MESCHEDE.cmd') -Encoding Ascii
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
@@ -96,7 +99,7 @@ $dataDir = Join-Path $package 'data'
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 $localSnapshot = Join-Path $desktop '_bin\data\masterdata.json'
 if (!(Test-Path $localSnapshot)) { $localSnapshot = Join-Path $desktop '_bin\Ipponboard-Meschede-Release\data\masterdata.json' }
-if (Test-Path $localSnapshot) { Copy-Item $localSnapshot $dataDir -Force }
+# Do not copy developer snapshots into any USB export template.
 # Empty USB bundles carry no server snapshot or active tournament records.
 # The application must not silently inherit data from its creator's machine.
 
