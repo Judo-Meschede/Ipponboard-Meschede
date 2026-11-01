@@ -5,6 +5,9 @@
 #include "ClubManagerDlg.h"
 #include "ui_ClubManagerDlg.h"
 #include "ClubManager.h"
+#include "FighterManager.h"
+#include "FighterManagerDlg.h"
+#include <QPushButton>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <memory>
@@ -13,14 +16,27 @@ using namespace Ipponboard;
 
 //---------------------------------------------------------
 ClubManagerDlg::ClubManagerDlg(
-	std::shared_ptr<ClubManager> pMgr, QWidget* parent)
+	std::shared_ptr<ClubManager> pMgr, FighterManager& fighters, QWidget* parent)
 	: QDialog(parent)
 	, ui(new Ui::ClubManagerDlg)
 	, m_pClubMgr(pMgr)
+	, m_fighters(fighters)
 	, m_SelectedClub(-1)
 //---------------------------------------------------------
 {
 	ui->setupUi(this);
+	QPushButton* editFighters = new QPushButton(tr("Kämpfer des Vereins verwalten"), this);
+	ui->verticalLayout->addWidget(editFighters);
+	connect(editFighters, &QPushButton::clicked, this, [this]() {
+		const QString clubName = ui->comboBox_club->currentText().trimmed();
+		if (clubName.isEmpty()) {
+			QMessageBox::information(this, tr("Verein auswählen"), tr("Bitte zuerst einen Verein anlegen und speichern."));
+			return;
+		}
+		FighterManagerDlg dlg(m_fighters, this);
+		dlg.SetFilter(FighterManagerDlg::eColumn_club, clubName);
+		dlg.exec();
+	});
 
 	Q_ASSERT(m_pClubMgr);
 
