@@ -110,14 +110,14 @@ $launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
 # Generate a portable launcher icon matching the desktop window/taskbar emblem.
 Add-Type -AssemblyName System.Drawing
 $iconPath = Join-Path $root 'USB-Build\\ipponboard-meschede.ico'
-$bitmap = New-Object System.Drawing.Bitmap(64, 64)
+$bitmap = [System.Drawing.Bitmap]::new(64, 64)
 $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
 $graphics.Clear([System.Drawing.Color]::FromArgb(25,25,25))
-$red = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(200,20,30))
-$white = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
-$font = New-Object System.Drawing.Font('Arial', 29, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$red = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(200,20,30))
+$white = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
+$font = [System.Drawing.Font]::new('Arial', 29, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $graphics.FillRectangle($red, 0, 0, 64, 10)
-$fmt = New-Object System.Drawing.StringFormat
+$fmt = [System.Drawing.StringFormat]::new()
 $fmt.Alignment = [System.Drawing.StringAlignment]::Center
 $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
 $graphics.DrawString('IM', $font, $white, ([System.Drawing.RectangleF]::new(0,9,64,55)), $fmt)
