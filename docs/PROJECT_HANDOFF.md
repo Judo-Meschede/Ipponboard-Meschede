@@ -1761,3 +1761,10 @@ Im neuen Chat reicht dieser Satz:
 > Arbeite am Projekt Ipponboard-Meschede weiter. Lies zuerst im GitHub-Repository Judo-Meschede/Ipponboard-Meschede die Datei docs/PROJECT_HANDOFF.md und prüfe CURRENT_VERSION.txt sowie den aktuellen main-Stand. Fasse mir danach den aktuellen Stand und den dort dokumentierten nächsten sinnvollen Schritt kurz zusammen. **Noch nichts umsetzen oder ändern. Frage mich anschließend, was ich als Nächstes machen möchte.** Keine alten Google-Drive-Projektstände als Quellcodebasis verwenden.
 
 Danach sollte der neue Chat zuerst GitHub lesen und erst dann Änderungen vornehmen.
+
+## 7bf. USB-Buildvorbereitung V0.2.52
+
+- Neues Skript `docs/project/03_POWERSHELL_WINDOWS_USB_VERSION_BAUEN.ps1` erstellt. Es lädt main, baut Qt/C++ Release unter Windows, ergänzt Qt-Laufzeitdateien, erzeugt Start-CMD und ZIP.
+- Ausführung erfolgt auf dem vorhandenen Windows-Buildrechner; **noch kein Windows-Build ausgeführt, keine USB-Funktion auf Fremdrechner geprüft**.
+- Keine Serveränderung. 01: nein; 02: nein; 03: neues USB-Skript ausführen.
+- Bei fehlender `env_cfg.bat` muss die vorhandene lokale Buildkonfiguration bereitgestellt werden. Windows-Smart-App-Control kann unsignierte EXE weiterhin blockieren.
