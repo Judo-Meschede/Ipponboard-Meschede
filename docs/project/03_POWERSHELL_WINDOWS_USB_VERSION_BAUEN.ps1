@@ -35,7 +35,16 @@ if (!$qt -or !(Test-Path (Join-Path $qt 'bin\windeployqt.exe'))) { throw 'Qt/win
 $build = Join-Path $root 'USB-Build'
 $base = Join-Path $desktop 'base'
 & (Join-Path $desktop 'scripts\create-versioninfo.cmd') $base; Check 'Versionsdateien erzeugen'
-cmake -S $desktop -B (Join-Path $desktop 'build-x86') -G 'Visual Studio 17 2022' -A Win32; Check 'CMake Konfiguration'
+$buildDir = Join-Path $desktop 'build-x86'
+$cache = Join-Path $buildDir 'CMakeCache.txt'
+if (Test-Path $cache) {
+  $cacheSource = Select-String -LiteralPath $cache -Pattern '^CMAKE_HOME_DIRECTORY:INTERNAL=' | Select-Object -First 1
+  if ($cacheSource -and $cacheSource.Line.Split('=',2)[1].Replace('\\','/').TrimEnd('/') -ne $desktop.Replace('\\','/').TrimEnd('/')) {
+    Remove-Item $buildDir -Recurse -Force
+    Write-Host 'Veralteten CMake-Buildcache mit fremdem Quellpfad entfernt.'
+  }
+}
+cmake -S $desktop -B $buildDir -G 'Visual Studio 17 2022' -A Win32; Check 'CMake Konfiguration'
 cmake --build (Join-Path $desktop 'build-x86') --config Release --target Ipponboard-Meschede; Check 'CMake Build'
 $exe = Join-Path $desktop '_bin\Ipponboard-Meschede-Release\Ipponboard-Meschede.exe'
 if (!(Test-Path $exe)) { throw "EXE fehlt: $exe" }
