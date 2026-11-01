@@ -2102,6 +2102,17 @@ void MainWindowTeam::on_actionNew_triggered()
 	const QString organizer = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
 		QStringLiteral("Ausrichter:"), QLineEdit::Normal, QString(), &accepted).trimmed();
 	if (!accepted) return;
+	const QString dateText = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
+		QStringLiteral("Datum (TT.MM.JJJJ):"), QLineEdit::Normal,
+		QDate::currentDate().toString(QStringLiteral("dd.MM.yyyy")), &accepted).trimmed();
+	if (!accepted) return;
+	const QDate tournamentDate = QDate::fromString(dateText, QStringLiteral("dd.MM.yyyy"));
+	if (!tournamentDate.isValid() || tournamentDate.toString(QStringLiteral("dd.MM.yyyy")) != dateText)
+	{
+		QMessageBox::warning(this, QStringLiteral("Ungültiges Datum"),
+			QStringLiteral("Bitte ein gültiges Datum im Format TT.MM.JJJJ eingeben."));
+		return;
+	}
 	const QString localId = QUuid::createUuid().toString(QUuid::WithoutBraces);
 	QJsonObject record;
 	record.insert(QStringLiteral("localId"), localId);
@@ -2109,9 +2120,9 @@ void MainWindowTeam::on_actionNew_triggered()
 	record.insert(QStringLiteral("name"), name);
 	record.insert(QStringLiteral("location"), location);
 	record.insert(QStringLiteral("organizer"), organizer);
-	record.insert(QStringLiteral("date"), QDate::currentDate().toString(Qt::ISODate));
+	record.insert(QStringLiteral("date"), tournamentDate.toString(Qt::ISODate));
 	record.insert(QStringLiteral("syncStatus"), QStringLiteral("pending"));
-	const QString directory = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("runtime/offline-tournaments"));
+	const QString directory = QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments"));
 	if (!QDir().mkpath(directory))
 	{
 		QMessageBox::warning(this, QStringLiteral("Fehler"), QStringLiteral("Offline-Verzeichnis konnte nicht angelegt werden."));
