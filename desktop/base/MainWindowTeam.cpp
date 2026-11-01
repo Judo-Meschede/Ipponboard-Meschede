@@ -2163,7 +2163,7 @@ void MainWindowTeam::on_actionNew_triggered()
 	form.addRow(tr("Matten"), &mats);
 	layout.addLayout(&form);
 
-	QLabel teamLabel(tr("Teilnehmende Mannschaften (mindestens zwei auswählen):"), &dialog);
+	QLabel teamLabel(QStringLiteral("Teilnehmende Mannschaften (mindestens zwei ausw\u00e4hlen):"), &dialog);
 	layout.addWidget(&teamLabel);
 	QListWidget teams(&dialog);
 	for (const QJsonValue& entry : m_masterTeams)
