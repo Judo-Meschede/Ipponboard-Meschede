@@ -39,6 +39,15 @@ function ensureMasterCollections(){
  if(!Array.isArray(master.ruleSets))master.ruleSets=defaultRuleSets();if(!master.ageClassFightTimeDefaults||typeof master.ageClassFightTimeDefaults!=='object'||Array.isArray(master.ageClassFightTimeDefaults))master.ageClassFightTimeDefaults={};
 }
 ensureMasterCollections();
+function refreshUsbMaster(){
+ if(process.env.IPPONBOARD_USB_OFFLINE!=='1')return;
+ if(!fs.existsSync(MASTER_FILE))return;
+ const stored=readJson(MASTER_FILE,()=>null);
+ if(!stored||!stored.masterdata||stored.masterdata.schema!=='ipponboard-meschede-masterdata-1')
+  throw new Error('Invalid USB masterdata file');
+ master=stored.masterdata;
+ ensureMasterCollections();
+}
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
 function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master)}catch(e){console.error('Masterdata save failed',e)}}
 function saveRecoveryStore(){recoveryStore.revision=Number(recoveryStore.revision||0)+1;recoveryStore.updatedAt=new Date().toISOString();try{atomicWrite(RECOVERY_FILE,recoveryStore)}catch(e){console.error('Recovery save failed',e)}}
@@ -527,6 +536,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   }
  }
 
+ if(process.env.IPPONBOARD_USB_OFFLINE==='1'&&u.pathname.startsWith('/api/')){
+  try{refreshUsbMaster()}catch(e){return json(res,{error:'USB-Datenbank konnte nicht gelesen werden: '+e.message},500)}
+ }
  if(u.pathname==='/api/health')return json(res,{ok:true,name:'Ipponboard-Meschede',version:APP_VERSION,revision:state.revision,masterRevision:master.revision,masterUpdatedAt:master.updatedAt});
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{version:APP_VERSION,masterdata:master,modes});
@@ -679,5 +691,5 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
 });
 server.on('upgrade',(req,sock)=>{if(req.url!=='/ws'){sock.destroy();return}const k=req.headers['sec-websocket-key'];if(!k){sock.destroy();return}sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+wsAccept(k)+'\r\n\r\n');sockets.add(sock);sock.write(frame({type:'state',state}));sock.on('close',()=>sockets.delete(sock));sock.on('error',()=>sockets.delete(sock))});
 setInterval(()=>{const now=Date.now(),d=now-lastTick;lastTick=now;const f=currentFight();let ch=false;if(f.running&&f.timeMs>0){f.timeMs=Math.max(0,f.timeMs-d);if(!f.timeMs)f.running=false;ch=true}if(f.hold.active){f.hold.timeMs+=d;ch=true}if(ch)broadcast()},100);
-fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);if(!fs.existsSync(RECOVERY_FILE))atomicWrite(RECOVERY_FILE,recoveryStore);
+fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);if(!fs.existsSync(RECOVERY_FILE))atomicWrite(RECOVERY_FILE,recoveryStore);
 server.listen(PORT,HOST,()=>{const a=server.address();const port=a&&typeof a==='object'?a.port:PORT;console.log(`Ipponboard-Meschede ${APP_VERSION} ${process.env.IPPONBOARD_DESKTOP?'Desktop':'Web'} ${HOST}:${port}`);if(process.send)process.send({type:'listening',port})});
