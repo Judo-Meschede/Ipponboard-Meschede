@@ -10,6 +10,8 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMouseEvent>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -27,6 +29,16 @@
 
 namespace
 {
+bool OfflineUsbProfile()
+{
+    const QString file = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
+    QFile input(file);
+    if (!input.open(QIODevice::ReadOnly)) return false;
+    const QJsonObject profile = QJsonDocument::fromJson(input.readAll()).object();
+    return profile.contains(QStringLiteral("serverSyncAllowed")) &&
+           !profile.value(QStringLiteral("serverSyncAllowed")).toBool();
+}
+
 #ifdef _WIN32
 bool FetchSnapshotWindows(QByteArray& payload, QString& error)
 {
@@ -162,7 +174,22 @@ bool SplashScreen::eventFilter(QObject* watched, QEvent* event)
 
 void SplashScreen::on_commandLinkButton_startSingleVersion_pressed(){ accept(); }
 void SplashScreen::on_commandLinkButton_startTeamVersion_pressed(){ done(QDialog::Accepted + 1); }
-void SplashScreen::on_commandLinkButton_admin_pressed(){ QDesktopServices::openUrl(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/verwaltung"))); }
+void SplashScreen::on_commandLinkButton_admin_pressed()
+{
+    if (OfflineUsbProfile())
+    {
+        const QString localPage = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../verwaltung-offline.html"));
+        if (!QFileInfo::exists(localPage))
+        {
+            QMessageBox::warning(this, QStringLiteral("Lokale Verwaltung"),
+                QStringLiteral("Die lokale Verwaltungsseite fehlt auf diesem USB-Stick."));
+            return;
+        }
+        QDesktopServices::openUrl(QUrl::fromLocalFile(localPage));
+        return;
+    }
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/verwaltung")));
+}
 void SplashScreen::on_btnSync_clicked(){ SyncMasterDataCache(); }
 
 void SplashScreen::resizeEvent(QResizeEvent* event)
@@ -204,6 +231,16 @@ void SplashScreen::ApplyReferenceGeometry()
 
 void SplashScreen::SyncMasterDataCache()
 {
+    if (OfflineUsbProfile())
+    {
+        ui->btnSync->setEnabled(false);
+        ui->btnSync->setText(QStringLiteral("Offline-Version"));
+        ui->label_serverStatus->setText(QStringLiteral("Serverzugriff gesperrt"));
+        ui->label_lastUpdate->setText(QStringLiteral("Nur lokale Daten"));
+        ui->label_cacheStatus->setText(QStringLiteral("USB-Datenbestand"));
+        return;
+    }
+
     ui->btnSync->setEnabled(false);
     ui->btnSync->setText(QStringLiteral("Aktualisiere..."));
     ui->label_serverStatus->setStyleSheet(QStringLiteral("color:#f4b83f;font-weight:700;font-size:14px;"));
