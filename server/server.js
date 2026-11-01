@@ -28,7 +28,9 @@ function newMaster(){const now=new Date().toISOString();return {schema:'ipponboa
 function readJson(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return fallback()}}
 function atomicWrite(file,obj){fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
 let state=readJson(STATE_FILE,newState); state.version=APP_VERSION;
-let master=readJson(MASTER_FILE,newMaster); if(!master.schema)master=newMaster();
+const savedMaster=readJson(MASTER_FILE,newMaster);
+let master=(process.env.IPPONBOARD_USB_OFFLINE==='1'&&savedMaster.masterdata)?savedMaster.masterdata:savedMaster;
+if(!master.schema)master=newMaster();
 function newRecoveryStore(){return {schema:'ipponboard-competition-recovery-1',revision:0,updatedAt:new Date().toISOString(),entries:{}}}
 let recoveryStore=readJson(RECOVERY_FILE,newRecoveryStore);
 if(!recoveryStore||recoveryStore.schema!=='ipponboard-competition-recovery-1'||typeof recoveryStore.entries!=='object'||Array.isArray(recoveryStore.entries))recoveryStore=newRecoveryStore();
@@ -38,7 +40,7 @@ function ensureMasterCollections(){
 }
 ensureMasterCollections();
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
-function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,master)}catch(e){console.error('Masterdata save failed',e)}}
+function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master)}catch(e){console.error('Masterdata save failed',e)}}
 function saveRecoveryStore(){recoveryStore.revision=Number(recoveryStore.revision||0)+1;recoveryStore.updatedAt=new Date().toISOString();try{atomicWrite(RECOVERY_FILE,recoveryStore)}catch(e){console.error('Recovery save failed',e)}}
 function competitionToDay(raw){
  const matches=Array.isArray(raw&&raw.matches)?raw.matches:[];
