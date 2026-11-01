@@ -11,9 +11,10 @@ function snapshot(master,kind,requested){
  const base={schema:master.schema||'ipponboard-meschede-masterdata-1',revision:0,updatedAt:new Date().toISOString()};
  for(const name of COLLECTIONS)base[name]=[];
  if(kind==='gift'){
-  base.ruleSets=[];
-  base.tournamentModes=[];
-  base.ageClassFightTimeDefaults={};
+  // Global settings belong to every USB variant, even with no clubs or events.
+  for(const name of ['weightClasses','tournamentModes','ruleSets'])
+   base[name]=structuredClone(master[name]||[]);
+  base.ageClassFightTimeDefaults=structuredClone(master.ageClassFightTimeDefaults||{});
   return base;
  }
  if(kind==='full'){
@@ -37,8 +38,7 @@ function snapshot(master,kind,requested){
  base.fighters=pick(master.fighters,fighterIds);
  for(const fighter of base.fighters)clubIds.add(fighter.clubId);
  base.clubs=pick(master.clubs,clubIds);
- const modeIds=new Set(base.competitionDays.map(x=>x.tournamentModeId));
- base.tournamentModes=(master.tournamentModes||[]).filter(x=>modeIds.has(x.id));
+ base.tournamentModes=structuredClone(master.tournamentModes||[]);
  base.ruleSets=structuredClone(master.ruleSets||[]);
  base.weightClasses=structuredClone(master.weightClasses||[]);
  base.ageClassFightTimeDefaults=structuredClone(master.ageClassFightTimeDefaults||{});
