@@ -56,7 +56,6 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungueltiger Pfad in USB-Vorlage');
   if(/^(data\/|app\/data\/|offline-tournaments\/|app\/offline-tournaments\/)/i.test(name))continue;
   if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv|clubs\.config|fighters\.config|tournament.*\.json|.*\.autosave)$/i.test(name))continue;
-  if(mode==='gift' && /^(app\/runtime\/|app\/clubs\/|app\/config\/)/i.test(name))continue;
   zip.addFile(name,entry.getData());
  }
  const offlinePage=path.join(__dirname,'public','verwaltung-offline.html');
