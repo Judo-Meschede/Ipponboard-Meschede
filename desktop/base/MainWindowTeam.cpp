@@ -2271,7 +2271,7 @@ void MainWindowTeam::on_actionManageModes_triggered()
 
 void MainWindowTeam::on_actionManage_Clubs_triggered()
 {
-	ClubManagerDlg dlg(m_pClubManager, this);
+	ClubManagerDlg dlg(m_pClubManager, m_fighterManager, this);
 	dlg.exec();
 }
 
