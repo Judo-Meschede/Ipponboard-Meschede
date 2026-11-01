@@ -11,6 +11,11 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 #include <QDateEdit>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QTabWidget>
+#include <QPushButton>
+#include <QHBoxLayout>
 #include <QUuid>
 #include <QSaveFile>
 #include "MainWindowTeam.h"
@@ -657,6 +662,16 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	}
 	m_masterClubs = master.value(QStringLiteral("clubs")).toArray();
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
+	// Local changes are stored separately: the synchronized server snapshot remains intact.
+	const QJsonDocument localMaster = read_json_document(QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json")));
+	if (localMaster.isObject())
+	{
+		const QJsonObject local = localMaster.object();
+		if (local.value(QStringLiteral("clubs")).isArray())
+			m_masterClubs = local.value(QStringLiteral("clubs")).toArray();
+		if (local.value(QStringLiteral("teams")).isArray())
+			m_masterTeams = local.value(QStringLiteral("teams")).toArray();
+	}
 	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
 	m_masterCompetitionDays = master.value(QStringLiteral("competitionDays")).toArray();
 	// Overlay offline-created competition days without modifying the server snapshot.
@@ -2435,8 +2450,183 @@ void MainWindowTeam::on_actionManageModes_triggered()
 
 void MainWindowTeam::on_actionManage_Clubs_triggered()
 {
-	ClubManagerDlg dlg(m_pClubManager, m_fighterManager, this);
-	dlg.exec();
+	if (!m_usingMasterData)
+	{
+		ClubManagerDlg dlg(m_pClubManager, m_fighterManager, this);
+		dlg.exec();
+		return;
+	}
+
+	QDialog dialog(this);
+	dialog.setWindowTitle(QStringLiteral("Vereine und Mannschaften – lokale Stammdaten"));
+	dialog.resize(850, 650);
+	QVBoxLayout layout(&dialog);
+	QTabWidget tabs(&dialog);
+	layout.addWidget(&tabs);
+
+	QWidget clubPage(&tabs);
+	QVBoxLayout clubLayout(&clubPage);
+	QTableWidget clubTable(&clubPage);
+	clubTable.setColumnCount(2);
+	clubTable.setHorizontalHeaderLabels({ QStringLiteral("Verein"), QStringLiteral("ID") });
+	clubTable.setColumnHidden(1, true);
+	clubTable.horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+	clubTable.setSelectionBehavior(QAbstractItemView::SelectRows);
+	for (const QJsonValue& value : m_masterClubs)
+	{
+		const QJsonObject club = value.toObject();
+		if (club.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+			continue;
+		const int row = clubTable.rowCount();
+		clubTable.insertRow(row);
+		clubTable.setItem(row, 0, new QTableWidgetItem(club.value(QStringLiteral("name")).toString()));
+		auto* idCell = new QTableWidgetItem(club.value(QStringLiteral("id")).toString());
+		idCell->setFlags(idCell->flags() & ~Qt::ItemIsEditable);
+		clubTable.setItem(row, 1, idCell);
+	}
+	clubLayout.addWidget(&clubTable);
+	QPushButton addClub(QStringLiteral("Verein hinzufügen"), &clubPage);
+	clubLayout.addWidget(&addClub);
+	tabs.addTab(&clubPage, QStringLiteral("Vereine"));
+	connect(&addClub, &QPushButton::clicked, &dialog, [&]()
+	{
+		bool ok = false;
+		const QString name = QInputDialog::getText(&dialog, QStringLiteral("Neuer Verein"),
+			QStringLiteral("Vereinsname:"), QLineEdit::Normal, QString(), &ok).trimmed();
+		if (!ok || name.isEmpty()) return;
+		const int row = clubTable.rowCount();
+		clubTable.insertRow(row);
+		clubTable.setItem(row, 0, new QTableWidgetItem(name));
+		auto* id = new QTableWidgetItem(QUuid::createUuid().toString(QUuid::WithoutBraces));
+		id->setFlags(id->flags() & ~Qt::ItemIsEditable);
+		clubTable.setItem(row, 1, id);
+	});
+
+	QWidget teamPage(&tabs);
+	QVBoxLayout teamLayout(&teamPage);
+	QTableWidget teamTable(&teamPage);
+	teamTable.setColumnCount(3);
+	teamTable.setHorizontalHeaderLabels({ QStringLiteral("Mannschaft"), QStringLiteral("Verein"), QStringLiteral("ID") });
+	teamTable.setColumnHidden(2, true);
+	teamTable.horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+	teamTable.horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+	teamTable.setSelectionBehavior(QAbstractItemView::SelectRows);
+	for (const QJsonValue& value : m_masterTeams)
+	{
+		const QJsonObject team = value.toObject();
+		if (team.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+			continue;
+		const int row = teamTable.rowCount();
+		teamTable.insertRow(row);
+		teamTable.setItem(row, 0, new QTableWidgetItem(team.value(QStringLiteral("name")).toString()));
+		QString clubName;
+		for (const QJsonValue& cv : m_masterClubs)
+			if (cv.toObject().value(QStringLiteral("id")).toString() == team.value(QStringLiteral("clubId")).toString())
+				clubName = cv.toObject().value(QStringLiteral("name")).toString();
+		auto* clubCell = new QTableWidgetItem(clubName);
+		clubCell->setFlags(clubCell->flags() & ~Qt::ItemIsEditable);
+		clubCell->setData(Qt::UserRole, team.value(QStringLiteral("clubId")).toString());
+		teamTable.setItem(row, 1, clubCell);
+		auto* idCell = new QTableWidgetItem(team.value(QStringLiteral("id")).toString());
+		idCell->setFlags(idCell->flags() & ~Qt::ItemIsEditable);
+		teamTable.setItem(row, 2, idCell);
+	}
+	teamLayout.addWidget(&teamTable);
+	QPushButton addTeam(QStringLiteral("Mannschaft hinzufügen"), &teamPage);
+	teamLayout.addWidget(&addTeam);
+	tabs.addTab(&teamPage, QStringLiteral("Mannschaften"));
+	connect(&addTeam, &QPushButton::clicked, &dialog, [&]()
+	{
+		bool ok = false;
+		const QString name = QInputDialog::getText(&dialog, QStringLiteral("Neue Mannschaft"),
+			QStringLiteral("Mannschaftsname:"), QLineEdit::Normal, QString(), &ok).trimmed();
+		if (!ok || name.isEmpty()) return;
+		QStringList clubs;
+		for (int row = 0; row < clubTable.rowCount(); ++row)
+			clubs.append(clubTable.item(row, 0)->text().trimmed());
+		if (clubs.isEmpty())
+		{
+			QMessageBox::warning(&dialog, QStringLiteral("Mannschaft"), QStringLiteral("Zuerst einen Verein anlegen."));
+			return;
+		}
+		const QString chosen = QInputDialog::getItem(&dialog, QStringLiteral("Verein zuordnen"),
+			QStringLiteral("Verein:"), clubs, 0, false, &ok);
+		if (!ok) return;
+		const int clubRow = clubs.indexOf(chosen);
+		const int row = teamTable.rowCount();
+		teamTable.insertRow(row);
+		teamTable.setItem(row, 0, new QTableWidgetItem(name));
+		auto* clubCell = new QTableWidgetItem(chosen);
+		clubCell->setFlags(clubCell->flags() & ~Qt::ItemIsEditable);
+		clubCell->setData(Qt::UserRole, clubTable.item(clubRow, 1)->text());
+		teamTable.setItem(row, 1, clubCell);
+		auto* idCell = new QTableWidgetItem(QUuid::createUuid().toString(QUuid::WithoutBraces));
+		idCell->setFlags(idCell->flags() & ~Qt::ItemIsEditable);
+		teamTable.setItem(row, 2, idCell);
+	});
+
+	QLabel note(QStringLiteral("Änderungen werden ausschließlich lokal auf diesem Datenträger gespeichert, nicht auf dem Server."), &dialog);
+	note.setWordWrap(true);
+	layout.addWidget(&note);
+	QDialogButtonBox buttons(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+	layout.addWidget(&buttons);
+	connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	connect(&buttons, &QDialogButtonBox::accepted, &dialog, [&]()
+	{
+		QJsonArray clubs = m_masterClubs;
+		QJsonArray teams = m_masterTeams;
+		for (int row = 0; row < clubTable.rowCount(); ++row)
+		{
+			const QString id = clubTable.item(row, 1)->text();
+			const QString name = clubTable.item(row, 0)->text().trimmed();
+			if (name.isEmpty()) { QMessageBox::warning(&dialog, QStringLiteral("Verein"), QStringLiteral("Vereinsnamen dürfen nicht leer sein.")); return; }
+			bool found = false;
+			for (int i = 0; i < clubs.size(); ++i)
+			{
+				QJsonObject entry = clubs.at(i).toObject();
+				if (entry.value(QStringLiteral("id")).toString() != id) continue;
+				entry.insert(QStringLiteral("name"), name);
+				clubs.replace(i, entry);
+				found = true;
+				break;
+			}
+			if (!found) { QJsonObject entry; entry.insert(QStringLiteral("id"), id); entry.insert(QStringLiteral("name"), name); entry.insert(QStringLiteral("status"), QStringLiteral("active")); clubs.append(entry); }
+		}
+		for (int row = 0; row < teamTable.rowCount(); ++row)
+		{
+			const QString id = teamTable.item(row, 2)->text();
+			const QString name = teamTable.item(row, 0)->text().trimmed();
+			if (name.isEmpty()) { QMessageBox::warning(&dialog, QStringLiteral("Mannschaft"), QStringLiteral("Mannschaftsnamen dürfen nicht leer sein.")); return; }
+			const QString clubId = teamTable.item(row, 1)->data(Qt::UserRole).toString();
+			bool found = false;
+			for (int i = 0; i < teams.size(); ++i)
+			{
+				QJsonObject entry = teams.at(i).toObject();
+				if (entry.value(QStringLiteral("id")).toString() != id) continue;
+				entry.insert(QStringLiteral("name"), name);
+				entry.insert(QStringLiteral("clubId"), clubId);
+				teams.replace(i, entry);
+				found = true;
+				break;
+			}
+			if (!found) { QJsonObject entry; entry.insert(QStringLiteral("id"), id); entry.insert(QStringLiteral("clubId"), clubId); entry.insert(QStringLiteral("name"), name); entry.insert(QStringLiteral("status"), QStringLiteral("active")); entry.insert(QStringLiteral("fighterIds"), QJsonArray()); teams.append(entry); }
+		}
+		// Keep all other global master data untouched.
+		const QString localPath = QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json"));
+		QJsonObject root;
+		root.insert(QStringLiteral("clubs"), clubs);
+		root.insert(QStringLiteral("teams"), teams);
+		if (!write_json_atomic(localPath, QJsonDocument(root)))
+		{
+			QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("Lokale Stammdaten konnten nicht gespeichert werden."));
+			return;
+		}
+		m_masterClubs = clubs;
+		m_masterTeams = teams;
+		update_club_views();
+		dialog.accept();
+	});
+	dialog.exec();
 }
 
 void MainWindowTeam::on_actionLoad_Demo_Data_triggered()
