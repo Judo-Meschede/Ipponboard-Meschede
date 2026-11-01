@@ -2610,9 +2610,12 @@ void MainWindowTeam::on_actionManage_Clubs_triggered()
 	clubTable.setColumnHidden(1, true);
 	clubTable.horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 	clubTable.setSelectionBehavior(QAbstractItemView::SelectRows);
+	clubTable.setSelectionMode(QAbstractItemView::SingleSelection);
+	QMap<QString, QString> clubLogos;
 	for (const QJsonValue& value : m_masterClubs)
 	{
 		const QJsonObject club = value.toObject();
+		clubLogos.insert(club.value(QStringLiteral("id")).toString(), club.value(QStringLiteral("logo")).toString());
 		if (club.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
 			continue;
 		const int row = clubTable.rowCount();
@@ -2625,10 +2628,27 @@ void MainWindowTeam::on_actionManage_Clubs_triggered()
 	clubLayout.addWidget(&clubTable);
 	QPushButton addClub(QStringLiteral("Verein hinzufügen"), &clubPage);
 	QPushButton editClub(QStringLiteral("Verein bearbeiten"), &clubPage);
+	QPushButton logoClub(QStringLiteral("Wappen auswählen"), &clubPage);
 	QHBoxLayout clubButtons;
 	clubButtons.addWidget(&addClub);
 	clubButtons.addWidget(&editClub);
+	clubButtons.addWidget(&logoClub);
 	clubLayout.addLayout(&clubButtons);
+	connect(&logoClub, &QPushButton::clicked, &dialog, [&]() {
+		const int row = clubTable.currentRow();
+		if (row < 0 || !clubTable.item(row, 1)) return;
+		const QString imagePath = QFileDialog::getOpenFileName(&dialog, QStringLiteral("Vereinswappen wählen"), QString(), QStringLiteral("Bilder (*.png *.jpg *.jpeg)"));
+		if (imagePath.isEmpty()) return;
+		QFile imageFile(imagePath);
+		if (!imageFile.open(QIODevice::ReadOnly) || imageFile.size() > 1024 * 1024) {
+			QMessageBox::warning(&dialog, QStringLiteral("Vereinswappen"), QStringLiteral("Wappen muss ein PNG/JPEG mit höchstens 1 MB sein."));
+			return;
+		}
+		const QByteArray bytes = imageFile.readAll();
+		QImage image; if (!image.loadFromData(bytes)) { QMessageBox::warning(&dialog, QStringLiteral("Vereinswappen"), QStringLiteral("Ungültige Bilddatei.")); return; }
+		const QString mime = imagePath.endsWith(QStringLiteral(".png"), Qt::CaseInsensitive) ? QStringLiteral("image/png") : QStringLiteral("image/jpeg");
+		clubLogos.insert(clubTable.item(row, 1)->text(), QStringLiteral("data:%1;base64,%2").arg(mime, QString::fromLatin1(bytes.toBase64())));
+	});
 	connect(&editClub, &QPushButton::clicked, &dialog, [&]() {
 		const int row = clubTable.currentRow();
 		if (row < 0 || !clubTable.item(row, 0)) return;
@@ -2818,11 +2838,12 @@ void MainWindowTeam::on_actionManage_Clubs_triggered()
 				QJsonObject entry = clubs.at(i).toObject();
 				if (entry.value(QStringLiteral("id")).toString() != id) continue;
 				entry.insert(QStringLiteral("name"), name);
+				if (clubLogos.contains(id)) entry.insert(QStringLiteral("logo"), clubLogos.value(id));
 				clubs.replace(i, entry);
 				found = true;
 				break;
 			}
-			if (!found) { QJsonObject entry; entry.insert(QStringLiteral("id"), id); entry.insert(QStringLiteral("name"), name); entry.insert(QStringLiteral("status"), QStringLiteral("active")); clubs.append(entry); }
+			if (!found) { QJsonObject entry; entry.insert(QStringLiteral("id"), id); entry.insert(QStringLiteral("name"), name); entry.insert(QStringLiteral("status"), QStringLiteral("active")); entry.insert(QStringLiteral("logo"), clubLogos.value(id)); clubs.append(entry); }
 		}
 		for (int row = 0; row < teamTable.rowCount(); ++row)
 		{
