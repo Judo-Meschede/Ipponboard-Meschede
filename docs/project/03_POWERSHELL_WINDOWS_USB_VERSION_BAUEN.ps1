@@ -107,7 +107,25 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
 if (!(Test-Path $csc)) { throw 'Windows .NET Framework C# compiler fehlt.' }
 $launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
 $launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
-& $csc /nologo /target:winexe "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
+# Generate a portable launcher icon matching the desktop window/taskbar emblem.
+Add-Type -AssemblyName System.Drawing
+$iconPath = Join-Path $root 'USB-Build\\ipponboard-meschede.ico'
+$bitmap = New-Object System.Drawing.Bitmap(64, 64)
+$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+$graphics.Clear([System.Drawing.Color]::FromArgb(25,25,25))
+$red = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(200,20,30))
+$white = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
+$font = New-Object System.Drawing.Font('Arial', 29, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$graphics.FillRectangle($red, 0, 0, 64, 10)
+$fmt = New-Object System.Drawing.StringFormat
+$fmt.Alignment = [System.Drawing.StringAlignment]::Center
+$fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
+$graphics.DrawString('IM', $font, $white, (New-Object System.Drawing.RectangleF(0,9,64,55)), $fmt)
+$graphics.Dispose()
+$ico = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
+$stream = [System.IO.File]::Create($iconPath)
+try { $ico.Save($stream) } finally { $stream.Dispose(); $ico.Dispose(); $bitmap.Dispose(); $font.Dispose(); $red.Dispose(); $white.Dispose(); $fmt.Dispose() }
+& $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
 Check 'Portable EXE Starter'
 if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
