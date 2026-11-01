@@ -507,7 +507,7 @@ $('#tournamentModesPickerClose').onclick=closeTournamentModesPicker;$('#tourname
     body:JSON.stringify({mode:mode.value,selected})});
    if(!response.ok){let reason='HTTP '+response.status;try{reason=(await response.json()).error||reason}catch{}throw new Error(reason)}
    const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
-   a.href=url;a.download='Ipponboard-Meschede_USB_'+mode.value+'.zip';
+   a.href=url;a.download='Ipponboard-Meschede_USB_'+({gift:'Vereinsneutral',selected:'Auswahl',full:'Vollstaendig'}[mode.value]||'Export')+'.zip';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(url),30000);
    status.textContent='ZIP-Paket heruntergeladen. Noch nicht auf USB übertragen.';
