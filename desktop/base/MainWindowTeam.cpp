@@ -263,6 +263,19 @@ MainWindowTeam::MainWindowTeam(QWidget* parent)
 	, m_modes()
 {
 	m_pUi->setupUi(this);
+	// Use the same Ipponboard-Meschede emblem as the portable starter for the taskbar.
+	QPixmap emblem(64, 64);
+	emblem.fill(QColor(25, 25, 25));
+	QPainter painter(&emblem);
+	painter.fillRect(0, 0, 64, 10, QColor(200, 20, 30));
+	painter.setPen(QColor(255, 255, 255));
+	QFont font = painter.font();
+	font.setBold(true);
+	font.setPixelSize(29);
+	painter.setFont(font);
+	painter.drawText(emblem.rect().adjusted(0, 9, 0, 0), Qt::AlignCenter, QStringLiteral("IM"));
+	painter.end();
+	setWindowIcon(QIcon(emblem));
 }
 
 MainWindowTeam::~MainWindowTeam()
