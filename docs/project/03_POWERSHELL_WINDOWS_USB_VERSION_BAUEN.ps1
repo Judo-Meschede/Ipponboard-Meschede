@@ -39,6 +39,7 @@ if (Test-Path $package) { Remove-Item $package -Recurse -Force }
 $app = Join-Path $package 'app'
 New-Item -ItemType Directory -Force -Path $app | Out-Null
 Copy-Item (Join-Path (Split-Path $exe) '*') $app -Recurse -Force
+Copy-Item (Join-Path $desktop 'base\TournamentModes.ini') (Join-Path $app 'TournamentModes.ini') -Force
 & (Join-Path $qt 'bin\windeployqt.exe') --release --no-translations --dir $app (Join-Path $app 'Ipponboard-Meschede.exe'); Check 'Qt Deployment'
 # Embed the complete web administration and its Node dependencies. The USB server only binds to localhost.
 $localServer = Join-Path $package 'local-server'
