@@ -49,7 +49,7 @@ function refreshUsbMaster(){
  ensureMasterCollections();
 }
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
-function saveMaster(action){master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master)}catch(e){console.error('Masterdata save failed',e)}}
+function saveMaster(action){const previous={revision:master.revision,updatedAt:master.updatedAt,lastAction:master.lastAction};master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master)}catch(e){Object.assign(master,previous);console.error('Masterdata save failed',e);throw new Error('Stammdaten konnten nicht gespeichert werden: '+e.message)}}
 function saveRecoveryStore(){recoveryStore.revision=Number(recoveryStore.revision||0)+1;recoveryStore.updatedAt=new Date().toISOString();try{atomicWrite(RECOVERY_FILE,recoveryStore)}catch(e){console.error('Recovery save failed',e)}}
 function competitionToDay(raw){
  const matches=Array.isArray(raw&&raw.matches)?raw.matches:[];
