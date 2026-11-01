@@ -287,30 +287,34 @@ void MainWindowBase::keyPressEvent(QKeyEvent* event)
 
 void MainWindowBase::on_actionAbout_Ipponboard_triggered()
 {
-	QMessageBox::about(
-		this,
-		tr("About %1").arg(QCoreApplication::applicationName()),
-		QString("<h3>%1 v%2</h3>"
-				"<p>Build: %3, Revision: %4</p>"
- 				"<p>&copy; 2010-%5 Florian M&uuml;cke &amp; contributors. All rights reserved.<br>For third party licenses see the User Manual.</p>"
-				"<p><a href=\"https://github.com/fmuecke/Ipponboard\">github.com/fmuecke/Ipponboard</a></p>"
-				"<p>Read how <a href=\"https://github.com/fmuecke/Ipponboard/blob/main/CONTRIBUTING.md\">you can contribute</a> and help Ipponboard improve. "
-				"Please keep Ipponboard alive with <a href=\"%6\">a little donation.</a></p>"
-				"<p>This program is provided AS IS with NO WARRANTY OF ANY KIND, "
-				"INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A "
-				"PARTICULAR PURPOSE.</p>"
-			   ).arg(QCoreApplication::applicationName(),
-					 QCoreApplication::applicationVersion(),
-					 VersionInfo::Date,
-					 VersionInfo::Revision,
-					 VersionInfo::CopyrightYear,
-					 DonationManager::DonationUrl));
+ QMessageBox::about(this, tr("Über Ipponboard-Meschede"),
+  QStringLiteral("<h3>Ipponboard-Meschede %1</h3>"
+    "<p>Build: %2<br>GitHub-Revision: %3</p>"
+    "<p>Portable Judo-Anzeigetafel für Einzel- und Mannschaftswettkämpfe.</p>"
+    "<p>Projekt: <a href=\"https://github.com/Judo-Meschede/Ipponboard-Meschede\">Judo-Meschede/Ipponboard-Meschede</a></p>"
+    "<p>Basiert auf Ipponboard von Florian Mücke und weiteren Mitwirkenden. "
+    "Die ursprünglichen Urheberrechte und Lizenzbedingungen bleiben bestehen.</p>")
+   .arg(QCoreApplication::applicationVersion(), QString::fromLatin1(VersionInfo::Date), QString::fromLatin1(VersionInfo::Revision)));
 }
 
 void MainWindowBase::on_actionUser_Manual_triggered()
 {
-	QUrl url(QCoreApplication::applicationDirPath() + tr("/User-Manual.html"));
-	QDesktopServices::openUrl(url);
+ QMessageBox::information(this, tr("Anleitung – Ipponboard-Meschede"),
+  QStringLiteral("Einzelmodus: Einzelwettkämpfe anzeigen und durchführen.\\n\\n"
+    "Mannschaftsmodus: Mannschaftskämpfe verwalten und werten.\\n\\n"
+    "Verwaltung: Vereine, Mannschaften, Kämpfer und Kampftage lokal bearbeiten.\\n\\n"
+    "Die USB-Version arbeitet ohne Serververbindung. Änderungen werden auf dem Datenträger gespeichert.\\n\\n"
+    "Weitere Projektinformationen: https://github.com/Judo-Meschede/Ipponboard-Meschede"));
+}
+
+void MainWindowBase::on_actionVisit_Project_Homepage_triggered()
+{
+ QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/Judo-Meschede/Ipponboard-Meschede")));
+}
+
+void MainWindowBase::on_actionOnline_Feedback_triggered()
+{
+ QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/Judo-Meschede/Ipponboard-Meschede/issues")));
 }
 
 void MainWindowBase::on_actionAutoAdjustPoints_toggled(bool checked)
