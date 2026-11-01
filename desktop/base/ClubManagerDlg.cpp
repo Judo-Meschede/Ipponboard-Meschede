@@ -28,11 +28,12 @@ ClubManagerDlg::ClubManagerDlg(
 	QPushButton* editFighters = new QPushButton(tr("Kämpfer des Vereins verwalten"), this);
 	ui->verticalLayout->addWidget(editFighters);
 	connect(editFighters, &QPushButton::clicked, this, [this]() {
-		const QString clubName = ui->comboBox_club->currentText().trimmed();
-		if (clubName.isEmpty()) {
+		const QString clubName = ui->lineEdit_name->text().trimmed();
+		if (clubName.isEmpty() || clubName == QStringLiteral("--> new <--")) {
 			QMessageBox::information(this, tr("Verein auswählen"), tr("Bitte zuerst einen Verein anlegen und speichern."));
 			return;
 		}
+		on_pushButton_save_pressed();
 		FighterManagerDlg dlg(m_fighters, this);
 		dlg.SetFilter(FighterManagerDlg::eColumn_club, clubName);
 		dlg.exec();
@@ -168,7 +169,23 @@ void ClubManagerDlg::on_pushButton_save_pressed()
 	club.logoFile = ui->lineEdit_logoFile->text();
 	club.address = ui->lineEdit_address->text();
 
-	// save club
+	// Reject duplicate names before updating the local club list.
+	if (club.name.trimmed().isEmpty() || club.name == QStringLiteral("--> new <--"))
+	{
+		QMessageBox::warning(this, tr("Verein"), tr("Bitte einen Vereinsnamen eingeben."));
+		return;
+	}
+	for (int i = 0; i < m_pClubMgr->ClubCount(); ++i)
+	{
+		if (i == m_SelectedClub) continue;
+		Ipponboard::Club existing;
+		if (m_pClubMgr->GetClub(i, existing) &&
+			existing.name.trimmed().compare(club.name.trimmed(), Qt::CaseInsensitive) == 0)
+		{
+			QMessageBox::warning(this, tr("Verein"), tr("Dieser Verein ist bereits vorhanden."));
+			return;
+		}
+	}
 	m_pClubMgr->UpdateClub(m_SelectedClub, club);
 
 	// update club view in list
