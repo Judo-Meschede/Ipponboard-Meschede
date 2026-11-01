@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
+#include <QInputDialog>
+#include <QUuid>
+#include <QSaveFile>
 #include "MainWindowTeam.h"
 #include "ui_MainWindowTeam.h"
 
@@ -2078,6 +2081,54 @@ void MainWindowTeam::load_autosave_if_available()
 
 void MainWindowTeam::on_actionNew_triggered()
 {
+	// Keep offline-created tournaments on the portable drive until server sync is available.
+	QMessageBox typeDialog(this);
+	typeDialog.setWindowTitle(QStringLiteral("Turnier neu"));
+	typeDialog.setText(QStringLiteral("Welche Art von Turnier soll angelegt werden?"));
+	QAbstractButton* teamButton = typeDialog.addButton(QStringLiteral("Kampftag (Mannschaft)"), QMessageBox::AcceptRole);
+	QAbstractButton* individualButton = typeDialog.addButton(QStringLiteral("Einzelturnier"), QMessageBox::ActionRole);
+	typeDialog.addButton(QMessageBox::Cancel);
+	typeDialog.exec();
+	if (typeDialog.clickedButton() != teamButton && typeDialog.clickedButton() != individualButton)
+		return;
+	const bool individual = typeDialog.clickedButton() == individualButton;
+	bool accepted = false;
+	const QString name = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
+		QStringLiteral("Bezeichnung:"), QLineEdit::Normal, QString(), &accepted).trimmed();
+	if (!accepted || name.isEmpty()) return;
+	const QString location = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
+		QStringLiteral("Ort:"), QLineEdit::Normal, QString(), &accepted).trimmed();
+	if (!accepted) return;
+	const QString organizer = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
+		QStringLiteral("Ausrichter:"), QLineEdit::Normal, QString(), &accepted).trimmed();
+	if (!accepted) return;
+	const QString localId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+	QJsonObject record;
+	record.insert(QStringLiteral("localId"), localId);
+	record.insert(QStringLiteral("type"), individual ? QStringLiteral("individual") : QStringLiteral("team"));
+	record.insert(QStringLiteral("name"), name);
+	record.insert(QStringLiteral("location"), location);
+	record.insert(QStringLiteral("organizer"), organizer);
+	record.insert(QStringLiteral("date"), QDate::currentDate().toString(Qt::ISODate));
+	record.insert(QStringLiteral("syncStatus"), QStringLiteral("pending"));
+	const QString directory = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("runtime/offline-tournaments"));
+	if (!QDir().mkpath(directory))
+	{
+		QMessageBox::warning(this, QStringLiteral("Fehler"), QStringLiteral("Offline-Verzeichnis konnte nicht angelegt werden."));
+		return;
+	}
+	QSaveFile offlineFile(QDir(directory).filePath(localId + QStringLiteral(".json")));
+	if (!offlineFile.open(QIODevice::WriteOnly) ||
+		offlineFile.write(QJsonDocument(record).toJson(QJsonDocument::Indented)) < 0 ||
+		!offlineFile.commit())
+	{
+		QMessageBox::warning(this, QStringLiteral("Fehler"), QStringLiteral("Turnier konnte nicht lokal gespeichert werden."));
+		return;
+	}
+	QMessageBox::information(this, QStringLiteral("Offline gespeichert"),
+		QStringLiteral("Turnier lokal angelegt. Noch nicht mit dem Server synchronisiert."));
+	if (individual)
+		return; // Individual tournament editing requires its own tournament UI.
 	if (QMessageBox::question(
 		this,
 		tr("Discard tournament?"),
