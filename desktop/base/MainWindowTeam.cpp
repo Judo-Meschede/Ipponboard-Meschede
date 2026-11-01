@@ -3,6 +3,14 @@
 // found in the LICENSE.txt file.
 
 #include <QInputDialog>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QSpinBox>
+#include <QVBoxLayout>
+#include <QDateEdit>
 #include <QUuid>
 #include <QSaveFile>
 #include "MainWindowTeam.h"
@@ -651,6 +659,29 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	m_masterTeams = master.value(QStringLiteral("teams")).toArray();
 	m_masterFighters = master.value(QStringLiteral("fighters")).toArray();
 	m_masterCompetitionDays = master.value(QStringLiteral("competitionDays")).toArray();
+	// Overlay offline-created competition days without modifying the server snapshot.
+	const QDir offlineDir(QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments")));
+	for (const QString& fileName : offlineDir.entryList(QStringList() << QStringLiteral("*.json"), QDir::Files))
+	{
+		const QJsonDocument offline = read_json_document(offlineDir.filePath(fileName));
+		if (!offline.isObject())
+			continue;
+		const QJsonObject day = offline.object();
+		const QString id = day.value(QStringLiteral("id")).toString();
+		if (id.isEmpty() || day.value(QStringLiteral("teamIds")).toArray().size() < 2)
+			continue;
+		bool found = false;
+		for (int i = 0; i < m_masterCompetitionDays.size(); ++i)
+		{
+			if (m_masterCompetitionDays.at(i).toObject().value(QStringLiteral("id")).toString() == id)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			m_masterCompetitionDays.append(day);
+	}
 	m_masterTournamentModes = master.value(QStringLiteral("tournamentModes")).toArray();
 	m_masterRuleSets = master.value(QStringLiteral("ruleSets")).toArray();
 	m_usingMasterData = !m_masterTeams.isEmpty();
@@ -2079,77 +2110,148 @@ void MainWindowTeam::load_autosave_if_available()
 	qWarning() << "Autosave document could not be applied";
 }
 
+
 void MainWindowTeam::on_actionNew_triggered()
 {
-	// Keep offline-created tournaments on the portable drive until server sync is available.
-	QMessageBox typeDialog(this);
-	typeDialog.setWindowTitle(QStringLiteral("Turnier neu"));
-	typeDialog.setText(QStringLiteral("Welche Art von Turnier soll angelegt werden?"));
-	QAbstractButton* teamButton = typeDialog.addButton(QStringLiteral("Kampftag (Mannschaft)"), QMessageBox::AcceptRole);
-	QAbstractButton* individualButton = typeDialog.addButton(QStringLiteral("Einzelturnier"), QMessageBox::ActionRole);
-	typeDialog.addButton(QMessageBox::Cancel);
-	typeDialog.exec();
-	if (typeDialog.clickedButton() != teamButton && typeDialog.clickedButton() != individualButton)
-		return;
-	const bool individual = typeDialog.clickedButton() == individualButton;
-	bool accepted = false;
-	const QString name = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
-		QStringLiteral("Bezeichnung:"), QLineEdit::Normal, QString(), &accepted).trimmed();
-	if (!accepted || name.isEmpty()) return;
-	const QString location = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
-		QStringLiteral("Ort:"), QLineEdit::Normal, QString(), &accepted).trimmed();
-	if (!accepted) return;
-	const QString organizer = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
-		QStringLiteral("Ausrichter:"), QLineEdit::Normal, QString(), &accepted).trimmed();
-	if (!accepted) return;
-	const QString dateText = QInputDialog::getText(this, QStringLiteral("Turnier neu"),
-		QStringLiteral("Datum (TT.MM.JJJJ):"), QLineEdit::Normal,
-		QDate::currentDate().toString(QStringLiteral("dd.MM.yyyy")), &accepted).trimmed();
-	if (!accepted) return;
-	const QDate tournamentDate = QDate::fromString(dateText, QStringLiteral("dd.MM.yyyy"));
-	if (!tournamentDate.isValid() || tournamentDate.toString(QStringLiteral("dd.MM.yyyy")) != dateText)
+	// This menu belongs to the team scoreboard. Individual competitions have their own mode.
+	if (!m_usingMasterData || m_masterTeams.isEmpty())
 	{
-		QMessageBox::warning(this, QStringLiteral("Ungültiges Datum"),
-			QStringLiteral("Bitte ein gültiges Datum im Format TT.MM.JJJJ eingeben."));
+		QMessageBox::warning(this, tr("Kampftag anlegen"),
+			tr("Keine lokal gespeicherten Mannschaften vorhanden. Zuerst Stammdaten laden."));
 		return;
 	}
-	const QString localId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-	QJsonObject record;
-	record.insert(QStringLiteral("localId"), localId);
-	record.insert(QStringLiteral("type"), individual ? QStringLiteral("individual") : QStringLiteral("team"));
-	record.insert(QStringLiteral("name"), name);
-	record.insert(QStringLiteral("location"), location);
-	record.insert(QStringLiteral("organizer"), organizer);
-	record.insert(QStringLiteral("date"), tournamentDate.toString(Qt::ISODate));
-	record.insert(QStringLiteral("syncStatus"), QStringLiteral("pending"));
-	const QString directory = QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments"));
-	if (!QDir().mkpath(directory))
-	{
-		QMessageBox::warning(this, QStringLiteral("Fehler"), QStringLiteral("Offline-Verzeichnis konnte nicht angelegt werden."));
-		return;
-	}
-	QSaveFile offlineFile(QDir(directory).filePath(localId + QStringLiteral(".json")));
-	if (!offlineFile.open(QIODevice::WriteOnly) ||
-		offlineFile.write(QJsonDocument(record).toJson(QJsonDocument::Indented)) < 0 ||
-		!offlineFile.commit())
-	{
-		QMessageBox::warning(this, QStringLiteral("Fehler"), QStringLiteral("Turnier konnte nicht lokal gespeichert werden."));
-		return;
-	}
-	QMessageBox::information(this, QStringLiteral("Offline gespeichert"),
-		QStringLiteral("Turnier lokal angelegt. Noch nicht mit dem Server synchronisiert."));
-	if (individual)
-		return; // Individual tournament editing requires its own tournament UI.
-	if (QMessageBox::question(
-		this,
-		tr("Discard tournament?"),
-		tr("This will discard any unsaved changes from your current tournament. Proceed?"),
-		QMessageBox::Yes,
-		QMessageBox::No) == QMessageBox::No) return;
 
-	ClearCompetitionDayFilter_();
-	QFile::remove(fm::GetAppConfigFilePath(TournamentSerialization::AutoSaveFilename));
-	on_comboBox_mode_currentIndexChanged(m_pUi->comboBox_mode->currentIndex());
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Neuen Mannschafts-Kampftag anlegen"));
+	dialog.resize(640, 620);
+	QVBoxLayout layout(&dialog);
+	QFormLayout form;
+	QLineEdit name(&dialog);
+	QLineEdit location(&dialog);
+	QLineEdit organizer(&dialog);
+	QDateEdit date(&dialog);
+	date.setCalendarPopup(true);
+	date.setDisplayFormat(QStringLiteral("dd.MM.yyyy"));
+	date.setDate(QDate::currentDate());
+
+	QComboBox host(&dialog);
+	host.addItem(tr("Kein Ausrichterverein"), QString());
+	for (const QJsonValue& entry : m_masterClubs)
+	{
+		const QJsonObject club = entry.toObject();
+		if (club.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+			continue;
+		const QString id = club.value(QStringLiteral("id")).toString();
+		const QString label = club.value(QStringLiteral("name")).toString();
+		if (!id.isEmpty() && !label.isEmpty())
+			host.addItem(label, id);
+	}
+	QComboBox mode(&dialog);
+	for (int i = 0; i < m_pUi->comboBox_mode->count(); ++i)
+		mode.addItem(m_pUi->comboBox_mode->itemText(i), m_pUi->comboBox_mode->itemData(i));
+	mode.setCurrentIndex(qMax(0, m_pUi->comboBox_mode->currentIndex()));
+	QSpinBox mats(&dialog);
+	mats.setRange(1, 20);
+	mats.setValue(1);
+
+	form.addRow(tr("Kampftag *"), &name);
+	form.addRow(tr("Datum *"), &date);
+	form.addRow(tr("Ort"), &location);
+	form.addRow(tr("Ausrichter"), &organizer);
+	form.addRow(tr("Ausrichterverein"), &host);
+	form.addRow(tr("Wettkampfmodus"), &mode);
+	form.addRow(tr("Matten"), &mats);
+	layout.addLayout(&form);
+
+	QLabel teamLabel(tr("Teilnehmende Mannschaften (mindestens zwei auswählen):"), &dialog);
+	layout.addWidget(&teamLabel);
+	QListWidget teams(&dialog);
+	for (const QJsonValue& entry : m_masterTeams)
+	{
+		const QJsonObject team = entry.toObject();
+		if (team.value(QStringLiteral("status")).toString() == QStringLiteral("inactive"))
+			continue;
+		const QString id = team.value(QStringLiteral("id")).toString();
+		const QString label = team.value(QStringLiteral("name")).toString();
+		if (id.isEmpty() || label.isEmpty())
+			continue;
+		auto* item = new QListWidgetItem(label, &teams);
+		item->setData(Qt::UserRole, id);
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(Qt::Unchecked);
+	}
+	layout.addWidget(&teams);
+	QDialogButtonBox buttons(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+	layout.addWidget(&buttons);
+	connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	connect(&buttons, &QDialogButtonBox::accepted, &dialog, [&]()
+	{
+		QJsonArray teamIds;
+		for (int i = 0; i < teams.count(); ++i)
+		{
+			const auto* item = teams.item(i);
+			if (item->checkState() == Qt::Checked)
+				teamIds.append(item->data(Qt::UserRole).toString());
+		}
+		if (name.text().trimmed().isEmpty() || teamIds.size() < 2)
+		{
+			QMessageBox::warning(&dialog, tr("Unvollständiger Kampftag"),
+				tr("Bezeichnung und mindestens zwei Mannschaften sind erforderlich."));
+			return;
+		}
+		dialog.accept();
+	});
+	if (dialog.exec() != QDialog::Accepted)
+		return;
+
+	if (QMessageBox::question(this, tr("Neuen Kampftag starten"),
+		tr("Der aktuelle Kampfstand wird ersetzt. Ungespeicherte Änderungen gehen verloren. Fortfahren?"),
+		QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+		return;
+
+	QJsonArray selectedIds;
+	for (int i = 0; i < teams.count(); ++i)
+	{
+		const auto* item = teams.item(i);
+		if (item->checkState() == Qt::Checked)
+			selectedIds.append(item->data(Qt::UserRole).toString());
+	}
+	const QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+	QJsonArray matList;
+	for (int i = 1; i <= mats.value(); ++i)
+	{
+		QJsonObject mat;
+		mat.insert(QStringLiteral("id"), QStringLiteral("mat-%1").arg(i));
+		mat.insert(QStringLiteral("name"), QStringLiteral("Tatami %1").arg(i));
+		matList.append(mat);
+	}
+	QJsonObject day;
+	day.insert(QStringLiteral("id"), id);
+	day.insert(QStringLiteral("localId"), id);
+	day.insert(QStringLiteral("type"), QStringLiteral("team"));
+	day.insert(QStringLiteral("name"), name.text().trimmed());
+	day.insert(QStringLiteral("date"), date.date().toString(Qt::ISODate));
+	day.insert(QStringLiteral("location"), location.text().trimmed());
+	day.insert(QStringLiteral("organizer"), organizer.text().trimmed());
+	day.insert(QStringLiteral("hostClubId"), host.currentData().toString());
+	day.insert(QStringLiteral("tournamentModeId"), mode.currentData().toString());
+	day.insert(QStringLiteral("teamIds"), selectedIds);
+	day.insert(QStringLiteral("matCount"), mats.value());
+	day.insert(QStringLiteral("mats"), matList);
+	day.insert(QStringLiteral("status"), QStringLiteral("planned"));
+	day.insert(QStringLiteral("syncStatus"), QStringLiteral("pending"));
+
+	const QString directory = QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments"));
+	if (!QDir().mkpath(directory) ||
+		!write_json_atomic(QDir(directory).filePath(id + QStringLiteral(".json")), QJsonDocument(day)))
+	{
+		QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
+			tr("Kampftag konnte nicht auf dem USB-Datenträger gespeichert werden."));
+		return;
+	}
+	m_masterCompetitionDays.append(day);
+	if (!ApplyCompetitionDay_(day, QStringLiteral("mat-1"), QStringLiteral("Tatami 1"), false, false))
+		QMessageBox::critical(this, tr("Kampftag"), tr("Kampftag wurde gespeichert, konnte aber nicht geladen werden."));
 }
 
 void MainWindowTeam::on_actionSave_As_triggered()
