@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $root = 'C:\Users\LokalAdmin_2\Ipponboard-Meschede-Build'
 $source = Join-Path $root 'USB-Source'
 $out = Join-Path $root 'Ausgabe'
-$version = '0.2.52'
+$version = '0.2.53'
 $package = Join-Path $out "Ipponboard-Meschede_V${version}_Portable"
 function Check($label) { if ($LASTEXITCODE -ne 0) { throw "$label fehlgeschlagen (Exitcode $LASTEXITCODE)" } }
 if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git fehlt.' }
