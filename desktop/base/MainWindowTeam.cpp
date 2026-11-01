@@ -711,8 +711,9 @@ bool MainWindowTeam::LoadMasterDataCache_()
 	}
 	m_masterTournamentModes = master.value(QStringLiteral("tournamentModes")).toArray();
 	m_masterRuleSets = master.value(QStringLiteral("ruleSets")).toArray();
-	m_usingMasterData = !m_masterTeams.isEmpty();
-	return m_usingMasterData;
+	// An empty but valid USB snapshot is authoritative; never fall back to bundled demo clubs.
+	m_usingMasterData = true;
+	return true;
 }
 
 void MainWindowTeam::RegisterRuleSetsFromMasterData_()
