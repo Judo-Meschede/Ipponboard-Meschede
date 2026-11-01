@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lokale Verwaltung – Ipponboard-Meschede</title>
+<style>
+:root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#101113;color:#f5f5f5}
+body{max-width:1100px;margin:32px auto;padding:0 18px}h1{border-bottom:3px solid #bb161a;padding-bottom:12px}
+p{color:#ccc}button,select,input{font:inherit;padding:10px;border-radius:5px;border:1px solid #666}
+button{background:#ad171e;color:white;cursor:pointer}button:disabled{opacity:.4}nav{display:flex;gap:9px;margin:20px 0;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #444;text-align:left}td input,td select{width:95%;box-sizing:border-box;background:#181a1c;color:white}
+#message{padding:14px;border:1px solid #555;background:#191a1b}#tableArea{overflow:auto}
+</style></head><body>
+<h1>Ipponboard-Meschede – Lokale Verwaltung</h1>
+<p>Diese Verwaltung arbeitet ausschließlich mit einer von dir ausgewählten Datei auf dem USB-Stick. Es wird keine Serververbindung hergestellt.</p>
+<p><button id="open">USB-Datenbestand öffnen</button> <button id="save" disabled>Änderungen auf USB speichern</button></p>
+<div id="message" role="status">Bitte die Datei <strong>data/masterdata.json</strong> auf dem USB-Stick auswählen. Chrome oder Edge erforderlich.</div>
+<nav id="tabs"></nav><div id="tableArea"></div>
+<script>
+'use strict';
+const collections={clubs:{label:'Vereine',columns:['name','shortName','country']},teams:{label:'Mannschaften',columns:['name','clubId','category']},fighters:{label:'Wettkämpfer',columns:['firstName','lastName','clubId','weightClass']},competitionDays:{label:'Kampftage',columns:['name','date','location']},individualTournaments:{label:'Einzelturniere',columns:['name','date','location']}};
+const $=id=>document.getElementById(id);let fileHandle=null,doc=null,tab='clubs';
+function message(t){$('message').textContent=t}
+function valid(){return doc&&doc.masterdata&&Array.isArray(doc.masterdata.clubs)}
+$('open').addEventListener('click',async()=>{try{
+ if(!window.showOpenFilePicker)throw Error('Dieser Browser unterstützt das direkte Speichern nicht. Bitte Edge oder Chrome verwenden.');
+ const handles=await showOpenFilePicker({multiple:false,types:[{description:'Ipponboard JSON',accept:{'application/json':['.json']}}]});
+ const candidate=handles[0],raw=await(await candidate.getFile()).text(),parsed=JSON.parse(raw);
+ if(!parsed.masterdata||!Array.isArray(parsed.masterdata.clubs))throw Error('Keine gültige Ipponboard-Stammdatendatei.');
+ fileHandle=candidate;doc=parsed;$('save').disabled=false;render();message('USB-Datenbestand geöffnet. Änderungen werden erst mit „Speichern“ übernommen.');
+ }catch(e){if(e.name!=='AbortError')message('Öffnen fehlgeschlagen: '+e.message)}});
+$('save').addEventListener('click',async()=>{if(!valid()||!fileHandle)return;try{
+ const writable=await fileHandle.createWritable();
+ await writable.write(JSON.stringify(doc,null,2));await writable.close();
+ message('Gespeichert. Die Änderungen liegen ausschließlich in der ausgewählten USB-Datei.');
+ }catch(e){message('Speichern fehlgeschlagen: '+e.message)}});
+function render(){if(!valid())return;
+ const tabs=$('tabs');tabs.replaceChildren();
+ for(const [id,info]of Object.entries(collections)){const b=document.createElement('button');b.textContent=info.label;b.style.background=id===tab?'#b71921':'#444';b.addEventListener('click',()=>{tab=id;render()});tabs.append(b)}
+ const area=$('tableArea');area.replaceChildren();const info=collections[tab];
+ const add=document.createElement('button');add.textContent='Neuer Eintrag';add.addEventListener('click',()=>{doc.masterdata[tab]??=[];const item={id:crypto.randomUUID(),status:'active'};doc.masterdata[tab].push(item);render()});area.append(add);
+ const table=document.createElement('table'),head=document.createElement('thead'),hr=document.createElement('tr');
+ for(const col of info.columns){const th=document.createElement('th');th.textContent=col;hr.append(th)}
+ const action=document.createElement('th');action.textContent='Aktion';hr.append(action);head.append(hr);table.append(head);
+ const tbody=document.createElement('tbody');const rows=doc.masterdata[tab]||[];
+ for(const item of rows){const tr=document.createElement('tr');
+ for(const field of info.columns){const td=document.createElement('td'),inp=document.createElement('input');inp.value=String(item[field]??'');inp.addEventListener('change',()=>{item[field]=inp.value});td.append(inp);tr.append(td)}
+ const td=document.createElement('td'),del=document.createElement('button');del.textContent='Entfernen';del.addEventListener('click',()=>{if(!confirm('Eintrag wirklich entfernen?'))return;doc.masterdata[tab]=rows.filter(row=>row!==item);render()});td.append(del);tr.append(td);tbody.append(tr)}
+ table.append(tbody);area.append(table);
+}
+</script></body></html>
