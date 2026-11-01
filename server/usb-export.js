@@ -11,9 +11,9 @@ function snapshot(master,kind,requested){
  const base={schema:master.schema||'ipponboard-meschede-masterdata-1',revision:0,updatedAt:new Date().toISOString()};
  for(const name of COLLECTIONS)base[name]=[];
  if(kind==='gift'){
-  base.ruleSets=JSON.parse(JSON.stringify(master.ruleSets||[])).filter(x=>x.status!=='inactive');
-  base.tournamentModes=JSON.parse(JSON.stringify(master.tournamentModes||[])).filter(x=>x.status!=='inactive');
-  base.ageClassFightTimeDefaults=master.ageClassFightTimeDefaults||{};
+  base.ruleSets=[];
+  base.tournamentModes=[];
+  base.ageClassFightTimeDefaults={};
   return base;
  }
  if(kind==='full'){
@@ -55,7 +55,8 @@ function createUsbZip({master,mode,selected,templatePath}){
   const name=entry.entryName.replace(/\\/g,'/');
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungueltiger Pfad in USB-Vorlage');
   if(/^(data\/|app\/data\/|offline-tournaments\/|app\/offline-tournaments\/)/i.test(name))continue;
-  if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv)$/i.test(name))continue;
+  if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv|clubs\.config|fighters\.config|tournament.*\.json|.*\.autosave)$/i.test(name))continue;
+  if(mode==='gift' && /^(app\/runtime\/|runtime\/|app\/clubs\/|app\/config\/)/i.test(name))continue;
   zip.addFile(name,entry.getData());
  }
  const data=snapshot(master,mode,selected||{});
