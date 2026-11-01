@@ -48,14 +48,14 @@ function createUsbZip({master,mode,selected,templatePath}){
  if(!['gift','selected','full'].includes(mode))throw new Error('Unbekannter USB-Modus');
  if(!fs.existsSync(templatePath))throw new Error('USB-Vorlage auf dem Server fehlt');
  const template=new AdmZip(templatePath);
- if(!template.getEntry('app/Ipponboard-Meschede.exe'))throw new Error('USB-Vorlage enthaelt keine Windows-Anwendung');
+ if(!template.getEntries().some(e=>e.entryName.replace(/\\/g,'/')==='app/Ipponboard-Meschede.exe'))throw new Error('USB-Vorlage enthaelt keine Windows-Anwendung');
  const zip=new AdmZip();
  for(const entry of template.getEntries()){
   if(entry.isDirectory)continue;
   const name=entry.entryName.replace(/\\/g,'/');
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungueltiger Pfad in USB-Vorlage');
   if(/^(data\/|app\/data\/|offline-tournaments\/|app\/offline-tournaments\/)/i.test(name))continue;
-  if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt)$/i.test(name))continue;
+  if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv)$/i.test(name))continue;
   zip.addFile(name,entry.getData());
  }
  const data=snapshot(master,mode,selected||{});
