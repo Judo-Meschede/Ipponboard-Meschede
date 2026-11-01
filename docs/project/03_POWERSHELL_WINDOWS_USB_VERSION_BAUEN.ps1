@@ -40,10 +40,50 @@ $app = Join-Path $package 'app'
 New-Item -ItemType Directory -Force -Path $app | Out-Null
 Copy-Item (Join-Path (Split-Path $exe) '*') $app -Recurse -Force
 & (Join-Path $qt 'bin\windeployqt.exe') --release --no-translations --dir $app (Join-Path $app 'Ipponboard-Meschede.exe'); Check 'Qt Deployment'
+# Embed the complete web administration and its Node dependencies. The USB server only binds to localhost.
+$localServer = Join-Path $package 'local-server'
+New-Item -ItemType Directory -Force -Path $localServer | Out-Null
+Copy-Item (Join-Path $source 'server\server.js'),(Join-Path $source 'server\usb-export.js'),(Join-Path $source 'server\package.json') $localServer
+Copy-Item (Join-Path $source 'server\public') (Join-Path $localServer 'public') -Recurse
+Remove-Item (Join-Path $localServer 'public\data') -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $localServer 'public\downloads') -Recurse -Force -ErrorAction SilentlyContinue
+$nodeVersion = 'v24.11.0'
+$nodeArchive = "node-$nodeVersion-win-x64.zip"
+$nodeCache = Join-Path $root "Tools\node-$nodeVersion-win-x64"
+if (!(Test-Path (Join-Path $nodeCache 'node.exe'))) {
+  $downloads = Join-Path $root 'Downloads'
+  New-Item -ItemType Directory -Force -Path $downloads | Out-Null
+  $zipPath = Join-Path $downloads $nodeArchive
+  $baseUrl = "https://nodejs.org/dist/$nodeVersion"
+  Invoke-WebRequest "$baseUrl/$nodeArchive" -OutFile $zipPath
+  $sums = (Invoke-WebRequest "$baseUrl/SHASUMS256.txt").Content
+  $line = ($sums -split "[\r\n]+" | Where-Object { $_ -match ([regex]::Escape($nodeArchive) + '$') } | Select-Object -First 1)
+  if (!$line) { throw 'Node SHA256 fehlt.' }
+  $expected = ($line -split '\s+')[0].ToLowerInvariant()
+  $actual = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($expected -ne $actual) { throw 'Node SHA256-Prüfung fehlgeschlagen.' }
+  Expand-Archive $zipPath -DestinationPath (Join-Path $root 'Tools') -Force
+}
+$nodePath = Join-Path $nodeCache 'node.exe'
+$nodeNpm = Join-Path $nodeCache 'node_modules\npm\bin\npm-cli.js'
+if (!(Test-Path $nodePath) -or !(Test-Path $nodeNpm)) { throw 'Node-Laufzeit unvollständig.' }
+$runtime = Join-Path $package 'runtime'
+New-Item -ItemType Directory -Force -Path $runtime | Out-Null
+Copy-Item $nodePath $runtime
+& $nodePath $nodeNpm install --omit=dev --no-audit --no-fund --prefix $localServer
+Check 'USB-Webserver-Abhängigkeiten'
 @'
 @echo off
-cd /d "%~dp0app"
-start "" "Ipponboard-Meschede.exe"
+setlocal
+cd /d "%~dp0"
+if exist "data\usb-profile.json" (
+  set "IPPONBOARD_USB_OFFLINE=1"
+  set "IPPONBOARD_DATA_DIR=%~dp0data"
+  set "PORT=43181"
+  set "HOST=127.0.0.1"
+  start "Ipponboard lokale Verwaltung" /MIN "%~dp0runtime\node.exe" "%~dp0local-server\server.js"
+)
+start "" "%~dp0app\Ipponboard-Meschede.exe"
 '@ | Set-Content (Join-Path $package 'START_IPPONBOARD_MESCHEDE.cmd') -Encoding Ascii
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
 # Preserve the downloaded masterdata snapshot for an offline-first USB test.
