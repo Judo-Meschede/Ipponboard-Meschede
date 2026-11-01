@@ -606,10 +606,115 @@ void MainWindowTeam::read_specific_settings(QSettings& settings)
 
 void MainWindowTeam::on_actionManageFighters_triggered()
 {
-	MainWindowBase::on_actionManageFighters_triggered();
-
-	FighterManagerDlg dlg(m_fighterManager, this);
-	dlg.exec();
+	if (!m_usingMasterData)
+	{
+		MainWindowBase::on_actionManageFighters_triggered();
+		FighterManagerDlg dlg(m_fighterManager, this);
+		dlg.exec();
+		return;
+	}
+	const QString dataFile = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/masterdata.json"));
+	const bool usbMode = QFile::exists(QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
+	QDialog dialog(this);
+	dialog.setWindowTitle(QStringLiteral("Kämpferverwaltung – lokale Stammdaten"));
+	dialog.resize(760, 550);
+	QVBoxLayout layout(&dialog);
+	QTableWidget table(&dialog);
+	table.setColumnCount(4);
+	table.setHorizontalHeaderLabels({QStringLiteral("Vorname"), QStringLiteral("Nachname"), QStringLiteral("Verein"), QStringLiteral("ID")});
+	table.setColumnHidden(3, true);
+	table.horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+	table.setSelectionBehavior(QAbstractItemView::SelectRows);
+	table.setSelectionMode(QAbstractItemView::SingleSelection);
+	layout.addWidget(&table);
+	QJsonArray fighters = m_masterFighters;
+	auto clubName = [&](const QString& id) {
+		for (const QJsonValue& v : m_masterClubs)
+			if (v.toObject().value(QStringLiteral("id")).toString() == id) return v.toObject().value(QStringLiteral("name")).toString();
+		return QString();
+	};
+	auto refresh = [&]() {
+		table.setRowCount(0);
+		for (const QJsonValue& v : fighters) {
+			const QJsonObject f = v.toObject();
+			if (f.value(QStringLiteral("status")).toString() == QStringLiteral("inactive")) continue;
+			const int row = table.rowCount();
+			table.insertRow(row);
+			table.setItem(row, 0, new QTableWidgetItem(f.value(QStringLiteral("firstName")).toString()));
+			table.setItem(row, 1, new QTableWidgetItem(f.value(QStringLiteral("lastName")).toString()));
+			table.setItem(row, 2, new QTableWidgetItem(clubName(f.value(QStringLiteral("clubId")).toString())));
+			auto* id = new QTableWidgetItem(f.value(QStringLiteral("id")).toString());
+			id->setFlags(id->flags() & ~Qt::ItemIsEditable);
+			table.setItem(row, 3, id);
+		}
+	};
+	refresh();
+	QPushButton add(QStringLiteral("Neuer Kämpfer"), &dialog), edit(QStringLiteral("Bearbeiten"), &dialog);
+	QHBoxLayout actions; actions.addWidget(&add); actions.addWidget(&edit); layout.addLayout(&actions);
+	auto editFighter = [&](bool existing) {
+		const int row = table.currentRow();
+		if (existing && (row < 0 || !table.item(row, 3))) return;
+		const QString id = existing ? table.item(row, 3)->text() : QUuid::createUuid().toString(QUuid::WithoutBraces);
+		QJsonObject fighter;
+		for (const QJsonValue& v : fighters) if (v.toObject().value(QStringLiteral("id")).toString() == id) fighter = v.toObject();
+		QDialog editor(&dialog);
+		QFormLayout form(&editor);
+		QLineEdit first(fighter.value(QStringLiteral("firstName")).toString(), &editor);
+		QLineEdit last(fighter.value(QStringLiteral("lastName")).toString(), &editor);
+		QComboBox club(&editor);
+		club.addItem(QStringLiteral("Ohne Verein"), QString());
+		for (const QJsonValue& v : m_masterClubs) {
+			const QJsonObject c = v.toObject();
+			if (c.value(QStringLiteral("status")).toString() != QStringLiteral("inactive"))
+				club.addItem(c.value(QStringLiteral("name")).toString(), c.value(QStringLiteral("id")).toString());
+		}
+		club.setCurrentIndex(qMax(0, club.findData(fighter.value(QStringLiteral("clubId")).toString())));
+		form.addRow(QStringLiteral("Vorname"), &first);
+		form.addRow(QStringLiteral("Nachname"), &last);
+		form.addRow(QStringLiteral("Verein (optional)"), &club);
+		QDialogButtonBox buttons(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &editor);
+		form.addRow(&buttons);
+		connect(&buttons, &QDialogButtonBox::accepted, &editor, &QDialog::accept);
+		connect(&buttons, &QDialogButtonBox::rejected, &editor, &QDialog::reject);
+		if (editor.exec() != QDialog::Accepted) return;
+		if (first.text().trimmed().isEmpty() || last.text().trimmed().isEmpty()) {
+			QMessageBox::warning(&dialog, QStringLiteral("Kämpfer"), QStringLiteral("Vorname und Nachname sind erforderlich.")); return;
+		}
+		fighter.insert(QStringLiteral("id"), id);
+		fighter.insert(QStringLiteral("firstName"), first.text().trimmed());
+		fighter.insert(QStringLiteral("lastName"), last.text().trimmed());
+		fighter.insert(QStringLiteral("clubId"), club.currentData().toString());
+		if (!fighter.contains(QStringLiteral("status"))) fighter.insert(QStringLiteral("status"), QStringLiteral("active"));
+		bool found = false;
+		for (int i = 0; i < fighters.size(); ++i) if (fighters.at(i).toObject().value(QStringLiteral("id")).toString() == id) { fighters.replace(i, fighter); found = true; break; }
+		if (!found) fighters.append(fighter);
+		refresh();
+	};
+	connect(&add, &QPushButton::clicked, &dialog, [&]() { editFighter(false); });
+	connect(&edit, &QPushButton::clicked, &dialog, [&]() { editFighter(true); });
+	connect(&table, &QTableWidget::cellDoubleClicked, &dialog, [&](int, int) { editFighter(true); });
+	QDialogButtonBox buttons(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+	layout.addWidget(&buttons);
+	connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	connect(&buttons, &QDialogButtonBox::accepted, &dialog, [&]() {
+		if (usbMode) {
+			QJsonObject root = read_json_document(dataFile).object();
+			QJsonObject master = root.value(QStringLiteral("masterdata")).toObject();
+			if (master.isEmpty()) { QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("USB-Stammdaten fehlen.")); return; }
+			master.insert(QStringLiteral("fighters"), fighters);
+			master.insert(QStringLiteral("revision"), master.value(QStringLiteral("revision")).toInt()+1);
+			root.insert(QStringLiteral("masterdata"), master);
+			if (!write_json_atomic(dataFile, QJsonDocument(root))) { QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("USB-Daten konnten nicht gespeichert werden.")); return; }
+		} else {
+			QJsonObject root = read_json_document(QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json"))).object();
+			root.insert(QStringLiteral("fighters"), fighters);
+			if (!write_json_atomic(QDir(runtime_data_dir()).filePath(QStringLiteral("masterdata-local.json")), QJsonDocument(root))) { QMessageBox::critical(&dialog, QStringLiteral("Speichern"), QStringLiteral("Kämpfer konnten nicht gespeichert werden.")); return; }
+		}
+		m_masterFighters = fighters;
+		UpdateTeamFighterDelegates_();
+		dialog.accept();
+	});
+	dialog.exec();
 }
 
 void MainWindowTeam::update_info_text_color(const QColor& color, const QColor& bgColor)
