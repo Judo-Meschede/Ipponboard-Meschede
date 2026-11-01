@@ -24,9 +24,15 @@ if (!(Test-Path $envCfg)) { throw 'env_cfg.bat fehlt. Bitte die vorhandene Build
 $cfg = @{}
 Get-Content $envCfg | ForEach-Object { if ($_ -match '^set "([^=]+)=(.*)"') { $cfg[$matches[1]] = $matches[2] } }
 $qt = $cfg['QTDIR']
+if (!$qt) { $qt = $cfg['QTDIR'] }
+$env:QTDIR = $qt
+$env:BOOST_DIR = $cfg['BOOST_DIR']
+$env:INNO_DIR = $cfg['INNO_DIR']
 if (!$qt -or !(Test-Path (Join-Path $qt 'bin\windeployqt.exe'))) { throw 'Qt/windeployqt nicht in QTDIR gefunden.' }
 $build = Join-Path $root 'USB-Build'
-cmake -S $desktop -B $build -G 'Visual Studio 17 2022' -A Win32; Check 'CMake Konfiguration'
+$base = Join-Path $desktop 'base'
+& (Join-Path $desktop 'scripts\create-versioninfo.cmd') $base; Check 'Versionsdateien erzeugen'
+cmake -S $desktop -B $build -G 'Visual Studio 17 2022' -A Win32 -T v142; Check 'CMake Konfiguration'
 cmake --build $build --config Release --target Ipponboard-Meschede; Check 'CMake Build'
 $exe = Join-Path $desktop '_bin\Ipponboard-Meschede-Release\Ipponboard-Meschede.exe'
 if (!(Test-Path $exe)) { throw "EXE fehlt: $exe" }
@@ -40,7 +46,7 @@ Copy-Item (Join-Path (Split-Path $exe) '*') $app -Recurse -Force
 cd /d "%~dp0app"
 start "" "Ipponboard-Meschede.exe"
 '@ | Set-Content (Join-Path $package 'START_IPPONBOARD_MESCHEDE.cmd') -Encoding Ascii
-Copy-Item (Join-Path $source 'LICENSE.txt') $package
+Copy-Item (Join-Path $desktop 'LICENSE.txt') $package
 New-Item -ItemType Directory -Force -Path (Join-Path $app 'data') | Out-Null
 $zip = "$package.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
