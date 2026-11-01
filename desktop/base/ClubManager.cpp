@@ -120,7 +120,8 @@ void ClubManager::LoadClubs_()
 		try
 		{
 			auto legacyConfig = fm::GetSettingsFilePath(str_legacy_filename_club_definitions);
-			m_Clubs = ClubParser::ParseJsonFile(legacyConfig);
+			if (QFile::exists(legacyConfig))
+				m_Clubs = ClubParser::ParseJsonFile(legacyConfig);
 		}
 		catch (std::exception const& e)
 		{
