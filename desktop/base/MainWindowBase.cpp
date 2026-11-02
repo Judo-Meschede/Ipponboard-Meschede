@@ -300,10 +300,10 @@ void MainWindowBase::on_actionAbout_Ipponboard_triggered()
 void MainWindowBase::on_actionUser_Manual_triggered()
 {
  QMessageBox::information(this, tr("Anleitung – Ipponboard-Meschede"),
-  QStringLiteral("Einzelmodus: Einzelwettkämpfe anzeigen und durchführen.\\n\\n"
-    "Mannschaftsmodus: Mannschaftskämpfe verwalten und werten.\\n\\n"
-    "Verwaltung: Vereine, Mannschaften, Kämpfer und Kampftage lokal bearbeiten.\\n\\n"
-    "Die USB-Version arbeitet ohne Serververbindung. Änderungen werden auf dem Datenträger gespeichert.\\n\\n"
+  QStringLiteral("Einzelmodus: Einzelwettkämpfe anzeigen und durchführen.\n\n"
+    "Mannschaftsmodus: Mannschaftskämpfe verwalten und werten.\n\n"
+    "Verwaltung: Vereine, Mannschaften, Kämpfer und Kampftage lokal bearbeiten.\n\n"
+    "Die USB-Version arbeitet ohne Serververbindung. Änderungen werden auf dem Datenträger gespeichert.\n\n"
     "Weitere Projektinformationen: https://github.com/Judo-Meschede/Ipponboard-Meschede"));
 }
 
