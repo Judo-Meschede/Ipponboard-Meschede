@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $root = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Ipponboard-Meschede-Build'
 $source = Join-Path $root 'GitHub\Ipponboard-Meschede'
 $out = Join-Path $root 'Ausgabe'
-$version = '0.2.56-preview'
+$version = '0.2.57-preview'
 $package = Join-Path $out "Ipponboard-Meschede_V${version}_Portable"
 function Check($label) { if ($LASTEXITCODE -ne 0) { throw "$label fehlgeschlagen (Exitcode $LASTEXITCODE)" } }
 if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git fehlt.' }
