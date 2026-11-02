@@ -20,7 +20,7 @@
 #include <QJsonArray>
 #include <QFile>
 
-const QString OnlineVersionChecker::VersionDocumentUrl = "https://api.github.com/repos/fmuecke/Ipponboard/releases/latest";
+const QString OnlineVersionChecker::VersionDocumentUrl = "https://api.github.com/repos/Judo-Meschede/Ipponboard-Meschede/releases/latest";
 const QString OnlineVersionChecker::ProjectReleasesUrl = "https://github.com/fmuecke/Ipponboard/releases";
 
 OnlineVersionChecker::OnlineVersionChecker()
