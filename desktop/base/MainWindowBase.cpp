@@ -329,18 +329,6 @@ void MainWindowBase::on_actionAutoAdjustPoints_toggled(bool checked)
 	m_pController->SetAutoAdjustPoints(checked);
 }
 
-void MainWindowBase::on_actionVisit_Project_Homepage_triggered()
-{
-	QUrl url("https://github.com/fmuecke/Ipponboard");
-	QDesktopServices::openUrl(url);
-}
-
-void MainWindowBase::on_actionOnline_Feedback_triggered()
-{
-	QUrl url("https://github.com/fmuecke/Ipponboard/issues");
-	QDesktopServices::openUrl(url);
-}
-
 void MainWindowBase::change_lang(bool beQuiet)
 {
 	ui_check_language_items();
