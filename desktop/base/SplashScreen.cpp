@@ -19,6 +19,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QResizeEvent>
+#include <QShortcut>
 #include <QSaveFile>
 #include <QTimer>
 #include <QUrl>
@@ -149,7 +150,10 @@ SplashScreen::SplashScreen(Data const& data, QWidget* parent) : QDialog(parent),
     MakeCardChildrenMouseTransparent(ui->cardAdmin);
 
     // All three header items must have a working action in the portable app.
-    ui->btnHelp->setToolTip(QStringLiteral("Offline-Hilfe und Bedienungsanleitung"));
+    ui->btnHelp->setToolTip(QStringLiteral("Offline-Hilfe und Bedienungsanleitung (F1)"));
+    connect(new QShortcut(QKeySequence(Qt::Key_F1), this), &QShortcut::activated, this, [this]() {
+        Ipponboard::ShowIpponboardHelp(this);
+    });
     connect(ui->btnHelp, &QPushButton::clicked, this, [this]() {
         Ipponboard::ShowIpponboardHelp(this);
     });
