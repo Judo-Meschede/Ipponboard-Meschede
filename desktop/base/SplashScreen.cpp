@@ -34,12 +34,10 @@ namespace
 {
 bool OfflineUsbProfile()
 {
+    // All three exported USB profiles use local administration and local data.
+    // A profile's optional synchronization permission never enables automatic requests.
     const QString file = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
-    QFile input(file);
-    if (!input.open(QIODevice::ReadOnly)) return false;
-    const QJsonObject profile = QJsonDocument::fromJson(input.readAll()).object();
-    return profile.contains(QStringLiteral("serverSyncAllowed")) &&
-           !profile.value(QStringLiteral("serverSyncAllowed")).toBool();
+    return QFile::exists(file);
 }
 
 #ifdef _WIN32
@@ -254,7 +252,7 @@ void SplashScreen::SyncMasterDataCache()
     {
         ui->btnSync->setEnabled(false);
         ui->btnSync->setText(QStringLiteral("Offline-Version"));
-        ui->label_serverStatus->setText(QStringLiteral("Serverzugriff gesperrt"));
+        ui->label_serverStatus->setText(QStringLiteral("Offline-Betrieb"));
         ui->label_lastUpdate->setText(QStringLiteral("Nur lokale Daten"));
         ui->label_cacheStatus->setText(QStringLiteral("USB-Datenbestand"));
         return;
