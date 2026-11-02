@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hilfe – Ipponboard-Meschede</title>
+<style>
+body { font-family: "Segoe UI", Arial, sans-serif; color:#222; background:#fff; font-size:14px; line-height:1.55; margin:24px; }
+h1 { font-size:26px; border-bottom:3px solid #b82026; padding-bottom:9px; }
+h2 { font-size:20px; margin-top:32px; padding-bottom:5px; border-bottom:1px solid #ccc; color:#9e1821; }
+h3 { font-size:16px; margin-top:19px; }
+a { color:#a81a24; }
+ul,ol { padding-left:24px; }
+li { margin:5px 0; }
+code { background:#f1f1f1; padding:2px 5px; }
+small { color:#666; }
+.notice { border-left:3px solid #a81a24; padding:8px 12px; background:#f6f6f6; }
+table { border-collapse:collapse; width:100%; margin:14px 0; }
+th,td { border:1px solid #ccc; padding:8px; text-align:left; vertical-align:top; }
+th { background:#eee; }
+</style>
+</head>
+<body>
+<h1>Hilfe zu Ipponboard-Meschede</h1>
+<p>Bedienhinweise für die Windows-Anzeigetafel und die lokale beziehungsweise serverbasierte Wettkampfverwaltung. Diese Hilfe ist ohne Internetverbindung verfügbar. Die aktuelle Entwicklungsversion ist eine Vorschau; noch nicht vollständig getestete Funktionen sind keine Freigabe für den Wettkampfeinsatz.</p>
+<p><strong>Direkt zu:</strong> <a href="#start">Start</a> · <a href="#oberflaeche">Anzeigetafel</a> · <a href="#kampf">Kampfbedienung</a> · <a href="#einzel">Einzel</a> · <a href="#mannschaft">Mannschaft</a> · <a href="#stamm">Stammdaten</a> · <a href="#anzeige">Bildschirme</a> · <a href="#usb">USB-Varianten</a> · <a href="#ergebnisse">Ergebnisse</a> · <a href="#probleme">Fehlerhilfe</a></p>
+
+<h2><a name="start"></a>1. Start und Grundregeln</h2>
+<ol>
+<li>Die vom Server exportierte ZIP vollständig in einen beschreibbaren Ordner oder auf den USB-Stick entpacken.</li>
+<li><strong>Ipponboard-Meschede.exe</strong> im Hauptordner doppelt anklicken; nicht die EXE im Unterordner <code>app</code> als regulären USB-Start verwenden.</li>
+<li>Der Starter öffnet die Anzeigetafel und startet den lokalen Verwaltungsdienst automatisch. Keine Installation und kein manueller Serverstart erforderlich.</li>
+<li>Änderungen und Wettkampfdaten bleiben auf dem jeweiligen Datenträger. Beim Kopieren oder Löschen stets den vollständigen Ordner einschließlich <code>data</code> beachten.</li>
+</ol>
+<div class="notice"><strong>Wichtig:</strong> Die Vereinsneutrale USB-Version darf keinen Mescheder Server kontaktieren. Bei einem unerwarteten Hinweis auf Serverdaten oder eine fremde Datenquelle nicht mit echten Wettkampfdaten weiterarbeiten.</div>
+
+<h2><a name="oberflaeche"></a>2. Anzeigetafel und Bedienelemente</h2>
+<p>Die Tafel zeigt den laufenden Kampf mit weißer und blauer Seite. Dazu gehören Kampfzeit, Wertungen, Strafen, Kämpfernamen und – soweit im Modus vorhanden – der Mannschaftsstand. Die Kopfzeile benennt Wettkampf und Gewichtsklasse.</p>
+<ul>
+<li><strong>Heim / Gast:</strong> Zuordnung der beiden Mannschaften im Mannschaftsmodus.</li>
+<li><strong>I / W / Y:</strong> Ippon, Waza-ari und Yuko. Welche Wertungen zulässig sind, bestimmt das aktivierte Regelwerk.</li>
+<li><strong>Uhr:</strong> Laufende Kampfzeit; Golden Score nur entsprechend dem Regelwerk aktivieren.</li>
+<li><strong>Nächster Kampf:</strong> Vorschau des folgenden Kampfes.</li>
+<li><strong>Vorheriger / Nächster:</strong> Navigation zwischen Kämpfen. Vor einem Wechsel Wertungen und Ergebnis kontrollieren.</li>
+<li><strong>Zurücksetzen:</strong> Nur verwenden, wenn die beabsichtigten Änderungen und der Datenverlust für den betreffenden Kampf klar sind.</li>
+</ul>
+
+<h2><a name="kampf"></a>3. Kampfablauf und Ergebniskontrolle</h2>
+<ol>
+<li>Wettkampfart, Kampftag, Begegnung und gegebenenfalls Matte auswählen.</li>
+<li>Die angezeigten Kämpfernamen und die Gewichtsklasse mit der tatsächlichen Ansetzung abgleichen.</li>
+<li>Kampfzeit starten beziehungsweise stoppen. Wertungen und Strafen entsprechend dem geltenden Regelwerk vergeben.</li>
+<li>Am Kampfende die Anzeige kontrollieren und den Kampf ordnungsgemäß abschließen oder speichern.</li>
+<li>Erst danach zum nächsten Kampf wechseln. Bei Unstimmigkeiten den Kampfstand vor dem Wechsel klären.</li>
+</ol>
+<p>Ein automatischer Datentransfer an den Server darf bei einer Offline-USB-Version nicht vorausgesetzt werden. Bei Variante 2 ist dafür später ein gesonderter Dateiexport vorgesehen.</p>
+
+<h2><a name="einzel"></a>4. Einzelwettkämpfe</h2>
+<p>Einzelturniere können Kategorien nach Altersklasse, Geschlecht und Gewichtsklasse enthalten. Je nach angelegtem Turnier stehen Meldung, Auslosung, Kämpfe und Platzierungen zur Verfügung.</p>
+<ol>
+<li>In der Verwaltung ein Einzelturnier und die benötigten Kategorien kontrollieren.</li>
+<li>Kämpfer den zutreffenden Kategorien zuordnen; doppelte Meldungen prüfen.</li>
+<li>Das vorgesehene Auslosungs- oder Wettkampfsystem kontrollieren.</li>
+<li>Vor dem ersten Kampf Kampfzeit und geltendes Regelwerk prüfen.</li>
+<li>Ergebnisse kontrollieren, bevor Platzierungen übernommen oder exportiert werden.</li>
+</ol>
+<p><small>Die Verfügbarkeit einzelner Auslosungsarten richtet sich nach dem Entwicklungsstand. Keine nicht geprüfte Turnierlogik ohne Kontrollliste einsetzen.</small></p>
+
+<h2><a name="mannschaft"></a>5. Mannschaftswettkämpfe</h2>
+<p>Mannschaften sind eigenständige Einheiten. Sie können Kämpfer unterschiedlicher Vereine enthalten. Ein Kämpfer darf nicht gleichzeitig mehreren Mannschaften zugeordnet sein.</p>
+<ol>
+<li>Über <strong>Verwaltung → Vereine / Mannschaften</strong> einen Mannschaftsnamen anlegen.</li>
+<li>Unter <strong>Mannschaftskader bearbeiten</strong> die verfügbaren Kämpfer auswählen.</li>
+<li>Bei Bedarf dort einen neuen Kämpfer anlegen; die Vereinszuordnung ist optional.</li>
+<li>Vor der Begegnung kontrollieren, ob Mannschaften, Kämpfer und Gewichtsklassen richtig ausgewählt sind.</li>
+<li>Die Kämpfe nacheinander durchführen und den Mannschaftsstand nach jedem Ergebnis prüfen.</li>
+</ol>
+<p>Kämpfer, die in der Mannschaftsverwaltung angelegt werden, müssen anschließend auch in der allgemeinen Kämpferverwaltung erscheinen.</p>
+
+<h2><a name="stamm"></a>6. Lokale und serverbasierte Stammdatenverwaltung</h2>
+<h3>Vereine</h3>
+<p>Beim Anlegen und Bearbeiten eines Vereins ist nur der <strong>Vereinsname</strong> verpflichtend. Kurzname, Land, Status, Webseite, Bemerkungen und ein Wappen sind optional. Bei fehlendem Wappen wird ein neutraler Platzhalter verwendet. Ein gespeichertes Wappen muss zusammen mit den Vereinsdaten auf dem USB-Datenträger verbleiben.</p>
+<h3>Kämpfer</h3>
+<p>Vorname und Nachname sind erforderlich. Eine Zuordnung zu einem Verein ist <strong>nicht</strong> erforderlich. Kämpfer sollen in beiden Verwaltungsoberflächen denselben Datenbestand nutzen.</p>
+<h3>Mannschaften</h3>
+<p>Kaderzuordnungen werden über die Mannschaftsverwaltung bearbeitet. Mehrfachzuordnungen derselben Person sind zu verhindern.</p>
+<h3>Datenabgleich</h3>
+<p>Die Windows-Anwendung und die lokale Webverwaltung verwenden die gemeinsame Stammdatendatei. Nach Änderungen in einem bereits geöffneten Fenster die Ansicht erneut aufrufen oder Daten neu laden. Nicht gleichzeitig denselben Datensatz in zwei geöffneten Bearbeitungsdialogen ändern.</p>
+<p><strong>Lokale Webverwaltung:</strong> Sie wird über den lokalen Dienst im Browser geöffnet. Die Offline-Version benötigt dazu keine externe Internetverbindung.</p>
+
+<h2><a name="anzeige"></a>7. Bildschirm, Anzeige und Bedienung</h2>
+<ul>
+<li>Mit dem Menü <strong>Anzeige</strong> die zweite beziehungsweise externe Anzeige kontrollieren.</li>
+<li>Vor dem Wettkampf testen, welcher Monitor die Anzeigetafel für die Zuschauer zeigt.</li>
+<li>Die Bildschirmanordnung in Windows bei Änderungen an Beamer oder Monitor prüfen.</li>
+<li>Auf der öffentlich sichtbaren Anzeige sollten keine Verwaltungs- oder Bearbeitungsfenster geöffnet sein.</li>
+<li><strong>F1</strong> öffnet diese Hilfe.</li>
+</ul>
+
+<h2><a name="usb"></a>8. Die drei USB-Exportvarianten</h2>
+<table>
+<tr><th>Variante</th><th>Inhalt und Verbindung</th></tr>
+<tr><td><strong>1 – Vereinsneutral</strong></td><td>Keine Mescheder Vereins-, Kämpfer-, Mannschafts- oder Wettkampfdaten. Globale Gewichtsklassen, Modi und Regelwerke sollen vorhanden sein. Ausschließlich offline; keine Verbindung zum Mescheder Server.</td></tr>
+<tr><td><strong>2 – Auswahl</strong></td><td>Ausgewählte Kampftage beziehungsweise Turniere mit zugehörigen Daten. Durchführung offline; Ergebnisrücktransport ausschließlich als ausdrücklich exportierte Datei.</td></tr>
+<tr><td><strong>3 – Vollständig</strong></td><td>Der für den vollständigen Export vorgesehene Datenbestand. Lokale Desktop- und Webverwaltung mit gemeinsamer Datenhaltung. Keine ungefragten Serveränderungen.</td></tr>
+</table>
+<p>Der Export wird in der Serververwaltung unter <strong>Import / Export</strong> ausgelöst. Anschließend die ZIP vollständig entpacken und den Starter aus dem Hauptordner verwenden.</p>
+
+<h2><a name="ergebnisse"></a>9. Ergebnisrücktransport – Variante 2</h2>
+<ol>
+<li>Den Kampftag auf dem USB-Datenträger offline abschließen und die Kämpfe kontrollieren.</li>
+<li>In der lokalen Verwaltung <strong>Offline-Kampfergebnisse exportieren</strong> wählen und die JSON-Datei sicher ablegen.</li>
+<li>Auf der dafür vorgesehenen Mescheder Serververwaltung die Ergebnisdatei auswählen.</li>
+<li>Mit dem berechtigten Freigabeschlüssel den Import bewusst auslösen.</li>
+<li>Die Rückmeldung prüfen: Unbekannte Kampftage oder Matten sowie bereits vorhandene Ergebnisse dürfen nicht ungefragt übernommen werden.</li>
+</ol>
+<div class="notice"><strong>Entwicklungsstand:</strong> Der Ergebnisrücktransport muss vor produktiver Nutzung mit einem vollständigen Testkampftag einschließlich erneutem Import und Konfliktprüfung getestet werden. Die bloße Existenz der Schaltflächen ist kein erfolgreicher Funktionstest.</div>
+
+<h2><a name="probleme"></a>10. Probleme und sichere Wiederaufnahme</h2>
+<h3>Windows meldet „Unbekannte App“</h3>
+<p>Das kann bei einer nicht signierten Vorschauversion durch Microsoft Defender SmartScreen auftreten. Nur selbst bezogene, unveränderte und vertrauenswürdige Testpakete ausführen. Eine Signierung für Releases ist gesondert vorgesehen.</p>
+<h3>EXE startet nicht oder die Verwaltung ist nicht erreichbar</h3>
+<p>Prüfen, ob die ZIP vollständig entpackt ist, ob <code>Ipponboard-Meschede.exe</code> im Hauptordner liegt und ob die Unterordner <code>app</code>, <code>local-server</code>, <code>runtime</code> und <code>data</code> vorhanden sind. Keine Serverprozesse manuell in das produktive System starten.</p>
+<h3>Verein, Kämpfer oder Mannschaft fehlt</h3>
+<p>Den verwendeten USB-Export und die Datenquelle kontrollieren. Verwaltung neu öffnen und sicherstellen, dass Änderungen gespeichert wurden. Auf keinen Fall zum scheinbaren Reparieren einen fremden Datenbestand importieren.</p>
+<h3>Ergebnisimport wird abgewiesen</h3>
+<p>Kampftag-ID, Mattenzuordnung und bereits vorhandene Ergebnisse prüfen. Ein abgewiesener Import darf nicht durch Löschen vorhandener Ergebnisse umgangen werden.</p>
+<h3>Fehler melden</h3>
+<p>Version, betroffene USB-Variante, genaue Schritte bis zum Fehler und eine Fehlermeldung oder einen Screenshot festhalten. Über <strong>Über → Fehler melden</strong> wird das GitHub-Issue-Verzeichnis des Projekts geöffnet, sofern Internet verfügbar ist.</p>
+<p><small>Ipponboard-Meschede · Projekt: Judo-Meschede/Ipponboard-Meschede · Diese Hilfe enthält keine fremden Online- oder Telemetrie-Abhängigkeiten.</small></p>
+</body>
+</html>
