@@ -1,6 +1,7 @@
 // Copyright 2018 Florian Muecke. Original Ipponboard source under BSD-style license.
 // Modifications: Ipponboard-Meschede.
 #include "SplashScreen.h"
+#include "HelpDialog.h"
 #include "ui_SplashScreen.h"
 #include <QCoreApplication>
 #include <QDateTime>
@@ -146,6 +147,26 @@ SplashScreen::SplashScreen(Data const& data, QWidget* parent) : QDialog(parent),
     MakeCardChildrenMouseTransparent(ui->cardSingle);
     MakeCardChildrenMouseTransparent(ui->cardTeam);
     MakeCardChildrenMouseTransparent(ui->cardAdmin);
+
+    // All three header items must have a working action in the portable app.
+    ui->btnHelp->setToolTip(QStringLiteral("Offline-Hilfe und Bedienungsanleitung"));
+    connect(ui->btnHelp, &QPushButton::clicked, this, [this]() {
+        Ipponboard::ShowIpponboardHelp(this);
+    });
+    ui->btnSettings->setToolTip(QStringLiteral("Vereins- und Wettkampfeinstellungen in der Verwaltung"));
+    connect(ui->btnSettings, &QPushButton::clicked, this, [this]() {
+        on_commandLinkButton_admin_pressed();
+    });
+    ui->btnAbout->setToolTip(QStringLiteral("Über Ipponboard-Meschede"));
+    connect(ui->btnAbout, &QPushButton::clicked, this, [this]() {
+        QMessageBox::about(this, QStringLiteral("Über Ipponboard-Meschede"),
+            QStringLiteral("<h3>Ipponboard-Meschede %1</h3>"
+                "<p>Portable Anzeigetafel für Judo-Einzel- und Mannschaftswettkämpfe.</p>"
+                "<p>Quellcode: <a href=\"https://github.com/Judo-Meschede/Ipponboard-Meschede\">Judo-Meschede/Ipponboard-Meschede</a></p>"
+                "<p>Basiert auf Ipponboard von Florian Mücke und Mitwirkenden. "
+                "Die ursprünglichen Urheberrechte und Lizenzbedingungen bleiben erhalten.</p>")
+                .arg(QCoreApplication::applicationVersion()));
+    });
 
     SyncMasterDataCache();
 }
