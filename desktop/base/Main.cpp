@@ -198,15 +198,12 @@ int main(int argc, char* argv[])
 	QTranslator translator;  // Note: this object needs to remain in scope.
 	SetTranslation(a, translator, langStr);
 
-	bool serverSyncAllowed = true;
-    QFile profile(QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
-    if (profile.open(QIODevice::ReadOnly)) {
-        const QJsonObject usb = QJsonDocument::fromJson(profile.readAll()).object();
-        if (usb.contains(QStringLiteral("serverSyncAllowed")))
-            serverSyncAllowed = usb.value(QStringLiteral("serverSyncAllowed")).toBool(false);
-    }
+    // USB export packages always start offline. Even allowed synchronization
+    // requires an explicit user action; never check remote releases at startup.
+    const QString usbProfile = QDir(QCoreApplication::applicationDirPath())
+        .absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
     OnlineVersionChecker::OnlineVersion onlineVersion{};
-    if (serverSyncAllowed)
+    if (!QFile::exists(usbProfile))
         onlineVersion = OnlineVersionChecker::CheckOnlineVersion();
 	if (onlineVersion.state == OnlineVersionChecker::State::NewerAvailable)
 	{
