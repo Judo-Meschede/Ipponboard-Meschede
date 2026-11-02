@@ -21,7 +21,7 @@
 #include <QFile>
 
 const QString OnlineVersionChecker::VersionDocumentUrl = "https://api.github.com/repos/Judo-Meschede/Ipponboard-Meschede/releases/latest";
-const QString OnlineVersionChecker::ProjectReleasesUrl = "https://github.com/fmuecke/Ipponboard/releases";
+const QString OnlineVersionChecker::ProjectReleasesUrl = "https://github.com/Judo-Meschede/Ipponboard-Meschede/releases";
 
 OnlineVersionChecker::OnlineVersionChecker()
 {
@@ -133,7 +133,7 @@ OnlineVersionChecker::OnlineVersion OnlineVersionChecker::parse_version_document
 
 	OnlineVersion versionInfo;
 	versionInfo.version = GetJsonValue(json, "name");
-	versionInfo.infoUrl = "https://github.com/fmuecke/Ipponboard/releases/latest";
+	versionInfo.infoUrl = "https://github.com/Judo-Meschede/Ipponboard-Meschede/releases/latest";
 	versionInfo.downloadUrl = GetJsonValue(json, "assets[0].browser_download_url");
 	versionInfo.changes_en = GetJsonValue(json, "body");
 	versionInfo.changes_de = versionInfo.changes_en;
