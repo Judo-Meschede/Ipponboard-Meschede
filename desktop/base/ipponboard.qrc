@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/res">
+        <file alias="hilfe.html">../../server/public/hilfe.html</file>
         <file>images/off.png</file>
         <file>images/on.png</file>
         <file>images/off_hansokumake.png</file>
