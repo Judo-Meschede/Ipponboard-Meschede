@@ -30,10 +30,58 @@ try {
     $graphics.DrawString('4:00', $fontTimer, $red, [System.Drawing.RectangleF]::new(0, 94, 128, 32), $center)
     $graphics.Flush()
     $bitmap.Save($PngPath, [System.Drawing.Imaging.ImageFormat]::Png)
-    $icon = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
+    # Multi-resolution ICO instead of the old single-size GetHicon() format.
+    # Windows Explorer, the taskbar and RC compiler can now choose an exact size.
+    $sizes = @(16, 24, 32, 48, 64, 128, 256)
+    $images = [System.Collections.Generic.List[byte[]]]::new()
+    foreach ($size in $sizes) {
+        $scaled = [System.Drawing.Bitmap]::new($size, $size)
+        $canvas = [System.Drawing.Graphics]::FromImage($scaled)
+        $canvas.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $canvas.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+        $canvas.DrawImage($bitmap, [System.Drawing.Rectangle]::new(0,0,$size,$size))
+        $canvas.Dispose()
+        $buffer = [System.IO.MemoryStream]::new()
+        try {
+            $scaled.Save($buffer, [System.Drawing.Imaging.ImageFormat]::Png)
+            $images.Add($buffer.ToArray())
+        } finally {
+            $buffer.Dispose()
+            $scaled.Dispose()
+        }
+    }
     $stream = [System.IO.File]::Create($IconPath)
-    try { $icon.Save($stream) }
-    finally { $stream.Dispose(); $icon.Dispose() }
+    $binary = [System.IO.BinaryWriter]::new($stream)
+    try {
+        $binary.Write([uint16]0)       # ICONDIR reserved
+        $binary.Write([uint16]1)       # ICO type
+        $binary.Write([uint16]$sizes.Count)
+        $offset = 6 + $sizes.Count * 16
+        for ($i = 0; $i -lt $sizes.Count; $i++) {
+            $size = $sizes[$i]
+            $binary.Write([byte]($size % 256))
+            $binary.Write([byte]($size % 256))
+            $binary.Write([byte]0)
+            $binary.Write([byte]0)
+            $binary.Write([uint16]1)
+            $binary.Write([uint16]32)
+            $binary.Write([uint32]$images[$i].Length)
+            $binary.Write([uint32]$offset)
+            $offset += $images[$i].Length
+        }
+        foreach ($png in $images) {
+            $binary.Write([byte[]]$png)
+        }
+    } finally { $binary.Dispose() }
+    # Check the output structure before letting a Windows build use it.
+    $testStream = [System.IO.File]::OpenRead($IconPath)
+    try {
+        $testReader = [System.IO.BinaryReader]::new($testStream)
+        if ($testReader.ReadUInt16() -ne 0 -or $testReader.ReadUInt16() -ne 1 -or
+            $testReader.ReadUInt16() -ne $sizes.Count) {
+            throw 'Ungültiges mehrstufiges Windows-Icon.'
+        }
+    } finally { $testReader.Dispose() }
 }
 finally {
     $graphics.Dispose()
