@@ -11,6 +11,7 @@
 #include "../util/path_helpers.h"
 
 #include <QApplication>
+#include <QIcon>
 #include <QDesktopServices>
 #include <QUrl>
 #include <QTranslator>
@@ -129,6 +130,10 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationName(QString::fromUtf8("SSV Meschede Judo"));
 	QCoreApplication::setOrganizationDomain("paul-meschede.de");
 	QCoreApplication::setApplicationName("Ipponboard-Meschede");
+    const QString emblemFile = QDir(QCoreApplication::applicationDirPath())
+        .absoluteFilePath(QStringLiteral("app-icon.png"));
+    if (QFile::exists(emblemFile))
+        a.setWindowIcon(QIcon(emblemFile));
 
     qInfo() << QCoreApplication::applicationName() << QCoreApplication::applicationVersion();
 
