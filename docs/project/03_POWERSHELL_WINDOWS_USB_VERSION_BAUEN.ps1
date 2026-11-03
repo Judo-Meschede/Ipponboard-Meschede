@@ -107,24 +107,12 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
 if (!(Test-Path $csc)) { throw 'Windows .NET Framework C# compiler fehlt.' }
 $launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
 $launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
-# Generate a portable launcher icon matching the desktop window/taskbar emblem.
-Add-Type -AssemblyName System.Drawing
+# Create one scoreboard emblem for the launcher EXE and the Qt windows.
 $iconPath = Join-Path $root 'USB-Build\\ipponboard-meschede.ico'
-$bitmap = [System.Drawing.Bitmap]::new(64, 64)
-$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-$graphics.Clear([System.Drawing.Color]::FromArgb(25,25,25))
-$red = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(200,20,30))
-$white = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
-$font = [System.Drawing.Font]::new('Arial', 29, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$graphics.FillRectangle($red, 0, 0, 64, 10)
-$fmt = [System.Drawing.StringFormat]::new()
-$fmt.Alignment = [System.Drawing.StringAlignment]::Center
-$fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
-$graphics.DrawString('IM', $font, $white, ([System.Drawing.RectangleF]::new(0,9,64,55)), $fmt)
-$graphics.Dispose()
-$ico = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
-$stream = [System.IO.File]::Create($iconPath)
-try { $ico.Save($stream) } finally { $stream.Dispose(); $ico.Dispose(); $bitmap.Dispose(); $font.Dispose(); $red.Dispose(); $white.Dispose(); $fmt.Dispose() }
+$pngPath = Join-Path $root 'USB-Build\\ipponboard-meschede.png'
+& (Join-Path $source 'docs\\project\\04_SCOREBOARD_ICON_ERZEUGEN.ps1') -IconPath $iconPath -PngPath $pngPath
+if (!(Test-Path $iconPath) -or !(Test-Path $pngPath)) { throw 'Scoreboard-Symbol nicht erstellt.' }
+Copy-Item $pngPath (Join-Path $app 'app-icon.png') -Force
 & $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
 Check 'Portable EXE Starter'
 if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
