@@ -474,112 +474,63 @@ void MainWindowTeam::closeEvent(QCloseEvent* event)
 	}
 }
 
+bool MainWindowTeam::CanExecuteScoreboardShortcut() const
+{
+    return m_pUi && m_pUi->tabWidget->currentWidget() == m_pUi->tab_view;
+}
+
+bool MainWindowTeam::HandleEditionKeyboardAction(const QString& command)
+{
+    if (command == QStringLiteral("next")) {
+        m_pUi->button_next->click();
+        return true;
+    }
+    if (command == QStringLiteral("previous")) {
+        m_pUi->button_prev->click();
+        return true;
+    }
+    if (command == QStringLiteral("result")) {
+        m_pUi->button_pause->click();
+        return true;
+    }
+    return false;
+}
+
 void MainWindowTeam::keyPressEvent(QKeyEvent* event)
 {
-	const bool isCtrlPressed = event->modifiers().testFlag(Qt::ControlModifier);
-	const bool isAltPressed = event->modifiers().testFlag(Qt::AltModifier);
-
-	if (event->matches(QKeySequence::SaveAs))
-	{
-		on_actionSave_As_triggered();
-	}
-	else if (event->matches(QKeySequence::Open))
-	{
-		on_actionLoad_triggered();
-	}
-
-	//FIXME: copy and paste handling should be part of the table class!
-	if (m_pUi->tabWidget->currentWidget() == m_pUi->tab_view)
-	{
-		switch (event->key())
-		{
-		case Qt::Key_Left:
-			if (isCtrlPressed && isAltPressed)
-			{
-				m_pUi->button_prev->click();
-				qDebug() << "Button [ Prev ] was triggered by keyboard";
-			}
-			else
-			{
-				MainWindowBase::keyPressEvent(event);
-			}
-
-			break;
-
-		case Qt::Key_Right:
-			if (isCtrlPressed && isAltPressed)
-			{
-				m_pUi->button_next->click();
-				qDebug() << "Button [ Next ] was triggered by keyboard";
-			}
-			else
-			{
-				MainWindowBase::keyPressEvent(event);
-			}
-
-			break;
-
-		case Qt::Key_F4:
-			m_pUi->button_pause->click();
-			qDebug() << "Button [ ResultScreen ] was triggered by keyboard";
-			break;
-
-		default:
-			MainWindowBase::keyPressEvent(event);
-			break;
-		}
-	}
-	else if (m_pUi->tabWidget->currentWidget() == m_pUi->tab_score_table)
-	{
-		if (event->matches(QKeySequence::Copy))
-		{
-			if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
-			{
-				slot_copy_cell_content_list1();
-			}
-			else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
-			{
-				slot_copy_cell_content_list2();
-			}
-		}
-		else if (event->matches(QKeySequence::Paste))
-		{
-			if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
-			{
-				slot_paste_cell_content_list1();
-			}
-			else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
-			{
-				slot_paste_cell_content_list2();
-			}
-		}
-		else if (event->matches(QKeySequence::Delete))
-		{
-			if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
-			{
-				slot_clear_cell_content_list1();
-			}
-			else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
-			{
-				slot_clear_cell_content_list2();
-			}
-		}
-		else
-		{
-			MainWindowBase::keyPressEvent(event);
-		}
-	}
-	else
-	{
-		//TODO: handle view keys
-		//FIXME: handling should be part of the view class!
-		//switch (event->key())
-		//{
-		//default:
-		MainWindowBase::keyPressEvent(event);
-		//    break;
-		//}
-	}
+    // Scoreboard commands are bound by MainWindowBase; table editing remains native.
+    if (event->matches(QKeySequence::SaveAs)) {
+        on_actionSave_As_triggered();
+        return;
+    }
+    if (event->matches(QKeySequence::Open)) {
+        on_actionLoad_triggered();
+        return;
+    }
+    if (m_pUi->tabWidget->currentWidget() == m_pUi->tab_score_table) {
+        if (event->matches(QKeySequence::Copy)) {
+            if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
+                slot_copy_cell_content_list1();
+            else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
+                slot_copy_cell_content_list2();
+            return;
+        }
+        if (event->matches(QKeySequence::Paste)) {
+            if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
+                slot_paste_cell_content_list1();
+            else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
+                slot_paste_cell_content_list2();
+            return;
+        }
+        if (event->matches(QKeySequence::Delete)) {
+            if (QApplication::focusWidget() == m_pUi->tableView_tournament_list1)
+                slot_clear_cell_content_list1();
+            else if (QApplication::focusWidget() == m_pUi->tableView_tournament_list2)
+                slot_clear_cell_content_list2();
+            return;
+        }
+    }
+    MainWindowBase::keyPressEvent(event);
 }
 
 QStringList MainWindowTeam::get_list_templates()
