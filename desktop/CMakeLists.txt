@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.28)
 
 project(Ipponboard-Meschede VERSION 0.2.57 LANGUAGES CXX)
 
+# All repository C++ sources are UTF-8; do not interpret umlauts using a Windows legacy code page.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 # Define variables for the required MSVC runtime libraries
 if(MSVC)
     include(InstallRequiredSystemLibraries)
