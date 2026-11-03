@@ -54,7 +54,9 @@ function createUsbZip({master,mode,selected,templatePath}){
  // AdmZip.getEntry(path) uses the raw archive entry name, so a valid file
  // may not be found despite appearing correctly in Windows Explorer.
  const templateEntries=new Map();
- for(const [name,entry] of templateEntries){
+ for(const entry of template.getEntries()){
+  if(entry.isDirectory)continue;
+  const name=entry.entryName.replace(/\\/g,'/');
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungültiger Dateipfad in der USB-Vorlage: '+name);
   if(templateEntries.has(name))throw new Error('Doppelter Dateipfad in der USB-Vorlage: '+name);
   templateEntries.set(name,entry);
@@ -78,9 +80,7 @@ function createUsbZip({master,mode,selected,templatePath}){
    throw new Error('USB-Vorlage fehlerhaft: '+name+' stimmt nicht mit geprüftem Build überein.');
  }
  const zip=new AdmZip();
- for(const entry of template.getEntries()){
-  if(entry.isDirectory)continue;
-  const name=entry.entryName.replace(/\\/g,'/');
+ for(const [name,entry] of templateEntries){
   if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungueltiger Pfad in USB-Vorlage');
   if(/^(data\/|app\/data\/|offline-tournaments\/|app\/offline-tournaments\/)/i.test(name))continue;
   if(/(masterdata-local\.json|last-session\.json|terminal-id\.txt|Ipponboard-Meschede\.ini|Ipponboard-Meschede\.log|FightersTeam\.csv|clubs\.config|fighters\.config|tournament.*\.json|.*\.autosave)$/i.test(name))continue;
