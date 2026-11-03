@@ -43,11 +43,12 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
     // Preserve the original settings signals and fields, but give the
     // administration dialog an independent Ipponboard-Meschede visual identity.
     setWindowTitle(QStringLiteral("Ipponboard-Meschede · Einstellungen"));
-    setMinimumSize(800, 620);
-    resize(920, 760);
+    setMinimumSize(820, 640);
+    resize(1000, 780);
     setStyleSheet(QStringLiteral(R"qss(
         QDialog { background:#0b1017; color:#e7ecf2; font: 11pt 'Segoe UI'; }
         QWidget#tab_general, QWidget#tab_keys, QWidget#tab { background:#0b1017; }
+        QScrollArea#scrollAreaSettingsDesign, QWidget#scrollAreaSettingsDesignContents { background:#0b1017; border:0; }
         QTabWidget::pane { border:0; background:#0b1017; top:0; }
         QTabBar::tab { background:#202b38; color:#c9d1db; border:1px solid #334253;
                        padding:13px 23px; margin-right:7px; border-radius:7px; }
@@ -80,6 +81,8 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
         QCheckBox::indicator { width:16px; height:16px; }
         QScrollBar:vertical { background:#17202b; width:12px; }
         QScrollBar::handle:vertical { background:#516375; border-radius:5px; min-height:20px; }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0px; }
+        QGroupBox#groupBox_design_title, QGroupBox#groupBox_design_white, QGroupBox#groupBox_design_blue { background:#111b26; }
     )qss"));
     ui->tab_extended->setTabText(ui->tab_extended->indexOf(ui->tab_general), QStringLiteral("Anzeige & Design"));
     ui->tab_extended->setTabText(ui->tab_extended->indexOf(ui->tab_keys), QStringLiteral("Tastatur / Numpad"));
