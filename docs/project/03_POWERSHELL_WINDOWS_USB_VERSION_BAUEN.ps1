@@ -35,6 +35,19 @@ if (!$qt -or !(Test-Path (Join-Path $qt 'bin\windeployqt.exe'))) { throw 'Qt/win
 $build = Join-Path $root 'USB-Build'
 $base = Join-Path $desktop 'base'
 & (Join-Path $desktop 'scripts\create-versioninfo.cmd') $base; Check 'Versionsdateien erzeugen'
+# Create and embed the same scoreboard emblem in the actual Qt executable.
+New-Item -ItemType Directory -Force -Path $build | Out-Null
+$iconPath = Join-Path $build 'ipponboard-meschede.ico'
+$pngPath = Join-Path $build 'ipponboard-meschede.png'
+& (Join-Path $source 'docs\project\04_SCOREBOARD_ICON_ERZEUGEN.ps1') -IconPath $iconPath -PngPath $pngPath
+if (!(Test-Path $iconPath) -or !(Test-Path $pngPath)) { throw 'Scoreboard-Symbol nicht erstellt.' }
+$rcPath = Join-Path $base 'Ipponboard.rc'
+$rcEncoding = [System.Text.Encoding]::GetEncoding(1252)
+$rcText = [System.IO.File]::ReadAllText($rcPath, $rcEncoding)
+$iconForRc = $iconPath.Replace('\','/')
+$rcText = $rcText.Replace('101 ICON "images/ipponboard.ico"', ('101 ICON "' + $iconForRc + '"'))
+if (!$rcText.Contains($iconForRc)) { throw 'EXE-Icon-Resource konnte nicht aktualisiert werden.' }
+[System.IO.File]::WriteAllText($rcPath, $rcText, $rcEncoding)
 $buildDir = Join-Path $desktop 'build-x86'
 $cache = Join-Path $buildDir 'CMakeCache.txt'
 if (Test-Path $cache) {
@@ -107,11 +120,7 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
 if (!(Test-Path $csc)) { throw 'Windows .NET Framework C# compiler fehlt.' }
 $launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
 $launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
-# Create one scoreboard emblem for the launcher EXE and the Qt windows.
-$iconPath = Join-Path $root 'USB-Build\\ipponboard-meschede.ico'
-$pngPath = Join-Path $root 'USB-Build\\ipponboard-meschede.png'
-& (Join-Path $source 'docs\\project\\04_SCOREBOARD_ICON_ERZEUGEN.ps1') -IconPath $iconPath -PngPath $pngPath
-if (!(Test-Path $iconPath) -or !(Test-Path $pngPath)) { throw 'Scoreboard-Symbol nicht erstellt.' }
+# Reuse the compiled scoreboard icon for the portable starter.
 Copy-Item $pngPath (Join-Path $app 'app-icon.png') -Force
 & $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
 Check 'Portable EXE Starter'
