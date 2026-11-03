@@ -4,6 +4,7 @@
 #include "HelpDialog.h"
 #include "ui_SplashScreen.h"
 #include <QCoreApplication>
+#include <QApplication>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -135,6 +136,7 @@ SplashScreen::SplashScreen(Data const& data, QWidget* parent) : QDialog(parent),
 {
     Q_UNUSED(data);
     ui->setupUi(this);
+    setWindowIcon(QApplication::windowIcon());
     ui->label_info->setText(QStringLiteral("Ipponboard-Meschede V%1").arg(QCoreApplication::applicationVersion()));
     setWindowFlags(Qt::Window);
     resize(1536, 982);
