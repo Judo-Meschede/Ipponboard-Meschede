@@ -17,7 +17,7 @@ echo Using: BASE_DIR=%BASE_DIR%
 :: --> CHANGE VERSION HERE:
 SET VER1=0
 SET VER2=2
-SET VER3=58
+SET VER3=59
 SET "TAG=preview"
 :: that's it. <--
 
