@@ -122,9 +122,41 @@ $launcher = Join-Path $source 'docs\\project\\UsbLauncher.cs'
 $launcherExe = Join-Path $package 'Ipponboard-Meschede.exe'
 # Reuse the compiled scoreboard icon for the portable starter.
 Copy-Item $pngPath (Join-Path $app 'app-icon.png') -Force
-& $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
+# Stamp the launcher with the current version; Explorer must not identify all releases
+# as the original legacy IM executable with an unchanging 0.0.0.0 file version.
+$releaseVersion = ($version -replace '-preview$', '') + '.0'
+$launcherMetadata = Join-Path $build 'UsbLauncher.Version.cs'
+@"
+using System.Reflection;
+[assembly: AssemblyTitle("Ipponboard-Meschede Portable")]
+[assembly: AssemblyProduct("Ipponboard-Meschede")]
+[assembly: AssemblyCompany("SSV Meschede Judo")]
+[assembly: AssemblyVersion("$releaseVersion")]
+[assembly: AssemblyFileVersion("$releaseVersion")]
+"@ | Set-Content -LiteralPath $launcherMetadata -Encoding Ascii
+& $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher $launcherMetadata
 Check 'Portable EXE Starter'
-if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
+if (!(Test-Path $launcherExe)) { throw 'USB-Start-EXE fehlt.' }
+# Validate the actual embedded EXE icon, rather than just the source PNG:
+# the previous IM emblem has no blue pixels at all.
+function Assert-ScoreboardIcon([string]$exePath) {
+  $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($exePath)
+  if (!$icon) { throw "EXE hat kein Windows-Symbol: $exePath" }
+  $pixels = $icon.ToBitmap()
+  try {
+    $bluePixels = 0
+    for ($y = 0; $y -lt $pixels.Height; $y++) {
+      for ($x = 0; $x -lt $pixels.Width; $x++) {
+        $c = $pixels.GetPixel($x, $y)
+        if ($c.A -ge 200 -and $c.B -ge 110 -and $c.B -gt ($c.R + 45) -and $c.B -gt ($c.G + 40)) { $bluePixels++ }
+      }
+    }
+    if ($bluePixels -lt 6) { throw "Falsches oder altes IM-Icon in EXE eingebettet: $exePath" }
+    Write-Host "Scoreboard-Icon geprüft: $exePath ($bluePixels blaue Pixel)"
+  } finally { $pixels.Dispose(); $icon.Dispose() }
+}
+Assert-ScoreboardIcon $launcherExe
+Assert-ScoreboardIcon (Join-Path $app 'Ipponboard-Meschede.exe')
 # Sign both Windows entry points with a verified publisher identity, when configured.
 # Never keep a private key or password in GitHub or in the USB package.
 if ($env:IPPONBOARD_SIGN_CERT_THUMBPRINT) {
