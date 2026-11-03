@@ -32,6 +32,7 @@ class FightCategoryMgr;
 class ScoreScreen;
 }
 class QSettings;
+class QShortcut;
 
 namespace FMlib
 {
@@ -115,6 +116,10 @@ protected:
 	virtual void changeEvent(QEvent*) override;
 	virtual void closeEvent(QCloseEvent*) override;
 	virtual void keyPressEvent(QKeyEvent*) override;
+	virtual bool HandleEditionKeyboardAction(const QString&) { return false; }
+	virtual bool CanExecuteScoreboardShortcut() const { return true; }
+	void InstallKeyboardShortcuts();
+	void DispatchKeyboardAction(const QString& command);
 
 	void write_settings();
 	void read_settings();
@@ -180,6 +185,7 @@ protected:
 	int m_secondScreenNo;
 	QSize m_secondScreenSize;
 	Ipponboard::ControllerConfig m_controllerCfg;
+	QList<QShortcut*> m_keyboardShortcuts;
 
 private:
 #ifdef _WIN32
