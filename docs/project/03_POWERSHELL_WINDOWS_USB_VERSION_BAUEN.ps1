@@ -166,7 +166,7 @@ $manifest = @{
   iconEntries = 7
   iconName = 'Ipponboard-Meschede Scoreboard'
 }
-$manifest | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $package 'build-manifest.json') -Encoding UTF8
+[System.IO.File]::WriteAllText((Join-Path $package 'build-manifest.json'), ($manifest | ConvertTo-Json -Depth 3), [System.Text.UTF8Encoding]::new($false))
 Write-Host "Launcher-Version und eingebettetes Icon geprüft: $releaseVersion"
 # Sign both Windows entry points with a verified publisher identity, when configured.
 # Never keep a private key or password in GitHub or in the USB package.
