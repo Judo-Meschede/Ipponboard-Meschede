@@ -236,6 +236,15 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
     defaultsButton->setObjectName(QStringLiteral("keyboardDefaultsButton"));
     if (auto* keyboardLayout = qobject_cast<QVBoxLayout*>(ui->tab_keys->layout()))
         keyboardLayout->insertWidget(0, defaultsButton);
+    auto* clearButton = new QPushButton(QStringLiteral("Ausgewählte Belegung entfernen"), ui->tab_keys);
+    if (auto* keyboardLayout = qobject_cast<QVBoxLayout*>(ui->tab_keys->layout()))
+        keyboardLayout->insertWidget(1, clearButton);
+    connect(clearButton, &QPushButton::clicked, this, [keyboardTable]() {
+        const int row = keyboardTable->currentRow();
+        if (row < 0) return;
+        auto* editor = qobject_cast<QKeySequenceEdit*>(keyboardTable->cellWidget(row,1));
+        if (editor) editor->clear();
+    });
     connect(defaultsButton, &QPushButton::clicked, this, [keyboardTable]() {
         const auto defaults = IpponboardKeyboard::defaults();
         for (int row=0; row<keyboardTable->rowCount(); ++row) {
@@ -434,7 +443,10 @@ void SettingsDlg::on_buttonBox_accepted()
             const QList<QKeySequence> reserved = {
                 QKeySequence(Qt::Key_F1), QKeySequence(Qt::ALT | Qt::Key_F4),
                 QKeySequence(Qt::CTRL | Qt::Key_O), QKeySequence(Qt::CTRL | Qt::Key_S),
-                QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S)
+                QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S),
+                QKeySequence(Qt::CTRL | Qt::Key_Q), QKeySequence(Qt::Key_F2),
+                QKeySequence(Qt::CTRL | Qt::Key_G),
+                QKeySequence(Qt::CTRL | Qt::Key_1), QKeySequence(Qt::CTRL | Qt::Key_2)
             };
             if (reserved.contains(sequence)) {
                 QMessageBox::warning(this, QStringLiteral("Tastatur"),
