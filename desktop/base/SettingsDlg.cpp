@@ -245,7 +245,7 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
         }
     });
 
-	ui->tableWidget_keys->verticalHeader()->setVisible(true);
+	ui->tableWidget_keys->verticalHeader()->setVisible(false);
 
 	// NOTE: This is nasty workaround for the standard buttons not
 	// beeing translated (separate translator would be required)
