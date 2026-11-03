@@ -116,6 +116,61 @@ Copy-Item $pngPath (Join-Path $app 'app-icon.png') -Force
 & $csc /nologo /target:winexe "/win32icon:$iconPath" "/out:$launcherExe" /reference:System.Windows.Forms.dll $launcher
 Check 'Portable EXE Starter'
 if (!(Test-Path (Join-Path $package 'Ipponboard-Meschede.exe'))) { throw 'USB-Start-EXE fehlt.' }
+# Sign both Windows entry points with a verified publisher identity, when configured.
+# Never keep a private key or password in GitHub or in the USB package.
+if ($env:IPPONBOARD_SIGN_CERT_THUMBPRINT) {
+  $signtool = (Get-Command 'signtool.exe' -ErrorAction SilentlyContinue).Source
+  if (!$signtool) {
+    $kits = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Windows Kits\\10\\bin'
+    if (Test-Path $kits) {
+      $signtool = Get-ChildItem $kits -Filter signtool.exe -Recurse -File |
+        Where-Object { $_.FullName -match '\\x64\\signtool.exe
+# Preserve the downloaded masterdata snapshot for an offline-first USB test.
+$dataDir = Join-Path $package 'data'
+New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+$localSnapshot = Join-Path $desktop '_bin\data\masterdata.json'
+if (!(Test-Path $localSnapshot)) { $localSnapshot = Join-Path $desktop '_bin\Ipponboard-Meschede-Release\data\masterdata.json' }
+# Do not copy developer snapshots into any USB export template.
+# Empty USB bundles carry no server snapshot or active tournament records.
+# The application must not silently inherit data from its creator's machine.
+
+$zip = "$package.zip"
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path (Join-Path $package '*') -DestinationPath $zip -CompressionLevel Optimal
+Write-Host "FERTIG: $zip"
+Write-Host 'USB-Test: ZIP entpacken, START_IPPONBOARD_MESCHEDE.cmd auf fremdem Windows-PC starten.'
+ } |
+        Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+    }
+  }
+  if (!$signtool) { throw 'SignTool nicht gefunden. Windows SDK zur Codesignierung erforderlich.' }
+  $thumbprint = ($env:IPPONBOARD_SIGN_CERT_THUMBPRINT -replace '\\s','').ToUpperInvariant()
+  if ($thumbprint -notmatch '^[0-9A-F]{40}
+# Preserve the downloaded masterdata snapshot for an offline-first USB test.
+$dataDir = Join-Path $package 'data'
+New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+$localSnapshot = Join-Path $desktop '_bin\data\masterdata.json'
+if (!(Test-Path $localSnapshot)) { $localSnapshot = Join-Path $desktop '_bin\Ipponboard-Meschede-Release\data\masterdata.json' }
+# Do not copy developer snapshots into any USB export template.
+# Empty USB bundles carry no server snapshot or active tournament records.
+# The application must not silently inherit data from its creator's machine.
+
+$zip = "$package.zip"
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path (Join-Path $package '*') -DestinationPath $zip -CompressionLevel Optimal
+Write-Host "FERTIG: $zip"
+Write-Host 'USB-Test: ZIP entpacken, START_IPPONBOARD_MESCHEDE.cmd auf fremdem Windows-PC starten.'
+) { throw 'Signatur-Zertifikat: Ungültiger SHA1-Fingerabdruck.' }
+  foreach ($toSign in @((Join-Path $app 'Ipponboard-Meschede.exe'), $launcherExe)) {
+    & $signtool sign /sha1 $thumbprint /fd SHA256 /tr 'http://timestamp.digicert.com' /td SHA256 $toSign
+    Check "Codesignierung $toSign"
+    & $signtool verify /pa /v $toSign
+    Check "Signaturprüfung $toSign"
+  }
+  Write-Host 'Windows-Dateien digital signiert und überprüft.'
+} else {
+  Write-Warning 'Windows-EXE noch nicht signiert. SmartScreen-Warnung kann weiterhin erscheinen.'
+}
 if (Test-Path (Join-Path $desktop 'LICENSE.txt')) { Copy-Item (Join-Path $desktop 'LICENSE.txt') $package }
 # Preserve the downloaded masterdata snapshot for an offline-first USB test.
 $dataDir = Join-Path $package 'data'
