@@ -75,10 +75,11 @@ inline QMap<QString, QKeySequence> load() {
     if (root.value(QStringLiteral("schema")).toString() != QStringLiteral("ipponboard-keyboard-1"))
         return result;
     const QJsonObject bindings = root.value(QStringLiteral("bindings")).toObject();
-    for (auto it = result.cbegin(); it != result.cend(); ++it) {
-        if (bindings.contains(it.key()) && bindings.value(it.key()).isString())
-            result[it.key()] = QKeySequence::fromString(bindings.value(it.key()).toString(),
-                                                       QKeySequence::PortableText);
+    for (const Command& command : commands()) {
+        const QString id = QString::fromLatin1(command.id);
+        if (bindings.contains(id) && bindings.value(id).isString())
+            result.insert(id, QKeySequence::fromString(bindings.value(id).toString(),
+                                                     QKeySequence::PortableText));
     }
     return result;
 }
