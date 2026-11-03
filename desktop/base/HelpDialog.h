@@ -61,7 +61,7 @@ inline void ShowIpponboardHelp(QWidget* parent)
         QStringLiteral("anzeige"), QStringLiteral("usb"),
         QStringLiteral("ergebnisse"), QStringLiteral("probleme")
     };
-    connect(&topics, &QListWidget::currentRowChanged, &dialog,
+    QObject::connect(&topics, &QListWidget::currentRowChanged, &dialog,
         [&](int row) {
             if (row >= 0 && row < anchors.size())
                 browser.scrollToAnchor(anchors.at(row));
@@ -77,10 +77,10 @@ inline void ShowIpponboardHelp(QWidget* parent)
                 ? QString() : QStringLiteral("Kein weiterer Treffer"));
         }
     };
-    connect(&searchButton, &QPushButton::clicked, &dialog, findText);
-    connect(&search, &QLineEdit::returnPressed, &dialog, findText);
+    QObject::connect(&searchButton, &QPushButton::clicked, &dialog, findText);
+    QObject::connect(&search, &QLineEdit::returnPressed, &dialog, findText);
     QPushButton close(QStringLiteral("Schließen"), &dialog);
-    connect(&close, &QPushButton::clicked, &dialog, &QDialog::accept);
+    QObject::connect(&close, &QPushButton::clicked, &dialog, &QDialog::accept);
     QHBoxLayout bottom;
     bottom.addStretch();
     bottom.addWidget(&close);
