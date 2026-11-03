@@ -3,6 +3,7 @@
 // found in the LICENSE.txt file.
 
 #include "MainWindowBase.h"
+#include "KeyboardShortcuts.h"
 #include "HelpDialog.h"
 
 #include "View.h"
@@ -29,6 +30,7 @@
 #include <QTimer>
 #include <QStyle>
 #include <QScreen>
+#include <QShortcut>
 #include <QDialog>
 #include <QFile>
 #include <QHBoxLayout>
@@ -99,6 +101,7 @@ void MainWindowBase::Init()
 	read_settings();
 
 	change_lang(true);
+	InstallKeyboardShortcuts();
 
 #ifdef _WIN32
     // Init gamepad
@@ -159,142 +162,71 @@ void MainWindowBase::closeEvent(QCloseEvent* event)
 
 void MainWindowBase::keyPressEvent(QKeyEvent* event)
 {
-	const bool isCtrlPressed = event->modifiers().testFlag(Qt::ControlModifier);
+    // All former hard-coded shortcuts are now supplied by the configurable
+    // per-USB keyboard layout; unassigned keys are passed to Qt.
+    QMainWindow::keyPressEvent(event);
+}
 
-	switch (event->key())
-	{
-	case Qt::Key_Space:
+void MainWindowBase::InstallKeyboardShortcuts()
+{
+    for (QShortcut* shortcut : m_keyboardShortcuts)
+        delete shortcut;
+    m_keyboardShortcuts.clear();
+
+    const auto bindings = IpponboardKeyboard::load();
+    for (const auto& command : IpponboardKeyboard::commands()) {
+        const QString id = QString::fromLatin1(command.id);
+        const QKeySequence sequence = bindings.value(id, command.defaultKey);
+        if (sequence.isEmpty()) continue;
+        QShortcut* shortcut = new QShortcut(sequence, this);
+        shortcut->setContext(Qt::WindowShortcut);
+        shortcut->setAutoRepeat(false);
+        connect(shortcut, &QShortcut::activated, this, [this, id]() {
+            DispatchKeyboardAction(id);
+        });
+        m_keyboardShortcuts.append(shortcut);
+    }
+}
+
+void MainWindowBase::DispatchKeyboardAction(const QString& command)
+{
+    if (!CanExecuteScoreboardShortcut()) return;
+    if (HandleEditionKeyboardAction(command)) return;
+    if (command == QStringLiteral("hajime")) {
         m_pController->DoAction(eAction_Hajime_Mate, FighterEnum::Nobody);
-		qDebug() << "Action [ Hajime/Mate ] was triggered by keyboard";
-		break;
-
-	case Qt::Key_Backspace:
-		if (isCtrlPressed)
-		{
-            m_pController->DoAction(eAction_ResetAll, FighterEnum::Nobody);
-			qDebug() << "Action [ Reset ] was triggered by keyboard";
-		}
-
-		break;
-
-	case Qt::Key_Left:
-		{
-			if (eState_Holding == m_pController->GetCurrentState() &&
-					FighterEnum::First != m_pController->GetLead())
-			{
-				m_pController->DoAction(eAction_SetOsaekomi, FighterEnum::First);
-			}
-			else
-			{
-				m_pController->DoAction(eAction_OsaeKomi_Toketa, FighterEnum::First);
-			}
-
-			qDebug() << "Action [ Osaekomi/Toketa for fighter1 ] was triggered by keyboard";
-		}
-
-		break;
-
-	case Qt::Key_Right:
-		{
-			if (eState_Holding == m_pController->GetCurrentState() &&
-					FighterEnum::Second != m_pController->GetLead())
-			{
-				m_pController->DoAction(eAction_SetOsaekomi, FighterEnum::Second);
-			}
-			else
-			{
-				m_pController->DoAction(eAction_OsaeKomi_Toketa, FighterEnum::Second);
-			}
-
-			qDebug() << "Action [ Osaekomi/Toketa for fighter2 ] was triggered by keyboard";
-		}
-
-		break;
-
-	case Qt::Key_Down:
-		//if (isCtrlPressed)
-		{
-            m_pController->DoAction(eAction_ResetOsaeKomi, FighterEnum::Nobody, true);
-			qDebug() << "Action [ Reset Osaekomi ] was triggered by keyboard";
-		}
-		break;
-
-	case Qt::Key_F5:
-		m_pController->DoAction(eAction_Ippon,
-								FighterEnum::First,
-								isCtrlPressed);
-		qDebug() << "Action [ Ippon for fighter1, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F6:
-		m_pController->DoAction(eAction_Wazaari,
-								FighterEnum::First,
-								isCtrlPressed);
-		qDebug() << "Action [ Wazaari for fighter1, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F7:
-		m_pController->DoAction(eAction_Yuko,
-								FighterEnum::First,
-								isCtrlPressed);
-		qDebug() << "Action [ Yuko for fighter1, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F8:
-		m_pController->DoAction(eAction_Shido,
-								FighterEnum::First,
-								isCtrlPressed);
-		qDebug() << "Action [ Shido for fighter1, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F9:
-		m_pController->DoAction(eAction_Ippon,
-								FighterEnum::Second,
-								isCtrlPressed);
-		qDebug() << "Action [ Ippon for fighter2, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F10:
-		m_pController->DoAction(eAction_Wazaari,
-								FighterEnum::Second,
-								isCtrlPressed);
-		qDebug() << "Action [ Wazaari for fighter2, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F11:
-		m_pController->DoAction(eAction_Yuko,
-								FighterEnum::Second,
-								isCtrlPressed);
-		qDebug() << "Action [ Yuko for fighter2, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	case Qt::Key_F12:
-		m_pController->DoAction(eAction_Shido,
-								FighterEnum::Second,
-								isCtrlPressed);
-		qDebug() << "Action [ Shido for fighter2, revoke="
-				 << isCtrlPressed
-				 << "] was triggered by keyboard";
-		break;
-
-	default:
-		QMainWindow::keyPressEvent(event);
-		break;
-	}
+        return;
+    }
+    if (command == QStringLiteral("reset")) {
+        m_pController->DoAction(eAction_ResetAll, FighterEnum::Nobody);
+        return;
+    }
+    if (command == QStringLiteral("hold_reset")) {
+        m_pController->DoAction(eAction_ResetOsaeKomi, FighterEnum::Nobody, true);
+        return;
+    }
+    if (command == QStringLiteral("hold_first") || command == QStringLiteral("hold_second")) {
+        const FighterEnum fighter = command == QStringLiteral("hold_first")
+            ? FighterEnum::First : FighterEnum::Second;
+        if (eState_Holding == m_pController->GetCurrentState() &&
+                fighter != m_pController->GetLead())
+            m_pController->DoAction(eAction_SetOsaekomi, fighter);
+        else
+            m_pController->DoAction(eAction_OsaeKomi_Toketa, fighter);
+        return;
+    }
+    const bool first = command.startsWith(QStringLiteral("first_"));
+    const bool second = command.startsWith(QStringLiteral("second_"));
+    if (!first && !second) return;
+    const FighterEnum fighter = first ? FighterEnum::First : FighterEnum::Second;
+    const bool revoke = command.endsWith(QStringLiteral("_minus"));
+    if (command.contains(QStringLiteral("_ippon_")))
+        m_pController->DoAction(eAction_Ippon, fighter, revoke);
+    else if (command.contains(QStringLiteral("_wazaari_")))
+        m_pController->DoAction(eAction_Wazaari, fighter, revoke);
+    else if (command.contains(QStringLiteral("_yuko_")))
+        m_pController->DoAction(eAction_Yuko, fighter, revoke);
+    else if (command.contains(QStringLiteral("_shido_")))
+        m_pController->DoAction(eAction_Shido, fighter, revoke);
 }
 
 void MainWindowBase::on_actionAbout_Ipponboard_triggered()
@@ -768,6 +700,7 @@ void MainWindowBase::on_actionPreferences_triggered()
 
 		// save changes to file
 		write_settings();
+		InstallKeyboardShortcuts();
 
 		update_statebar();
 		update_views();
