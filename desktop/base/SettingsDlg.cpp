@@ -3,6 +3,7 @@
 // found in the LICENSE.txt file.
 
 #include "SettingsDlg.h"
+#include "KeyboardShortcuts.h"
 #include "ui_SettingsDlg.h"
 #ifdef _WIN32
 #include "../gamepad/gamepad.h"
@@ -17,6 +18,16 @@
 #include <QSound>
 #include <QColorDialog>
 #include <QDebug>
+#include <QKeySequenceEdit>
+#include <QMessageBox>
+#include <QHeaderView>
+#include <QTabWidget>
+#include <QTabBar>
+#include <QTableWidget>
+#include <QPushButton>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QSet>
 
 using namespace Ipponboard;
 
@@ -26,6 +37,75 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
 	ui(new Ui::SettingsDlg)
 {
 	ui->setupUi(this);
+
+    // Preserve the original settings signals and fields, but give the
+    // administration dialog an independent Ipponboard-Meschede visual identity.
+    setWindowTitle(QStringLiteral("Ipponboard-Meschede · Einstellungen"));
+    setMinimumSize(800, 620);
+    resize(920, 760);
+    setStyleSheet(QStringLiteral(R"qss(
+        QDialog { background:#0b1017; color:#e7ecf2; font: 11pt 'Segoe UI'; }
+        QWidget#tab_general, QWidget#tab_keys, QWidget#tab { background:#0b1017; }
+        QTabWidget::pane { border:0; background:#0b1017; top:0; }
+        QTabBar::tab { background:#202b38; color:#c9d1db; border:1px solid #334253;
+                       padding:13px 23px; margin-right:7px; border-radius:7px; }
+        QTabBar::tab:selected { color:white; background:#9b1922; border-color:#c62a35; }
+        QTabBar::tab:hover:!selected { background:#334354; }
+        QGroupBox { background:#17202b; color:#f3f5f8;
+                    border:1px solid #384758; border-radius:10px;
+                    margin-top:16px; padding:16px 12px 12px; font-weight:600; }
+        QGroupBox::title { subcontrol-origin:margin; subcontrol-position:top left;
+                           left:17px; padding:0 9px; color:#f16b75; }
+        QLabel { color:#d5dce6; }
+        QLineEdit, QComboBox, QFontComboBox, QKeySequenceEdit {
+            background:#263240; color:#f7f8f9; border:1px solid #4b6073;
+            border-radius:6px; padding:7px; min-height:25px; }
+        QComboBox:disabled, QLineEdit:disabled { color:#82909c; background:#202832; }
+        QComboBox::drop-down { border:none; width:26px; }
+        QComboBox QAbstractItemView { background:#253241; color:white; selection-background-color:#a51d2b; }
+        QTableWidget { background:#18232e; color:#e7ebf0; alternate-background-color:#202c38;
+                       gridline-color:#35475b; border:1px solid #405066; border-radius:8px; }
+        QTableWidget::item:selected { background:#77222c; }
+        QHeaderView::section { background:#243546; color:#fafafa;
+                               padding:11px; border:0; border-right:1px solid #435466; }
+        QPushButton, QToolButton {
+            background:#273747; color:white; border:1px solid #4a6279;
+            border-radius:7px; padding:8px 13px; min-height:24px; }
+        QPushButton:hover, QToolButton:hover { background:#364e63; }
+        QPushButton:pressed { background:#a51a26; }
+        QPushButton:disabled { background:#1b2732; color:#778795; }
+        QCheckBox { spacing:7px; color:#e4e8ed; }
+        QCheckBox::indicator { width:16px; height:16px; }
+        QScrollBar:vertical { background:#17202b; width:12px; }
+        QScrollBar::handle:vertical { background:#516375; border-radius:5px; min-height:20px; }
+    )qss"));
+    ui->tab_extended->setTabText(ui->tab_extended->indexOf(ui->tab_general), QStringLiteral("Anzeige & Design"));
+    ui->tab_extended->setTabText(ui->tab_extended->indexOf(ui->tab_keys), QStringLiteral("Tastatur / Numpad"));
+    ui->tab_extended->setTabText(ui->tab_extended->indexOf(ui->tab), QStringLiteral("Erweitert"));
+    ui->tab_extended->setTabIcon(ui->tab_extended->indexOf(ui->tab_general), QIcon());
+    ui->tab_extended->setTabIcon(ui->tab_extended->indexOf(ui->tab_keys), QIcon());
+    ui->tab_extended->setTabIcon(ui->tab_extended->indexOf(ui->tab), QIcon());
+    // Gamepad input continues to work with its existing configuration.
+    ui->tab_extended->removeTab(ui->tab_extended->indexOf(ui->tab_gamepad));
+    ui->groupBox_2nd_view->setTitle(QStringLiteral("01   EXTERNE ANZEIGE"));
+    ui->groupBox_sound->setTitle(QStringLiteral("02   MATTE & SIGNAL"));
+    ui->groupBox_info_header->setTitle(QStringLiteral("03   SCHRIFT & FARBGEBUNG"));
+    if (auto* generalLayout = qobject_cast<QVBoxLayout*>(ui->tab_general->layout())) {
+        auto* header = new QLabel(
+            QStringLiteral("<span style='font-size:22px;font-weight:700;color:#ffffff'>"
+                "Anzeigetafel gestalten</span><br>"
+                "<span style='font-size:12px;color:#a9b8c6'>"
+                "Bildschirm, Beschriftung, Tonsignal und Farbschema für den Wettkampfbetrieb.</span>"),
+            ui->tab_general);
+        header->setTextFormat(Qt::RichText);
+        header->setMinimumHeight(65);
+        generalLayout->insertWidget(0, header);
+        generalLayout->setSpacing(12);
+    }
+    ui->label_5->setText(QStringLiteral(
+        "Tastenkombination anklicken und die neue Taste am Gerät drücken. "
+        "Alle Änderungen werden lokal auf dem USB-Datenträger gespeichert."));
+    ui->label_5->setWordWrap(true);
 
 	if (m_edition == EditionType::Team)
 	{
@@ -123,76 +203,45 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
 	QStringList sounds(dir.entryList(QDir::Files));
 	ui->comboBox_sound_time_ends->addItems(sounds);
 
-	// keyboard page
-	QStringList keyVals;
-	keyVals << "<none>";
-	keyVals << "ENTER";			// VK_RETURN
-	keyVals << "BACKSPACE";		// VK_BACK
-	keyVals << "SPACE";			// VK_SPACE
-	keyVals << "TAB";			// VK_TAB
-	keyVals << "INS";			// VK_INSERT
-	keyVals << "DEL";			// VK_DELETE
-	keyVals << "HOME";			// VK_HOME
-	keyVals << "END";			// VK_END
-	keyVals << "PAGE UP";		// VK_PRIOR
-	keyVals << "PAGE DOWN";		// VK_NEXT
-	keyVals << "PAUSE";			// VK_PAUSE
-	keyVals << "LEFT ARROW";	// VK_LEFT
-	keyVals << "UP ARROW";		// VK_UP
-	keyVals << "DOWN ARROW";	// VK_DOWN
-	keyVals << "RIGHT ARROW";	// VK_RIGHT
-	keyVals << "NUMPAD 0";		// VK_NUMPAD0	60	Numeric keypad 0 key
-	keyVals << "NUMPAD 1";		// VK_NUMPAD1	61	Numeric keypad 1 key
-	keyVals << "NUMPAD 2";		// VK_NUMPAD2	62	Numeric keypad 2 key
-	keyVals << "NUMPAD 3";		// VK_NUMPAD3	63	Numeric keypad 3 key
-	keyVals << "NUMPAD 4";		// VK_NUMPAD4	64	Numeric keypad 4 key
-	keyVals << "NUMPAD 5";		// VK_NUMPAD5	65	Numeric keypad 5 key
-	keyVals << "NUMPAD 6";		// VK_NUMPAD6	66	Numeric keypad 6 key
-	keyVals << "NUMPAD 7";		// VK_NUMPAD7	67	Numeric keypad 7 key
-	keyVals << "NUMPAD 8";		// VK_NUMPAD8	68	Numeric keypad 8 key
-	keyVals << "NUMPAD 9";		// VK_NUMPAD9	69	Numeric keypad 9 key
-	keyVals << "NUMPAD *";		// VK_MULTIPLY	6A	Multiply key
-	keyVals << "NUMPAD +";		// VK_ADD	6B	Add key
-	keyVals << "NUMPAD ENTER";		// VK_SEPARATOR	6C	Separator key
-	keyVals << "NUMPAD -";		// VK_SUBTRACT	6D	Subtract key
-	keyVals << "NUMPAD ,";		// VK_DECIMAL	6E	Decimal key
-	keyVals << "NUMPAD %";		// VK_DIVIDE	6F	Divide key
-	keyVals << "F1";
-	keyVals << "F2";
-	keyVals << "F3";
-	keyVals << "F4";
-	keyVals << "F5";
-	keyVals << "F6";
-	keyVals << "F7";
-	keyVals << "F8";
-	keyVals << "F9";
-	keyVals << "F10";
-	keyVals << "F11";
-	keyVals << "F12";
-	// (http://msdn.microsoft.com/en-us/library/ms927178.aspx)
 
-	QStringList modifierVals;
-	modifierVals << "<none>";
-	modifierVals << "Ctrl";
-	modifierVals << "Alt";
-	modifierVals << "Shift";
-	modifierVals << "Ctrl+Alt";
-	modifierVals << "Ctrl+Shift";
-	modifierVals << "Alt+Shift";
-	modifierVals << "Ctrl+Alt+Shift";
-
-	//FIXME: enable this when keyboard access is customizable
-	//for (int i = 0; i < ui->tableWidget_keys->rowCount(); ++i)
-	//{
-	//	QComboBox* pCombo = new QComboBox();
-	//	pCombo->addItems(keyVals);
-	//	pCombo->setEditable(true);
-	//	ui->tableWidget_keys->setCellWidget(i, 1, pCombo);
-	//
-	//	pCombo = new QComboBox();
-	//	pCombo->addItems(modifierVals);
-	//	ui->tableWidget_keys->setCellWidget(i, 0, pCombo);
-	//}
+    // Editable keyboard layout, including genuine numeric keypad key sequences.
+    const auto currentKeys = IpponboardKeyboard::load();
+    auto* keyboardTable = ui->tableWidget_keys;
+    keyboardTable->clear();
+    keyboardTable->setRowCount(IpponboardKeyboard::commands().size());
+    keyboardTable->setColumnCount(2);
+    keyboardTable->setHorizontalHeaderLabels({
+        QStringLiteral("AKTION AUF DER ANZEIGETAFEL"),
+        QStringLiteral("TASTENKOMBINATION") });
+    keyboardTable->setAlternatingRowColors(true);
+    keyboardTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    keyboardTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    keyboardTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    keyboardTable->verticalHeader()->setDefaultSectionSize(43);
+    int keyboardRow = 0;
+    for (const auto& command : IpponboardKeyboard::commands()) {
+        const QString id = QString::fromLatin1(command.id);
+        auto* label = new QTableWidgetItem(command.label);
+        label->setFlags(label->flags() & ~Qt::ItemIsEditable);
+        label->setData(Qt::UserRole, id);
+        keyboardTable->setItem(keyboardRow, 0, label);
+        auto* sequence = new QKeySequenceEdit(currentKeys.value(id, command.defaultKey), keyboardTable);
+        sequence->setToolTip(QStringLiteral("Hier klicken und die gewünschte Taste drücken (auch Numpad)."));
+        keyboardTable->setCellWidget(keyboardRow, 1, sequence);
+        ++keyboardRow;
+    }
+    auto* defaultsButton = new QPushButton(QStringLiteral("Standardbelegung wiederherstellen"), ui->tab_keys);
+    defaultsButton->setObjectName(QStringLiteral("keyboardDefaultsButton"));
+    if (auto* keyboardLayout = qobject_cast<QVBoxLayout*>(ui->tab_keys->layout()))
+        keyboardLayout->insertWidget(0, defaultsButton);
+    connect(defaultsButton, &QPushButton::clicked, this, [keyboardTable]() {
+        const auto defaults = IpponboardKeyboard::defaults();
+        for (int row=0; row<keyboardTable->rowCount(); ++row) {
+            const QString id = keyboardTable->item(row,0)->data(Qt::UserRole).toString();
+            auto* editor = qobject_cast<QKeySequenceEdit*>(keyboardTable->cellWidget(row,1));
+            if (editor) editor->setKeySequence(defaults.value(id));
+        }
+    });
 
 	ui->tableWidget_keys->verticalHeader()->setVisible(true);
 
@@ -365,7 +414,46 @@ QString SettingsDlg::GetGongFile() const
 
 void SettingsDlg::on_buttonBox_accepted()
 {
-	accept();
+    QMap<QString, QKeySequence> bindings;
+    QMap<QString, QString> occupied;
+    for (int row=0; row<ui->tableWidget_keys->rowCount(); ++row) {
+        const auto* item = ui->tableWidget_keys->item(row,0);
+        const auto* editor = qobject_cast<QKeySequenceEdit*>(ui->tableWidget_keys->cellWidget(row,1));
+        if (!item || !editor) continue;
+        const QKeySequence sequence = editor->keySequence();
+        const QString id = item->data(Qt::UserRole).toString();
+        if (sequence.count() > 1) {
+            QMessageBox::warning(this, QStringLiteral("Tastatur"), QStringLiteral(
+                "Pro Funktion ist nur eine Tastenkombination zulässig."));
+            return;
+        }
+        const QString key = sequence.toString(QKeySequence::PortableText);
+        if (!key.isEmpty()) {
+            const QList<QKeySequence> reserved = {
+                QKeySequence(Qt::Key_F1), QKeySequence(Qt::ALT | Qt::Key_F4),
+                QKeySequence(Qt::CTRL | Qt::Key_O), QKeySequence(Qt::CTRL | Qt::Key_S),
+                QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S)
+            };
+            if (reserved.contains(sequence)) {
+                QMessageBox::warning(this, QStringLiteral("Tastatur"),
+                    QStringLiteral("Diese Taste ist für die Hilfe, Dateiaktionen oder Windows reserviert: %1").arg(key));
+                return;
+            }
+            if (occupied.contains(key)) {
+                QMessageBox::warning(this, QStringLiteral("Doppelte Tastenbelegung"),
+                    QStringLiteral("%1 ist bereits für „%2“ belegt.").arg(key, occupied.value(key)));
+                return;
+            }
+            occupied.insert(key, item->text());
+        }
+        bindings.insert(id, sequence);
+    }
+    QString error;
+    if (!IpponboardKeyboard::save(bindings, error)) {
+        QMessageBox::critical(this, QStringLiteral("Tastatur konnte nicht gespeichert werden"), error);
+        return;
+    }
+    accept();
 }
 
 void SettingsDlg::on_buttonBox_rejected()
