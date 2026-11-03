@@ -50,6 +50,6 @@ assert.equal(data.masterdata.individualTournaments.length,0);
 assert.equal(data.masterdata.weightClasses.length,1);
 assert.equal(data.masterdata.tournamentModes.length,1);
 assert.equal(data.masterdata.ruleSets.length,1);
-assert.ok(!buffer.toString('utf8').includes('SHOULD_NOT_LEAK'),
- 'Unexpected local personal test data in neutral USB export');
+assert.ok(!zip.getEntry('data/masterdata.json').getData().toString('utf8').includes('SHOULD_NOT_LEAK'),
+ 'Unexpected club or fighter data in neutral USB export');
 console.log('OK: Vereinsneutraler USB-Export, vollständige EXEs, globale Einstellungen und Datenfilter geprüft.');
