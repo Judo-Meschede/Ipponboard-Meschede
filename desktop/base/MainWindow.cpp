@@ -25,6 +25,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QSettings>
+#include <QApplication>
 #include <QTimer>
 #include <QUrl>
 
@@ -42,6 +43,7 @@ MainWindow::MainWindow(QWidget* parent)
 	, m_pCategoryManager()
 {
 	m_pUi->setupUi(this);
+	setWindowIcon(QApplication::windowIcon());
 }
 
 MainWindow::~MainWindow()
