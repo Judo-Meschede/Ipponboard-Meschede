@@ -50,7 +50,16 @@ function createUsbZip({master,mode,selected,templatePath}){
  if(!['gift','selected','full'].includes(mode))throw new Error('Unbekannter USB-Modus');
  if(!fs.existsSync(templatePath))throw new Error('USB-Vorlage auf dem Server fehlt');
  const template=new AdmZip(templatePath);
- const manifestEntry=template.getEntry('build-manifest.json');
+ // Windows-created ZIPs can store backslashes instead of forward slashes.
+ // AdmZip.getEntry(path) uses the raw archive entry name, so a valid file
+ // may not be found despite appearing correctly in Windows Explorer.
+ const templateEntries=new Map();
+ for(const [name,entry] of templateEntries){
+  if(!name||name.startsWith('/')||name.split('/').includes('..'))throw new Error('Ungültiger Dateipfad in der USB-Vorlage: '+name);
+  if(templateEntries.has(name))throw new Error('Doppelter Dateipfad in der USB-Vorlage: '+name);
+  templateEntries.set(name,entry);
+ }
+ const manifestEntry=templateEntries.get('build-manifest.json');
  if(!manifestEntry)throw new Error('USB-Vorlage veraltet: Icon-/Versionsprüfung fehlt. Neue Windows-ZIP erzeugen und hochladen.');
  let manifest;
  try { manifest=JSON.parse(manifestEntry.getData().toString('utf8')); }
@@ -62,7 +71,7 @@ function createUsbZip({master,mode,selected,templatePath}){
      ['Ipponboard-Meschede.exe',manifest.launcherSha256],
      ['app/Ipponboard-Meschede.exe',manifest.scoreboardSha256]
  ]) {
-  const entry=template.getEntry(name);
+  const entry=templateEntries.get(name);
   if(!entry)throw new Error('USB-Vorlage enthält nicht '+name);
   const checksum=crypto.createHash('sha256').update(entry.getData()).digest('hex');
   if(!/^[a-f0-9]{64}$/.test(expected)||checksum!==expected)
