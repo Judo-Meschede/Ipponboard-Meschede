@@ -18,6 +18,7 @@
 #include <QSound>
 #include <QColorDialog>
 #include <QDebug>
+#include <QApplication>
 #include <QKeySequenceEdit>
 #include <QMessageBox>
 #include <QHeaderView>
@@ -37,6 +38,7 @@ SettingsDlg::SettingsDlg(EditionType edition, QWidget* parent) :
 	ui(new Ui::SettingsDlg)
 {
 	ui->setupUi(this);
+    setWindowIcon(QApplication::windowIcon());
 
     // Preserve the original settings signals and fields, but give the
     // administration dialog an independent Ipponboard-Meschede visual identity.
