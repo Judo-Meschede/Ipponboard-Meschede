@@ -50,8 +50,9 @@
        <string>General</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_6">
-       <item>
-        <widget class="QGroupBox" name="groupBox_2nd_view">
+<property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+<item><widget class="QScrollArea" name="scrollAreaSettingsDesign"><property name="widgetResizable"><bool>true</bool></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property><widget class="QWidget" name="scrollAreaSettingsDesignContents"><property name="geometry"><rect><x>0</x><y>0</y><width>850</width><height>1400</height></rect></property><layout class="QVBoxLayout" name="layout_scroll_design"><property name="spacing"><number>18</number></property><property name="leftMargin"><number>14</number></property><property name="rightMargin"><number>14</number></property>
+<item><widget class="QGroupBox" name="groupBox_2nd_view">
          <property name="title">
           <string>Secondary View</string>
          </property>
@@ -207,10 +208,8 @@
            </layout>
           </item>
          </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_sound">
+        </widget></item>
+<item><widget class="QGroupBox" name="groupBox_sound">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -358,37 +357,22 @@
            </widget>
           </item>
          </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_info_header">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="title">
-          <string>Fonts &amp;&amp; Colors</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_7" rowstretch="0,0,0,0,0,0,1" columnstretch="1,0">
-          <item row="3" column="1">
-           <widget class="QFontComboBox" name="fontComboBox_fighters">
+        </widget></item>
+<item><widget class="QGroupBox" name="groupBox_info_header"><property name="title"><string>Schrift und Farbgebung</string></property><layout class="QVBoxLayout" name="vbox_design_colors"><property name="spacing"><number>20</number></property>
+ <item><widget class="QGroupBox" name="groupBox_design_title"><property name="title"><string>Wettkampftitel</string></property><layout class="QGridLayout" name="grid_design_title"><property name="verticalSpacing"><number>12</number></property><property name="horizontalSpacing"><number>18</number></property><item row="0" column="0" colspan="2"><widget class="ScaledText" name="text_text_sample" native="true">
+            <property name="minimumSize"><size><width>100</width><height>78</height></size></property>
+           </widget></item>
+<item row="1" column="0"><widget class="QLabel" name="lbl_font_title"><property name="text"><string>Schriftart</string></property></widget></item>
+<item row="1" column="1"><widget class="QFontComboBox" name="fontComboBox_infoHeader">
             <property name="fontFilters">
              <set>QFontComboBox::ScalableFonts</set>
             </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="0,0,0,0,0">
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_color_first">
+           </widget></item>
+<item row="2" column="0"><widget class="QLabel" name="lbl_fg_title"><property name="text"><string>Textfarbe</string></property></widget></item>
+<item row="2" column="1"><widget class="QPushButton" name="toolButton_text_color">
               <property name="maximumSize">
                <size>
-                <width>50</width>
+                <width>180</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -398,204 +382,7 @@
               <property name="toolTip">
                <string>Sets the foreground color</string>
               </property>
-              <property name="text">
-               <string notr="true"/>
-              </property>
-              <property name="icon">
-               <iconset resource="ipponboard.qrc">
-                <normaloff>:/res/icons/color_fg.png</normaloff>:/res/icons/color_fg.png</iconset>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_background_first">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>50</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="toolTip">
-               <string>Sets the background color</string>
-              </property>
-              <property name="text">
-               <string notr="true"/>
-              </property>
-              <property name="icon">
-               <iconset resource="ipponboard.qrc">
-                <normaloff>:/res/icons/color_bg.png</normaloff>:/res/icons/color_bg.png</iconset>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_6">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_fighters_bold">
-              <property name="text">
-               <string>bold</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_fighters_italic">
-              <property name="text">
-               <string>italic</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="6" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_color_second">
-              <property name="maximumSize">
-               <size>
-                <width>50</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="toolTip">
-               <string>Sets the foreground color</string>
-              </property>
-              <property name="text">
-               <string notr="true"/>
-              </property>
-              <property name="icon">
-               <iconset resource="ipponboard.qrc">
-                <normaloff>:/res/icons/color_fg.png</normaloff>:/res/icons/color_fg.png</iconset>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_background_second">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>50</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="toolTip">
-               <string>Sets the background color</string>
-              </property>
-              <property name="text">
-               <string notr="true"/>
-              </property>
-              <property name="icon">
-               <iconset resource="ipponboard.qrc">
-                <normaloff>:/res/icons/color_bg.png</normaloff>:/res/icons/color_bg.png</iconset>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_7">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item row="5" column="1">
-           <spacer name="verticalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="1" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_10">
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_color">
-              <property name="maximumSize">
-               <size>
-                <width>50</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="toolTip">
-               <string>Sets the foreground color</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
+              <property name="text"><string>Auswählen</string></property>
               <property name="icon">
                <iconset resource="ipponboard.qrc">
                 <normaloff>:/res/icons/color_fg.png</normaloff>:/res/icons/color_fg.png</iconset>
@@ -609,10 +396,9 @@
               <property name="flat">
                <bool>false</bool>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="toolButton_text_background">
+             </widget></item>
+<item row="3" column="0"><widget class="QLabel" name="lbl_bg_title"><property name="text"><string>Hintergrund</string></property></widget></item>
+<item row="3" column="1"><widget class="QPushButton" name="toolButton_text_background">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -621,7 +407,7 @@
               </property>
               <property name="maximumSize">
                <size>
-                <width>50</width>
+                <width>180</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -631,9 +417,7 @@
               <property name="toolTip">
                <string>Sets the background color</string>
               </property>
-              <property name="text">
-               <string notr="true"/>
-              </property>
+              <property name="text"><string>Auswählen</string></property>
               <property name="icon">
                <iconset resource="ipponboard.qrc">
                 <normaloff>:/res/icons/color_bg.png</normaloff>:/res/icons/color_bg.png</iconset>
@@ -641,102 +425,163 @@
               <property name="flat">
                <bool>false</bool>
               </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_5">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_text_bold">
+             </widget></item>
+<item row="4" column="0"><widget class="QCheckBox" name="checkBox_text_bold">
               <property name="text">
                <string>bold</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_text_italic">
+             </widget></item>
+<item row="4" column="1"><widget class="QCheckBox" name="checkBox_text_italic">
               <property name="text">
                <string>italic</string>
               </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QFontComboBox" name="fontComboBox_infoHeader">
-            <property name="fontFilters">
-             <set>QFontComboBox::ScalableFonts</set>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0" rowspan="2">
-           <widget class="ScaledText" name="text_color_second" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" rowspan="2">
-           <widget class="ScaledText" name="text_text_sample" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>0</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" rowspan="2">
-           <widget class="ScaledText" name="text_color_first" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>20</height>
-             </size>
-            </property>
+             </widget></item></layout></widget></item>
+ <item><widget class="QGroupBox" name="groupBox_design_white"><property name="title"><string>Kämpfer – Weiß</string></property><layout class="QGridLayout" name="grid_design_white"><property name="verticalSpacing"><number>12</number></property><property name="horizontalSpacing"><number>18</number></property><item row="0" column="0" colspan="2"><widget class="ScaledText" name="text_color_first" native="true">
+            <property name="minimumSize"><size><width>100</width><height>78</height></size></property>
             <property name="toolTip">
              <string/>
             </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </widget>
+           </widget></item>
+<item row="1" column="0"><widget class="QLabel" name="lbl_font_white"><property name="text"><string>Schriftart</string></property></widget></item>
+<item row="1" column="1"><widget class="QFontComboBox" name="fontComboBox_fighters">
+            <property name="fontFilters">
+             <set>QFontComboBox::ScalableFonts</set>
+            </property>
+           </widget></item>
+<item row="2" column="0"><widget class="QLabel" name="lbl_fg_white"><property name="text"><string>Textfarbe</string></property></widget></item>
+<item row="2" column="1"><widget class="QPushButton" name="toolButton_text_color_first">
+              <property name="maximumSize">
+               <size>
+                <width>180</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="toolTip">
+               <string>Sets the foreground color</string>
+              </property>
+              <property name="text"><string>Auswählen</string></property>
+              <property name="icon">
+               <iconset resource="ipponboard.qrc">
+                <normaloff>:/res/icons/color_fg.png</normaloff>:/res/icons/color_fg.png</iconset>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+             </widget></item>
+<item row="3" column="0"><widget class="QLabel" name="lbl_bg_white"><property name="text"><string>Hintergrund</string></property></widget></item>
+<item row="3" column="1"><widget class="QPushButton" name="toolButton_text_background_first">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>180</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="toolTip">
+               <string>Sets the background color</string>
+              </property>
+              <property name="text"><string>Auswählen</string></property>
+              <property name="icon">
+               <iconset resource="ipponboard.qrc">
+                <normaloff>:/res/icons/color_bg.png</normaloff>:/res/icons/color_bg.png</iconset>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+             </widget></item>
+<item row="4" column="0"><widget class="QCheckBox" name="checkBox_fighters_bold">
+              <property name="text">
+               <string>bold</string>
+              </property>
+             </widget></item>
+<item row="4" column="1"><widget class="QCheckBox" name="checkBox_fighters_italic">
+              <property name="text">
+               <string>italic</string>
+              </property>
+             </widget></item></layout></widget></item>
+ <item><widget class="QGroupBox" name="groupBox_design_blue"><property name="title"><string>Kämpfer – Blau</string></property><layout class="QGridLayout" name="grid_design_blue"><property name="verticalSpacing"><number>12</number></property><property name="horizontalSpacing"><number>18</number></property><item row="0" column="0" colspan="2"><widget class="ScaledText" name="text_color_second" native="true">
+            <property name="minimumSize"><size><width>100</width><height>78</height></size></property>
+           </widget></item>
+<item row="1" column="0" colspan="2"><widget class="QLabel" name="lbl_shared_blue"><property name="text"><string>Schriftart und Stil werden für beide Kämpfer gemeinsam gewählt.</string></property></widget></item>
+<item row="2" column="0"><widget class="QLabel" name="lbl_fg_blue"><property name="text"><string>Textfarbe</string></property></widget></item>
+<item row="2" column="1"><widget class="QPushButton" name="toolButton_text_color_second">
+              <property name="maximumSize">
+               <size>
+                <width>180</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="toolTip">
+               <string>Sets the foreground color</string>
+              </property>
+              <property name="text"><string>Auswählen</string></property>
+              <property name="icon">
+               <iconset resource="ipponboard.qrc">
+                <normaloff>:/res/icons/color_fg.png</normaloff>:/res/icons/color_fg.png</iconset>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+             </widget></item>
+<item row="3" column="0"><widget class="QLabel" name="lbl_bg_blue"><property name="text"><string>Hintergrund</string></property></widget></item>
+<item row="3" column="1"><widget class="QPushButton" name="toolButton_text_background_second">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>180</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="toolTip">
+               <string>Sets the background color</string>
+              </property>
+              <property name="text"><string>Auswählen</string></property>
+              <property name="icon">
+               <iconset resource="ipponboard.qrc">
+                <normaloff>:/res/icons/color_bg.png</normaloff>:/res/icons/color_bg.png</iconset>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+             </widget></item></layout></widget></item>
+ </layout></widget></item>
+<item><spacer name="spacer_scrolled_design"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+</layout></widget></widget></item>
+</layout></widget>
      <widget class="QWidget" name="tab_gamepad">
       <attribute name="icon">
        <iconset resource="ipponboard.qrc">
