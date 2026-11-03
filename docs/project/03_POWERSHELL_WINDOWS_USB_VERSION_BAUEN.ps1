@@ -157,6 +157,17 @@ function Assert-ScoreboardIcon([string]$exePath) {
 }
 Assert-ScoreboardIcon $launcherExe
 Assert-ScoreboardIcon (Join-Path $app 'Ipponboard-Meschede.exe')
+# Never allow a server export to silently reuse a template with the old IM icon.
+$manifest = @{
+  version = $version
+  templateSchema = 'ipponboard-usb-template-1'
+  launcherSha256 = (Get-FileHash -LiteralPath $launcherExe -Algorithm SHA256).Hash.ToLowerInvariant()
+  scoreboardSha256 = (Get-FileHash -LiteralPath (Join-Path $app 'Ipponboard-Meschede.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+  iconEntries = 7
+  iconName = 'Ipponboard-Meschede Scoreboard'
+}
+$manifest | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $package 'build-manifest.json') -Encoding UTF8
+Write-Host "Launcher-Version und eingebettetes Icon geprüft: $releaseVersion"
 # Sign both Windows entry points with a verified publisher identity, when configured.
 # Never keep a private key or password in GitHub or in the USB package.
 if ($env:IPPONBOARD_SIGN_CERT_THUMBPRINT) {
