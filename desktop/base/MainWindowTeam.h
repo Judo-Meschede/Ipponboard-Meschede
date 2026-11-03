@@ -47,6 +47,8 @@ protected:
 	//virtual void changeEvent(QEvent* e) override;
 	virtual void closeEvent(QCloseEvent* event) override;
 	virtual void keyPressEvent(QKeyEvent* event) override;
+	virtual bool HandleEditionKeyboardAction(const QString& command) override;
+	virtual bool CanExecuteScoreboardShortcut() const override;
 	virtual void attach_primary_view() final;
 	virtual void retranslate_Ui() final;
 	virtual void ui_check_language_items() final;
