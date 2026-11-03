@@ -1,5 +1,7 @@
 'use strict';
 const fs=require('fs');
+const crypto=require('crypto');
+const EXPECTED_TEMPLATE_VERSION='0.2.60-preview';
 const path=require('path');
 const AdmZip=require('adm-zip');
 
@@ -48,7 +50,24 @@ function createUsbZip({master,mode,selected,templatePath}){
  if(!['gift','selected','full'].includes(mode))throw new Error('Unbekannter USB-Modus');
  if(!fs.existsSync(templatePath))throw new Error('USB-Vorlage auf dem Server fehlt');
  const template=new AdmZip(templatePath);
- if(!template.getEntries().some(e=>e.entryName.replace(/\\/g,'/')==='app/Ipponboard-Meschede.exe'))throw new Error('USB-Vorlage enthaelt keine Windows-Anwendung');
+ const manifestEntry=template.getEntry('build-manifest.json');
+ if(!manifestEntry)throw new Error('USB-Vorlage veraltet: Icon-/Versionsprüfung fehlt. Neue Windows-ZIP erzeugen und hochladen.');
+ let manifest;
+ try { manifest=JSON.parse(manifestEntry.getData().toString('utf8')); }
+ catch (_) { throw new Error('USB-Buildmanifest ungültig. Neue Windows-ZIP erforderlich.'); }
+ if(manifest.templateSchema!=='ipponboard-usb-template-1'||
+    manifest.version!==EXPECTED_TEMPLATE_VERSION||manifest.iconEntries!==7)
+  throw new Error('USB-Vorlage ist nicht die geprüfte '+EXPECTED_TEMPLATE_VERSION+'. Neue Windows-ZIP hochladen.');
+ for(const [name,expected] of [
+     ['Ipponboard-Meschede.exe',manifest.launcherSha256],
+     ['app/Ipponboard-Meschede.exe',manifest.scoreboardSha256]
+ ]) {
+  const entry=template.getEntry(name);
+  if(!entry)throw new Error('USB-Vorlage enthält nicht '+name);
+  const checksum=crypto.createHash('sha256').update(entry.getData()).digest('hex');
+  if(!/^[a-f0-9]{64}$/.test(expected)||checksum!==expected)
+   throw new Error('USB-Vorlage fehlerhaft: '+name+' stimmt nicht mit geprüftem Build überein.');
+ }
  const zip=new AdmZip();
  for(const entry of template.getEntries()){
   if(entry.isDirectory)continue;
