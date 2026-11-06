@@ -111,14 +111,15 @@ class Client{
   this.inFlight=false;this.timer=null;this.debounce=null;
  }
  getStatus(){
-  let pending=false;
+  let pending=false,masterRevision=null;
   if(this.status.enabled){
    try{
     const state=read(this.stateFile),local=read(this.masterFile).masterdata;
+    masterRevision=Number(local.revision)||0;
     pending=!same(state.baseline,local);
    }catch{pending=true}
   }
-  return {...this.status,pending};
+  return {...this.status,pending,masterRevision};
  }
  schedule(){
   if(!this.status.enabled||this.debounce)return;
