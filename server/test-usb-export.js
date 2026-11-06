@@ -25,8 +25,17 @@ const master = {
  tournamentModes:[{id:'test-mode',name:'TEST'}],
  ruleSets:[{id:'test-rules',name:'TEST'}]
 };
-const buffer = createUsbZip({master, mode:'gift', selected:{}, templatePath:path.resolve(templatePath)});
-const zip = new AdmZip(buffer);
+const exportVariant = (mode, selected={}) => {
+ const buffer = createUsbZip({master, mode, selected, templatePath:path.resolve(templatePath)});
+ const zip = new AdmZip(buffer);
+ const profile = JSON.parse(zip.getEntry('data/usb-profile.json').getData().toString('utf8'));
+ const data = JSON.parse(zip.getEntry('data/masterdata.json').getData().toString('utf8'));
+ assert.equal(profile.mode,mode);
+ assert.equal(profile.serverSyncAllowed,mode==='full');
+ assert.ok(zip.getEntry('build-manifest.json'));
+ return {buffer,zip,profile,data};
+};
+const {zip,data} = exportVariant('gift');
 const required = [
  'Ipponboard-Meschede.exe',
  'app/Ipponboard-Meschede.exe',
@@ -38,10 +47,6 @@ const required = [
 ];
 for (const filename of required)
  assert.ok(zip.getEntry(filename), 'Missing export entry: '+filename);
-const profile = JSON.parse(zip.getEntry('data/usb-profile.json').getData().toString('utf8'));
-const data = JSON.parse(zip.getEntry('data/masterdata.json').getData().toString('utf8'));
-assert.equal(profile.mode, 'gift');
-assert.equal(profile.serverSyncAllowed,false);
 assert.equal(data.masterdata.clubs.length,0);
 assert.equal(data.masterdata.teams.length,0);
 assert.equal(data.masterdata.fighters.length,0);
@@ -52,4 +57,14 @@ assert.equal(data.masterdata.tournamentModes.length,1);
 assert.equal(data.masterdata.ruleSets.length,1);
 assert.ok(!zip.getEntry('data/masterdata.json').getData().toString('utf8').includes('SHOULD_NOT_LEAK'),
  'Unexpected club or fighter data in neutral USB export');
-console.log('OK: Vereinsneutraler USB-Export, vollständige EXEs, globale Einstellungen und Datenfilter geprüft.');
+const selected = exportVariant('selected', {competitionDays:['test-day']});
+assert.equal(selected.data.masterdata.competitionDays.length,1);
+assert.equal(selected.data.masterdata.clubs.length,0);
+assert.equal(selected.data.masterdata.teams.length,0);
+assert.equal(selected.data.masterdata.weightClasses.length,1);
+const full = exportVariant('full');
+assert.equal(full.data.masterdata.clubs.length,1);
+assert.equal(full.data.masterdata.fighters.length,1);
+assert.equal(full.data.masterdata.teams.length,1);
+assert.equal(full.data.masterdata.competitionDays.length,1);
+console.log('OK: Varianten 1+2 offline, Variante 3 online freigegeben, Stammdaten und EXEs geprüft.');
