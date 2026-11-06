@@ -225,10 +225,58 @@ void SplashScreen::on_commandLinkButton_admin_pressed()
 }
 void SplashScreen::on_btnSync_clicked()
 {
-    // If offline, retry the connection first; only a confirmed online state
-    // permits the user to request the protected manual data download.
-    const bool usbFull = CurrentUsbProfile() == UsbProfile::Online;
-    SyncMasterDataCache(!usbFull || ui->btnSync->property("serverReachable").toBool());
+    if (CurrentUsbProfile() == UsbProfile::Online)
+    {
+        // A direct snapshot download would bypass the conflict checks. Instead,
+        // trigger the same safe sync that runs periodically in the USB service.
+        ui->btnSync->setEnabled(false);
+        ui->btnSync->setText(QStringLiteral("Synchronisiere..."));
+        QCoreApplication::processEvents();
+
+        QNetworkAccessManager manager;
+        QNetworkRequest request(QUrl(QStringLiteral("http://127.0.0.1:43181/api/usb-sync/now")));
+        request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+        QNetworkReply* reply = manager.post(request, QByteArray("{}"));
+        QEventLoop loop;
+        QTimer timer;
+        timer.setSingleShot(true);
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+        timer.start(8500);
+        loop.exec();
+        const bool finished = reply->isFinished();
+        const QByteArray response = finished ? reply->readAll() : QByteArray();
+        if (!finished) reply->abort();
+        reply->deleteLater();
+        const QJsonDocument report = QJsonDocument::fromJson(response);
+        const QJsonObject status = report.isObject() ? report.object() : QJsonObject();
+        const int conflictCount = status.value(QStringLiteral("conflicts")).toArray().size();
+        if (conflictCount)
+        {
+            ui->label_serverStatus->setText(QStringLiteral("Synchronisationskonflikt"));
+            ui->label_lastUpdate->setText(QStringLiteral("Lokale und Serverdaten erhalten"));
+            QMessageBox::warning(this, QStringLiteral("Synchronisationskonflikt"),
+                QStringLiteral("%1 widersprüchliche Datensätze. "
+                    "Es wurden keine Serverdaten überschrieben. "
+                    "Details in der lokalen Verwaltung.").arg(conflictCount));
+        }
+        else if (status.value(QStringLiteral("ok")).toBool())
+        {
+            ui->label_serverStatus->setText(QStringLiteral("Stammdaten synchronisiert"));
+            ui->label_lastUpdate->setText(QStringLiteral("Letzter Abgleich: %1")
+                .arg(QDateTime::currentDateTime().toString(QStringLiteral("dd.MM.yyyy HH:mm"))));
+        }
+        else
+        {
+            ui->label_serverStatus->setText(QStringLiteral("Abgleich derzeit nicht möglich"));
+            ui->label_lastUpdate->setText(
+                status.value(QStringLiteral("error")).toString(QStringLiteral("Lokale Daten bleiben erhalten")).left(64));
+        }
+        ui->btnSync->setText(QStringLiteral("Jetzt abgleichen"));
+        ui->btnSync->setEnabled(true);
+        return;
+    }
+    SyncMasterDataCache(true);
 }
 
 void SplashScreen::resizeEvent(QResizeEvent* event)
@@ -284,7 +332,7 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
     // Variante 3 may use the Meschede test server whenever it is reachable.
     // At startup we ONLY probe connectivity: no implicit replacement of USB data.
     // Downloading a server snapshot remains an explicit user action.
-    const bool connectivityOnly = profile == UsbProfile::Online && !explicitlyRequested;
+    const bool connectivityOnly = profile == UsbProfile::Online;
     ui->btnSync->setEnabled(false);
     ui->btnSync->setText(QStringLiteral("Prüfe Server..."));
     ui->label_serverStatus->setStyleSheet(QStringLiteral("color:#f4b83f;font-weight:700;font-size:14px;"));
@@ -343,7 +391,7 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
             ? QStringLiteral("color:#39df69;font-weight:700;font-size:14px;")
             : QStringLiteral("color:#f4b83f;font-weight:700;font-size:14px;"));
         ui->label_serverStatus->setText(downloadOk
-            ? QStringLiteral("Server verbunden")
+            ? QStringLiteral("Server erreichbar")
             : QStringLiteral("Offline – lokaler Datenbestand"));
         ui->label_lastUpdate->setText(downloadOk
             ? QStringLiteral("Online – Daten bleiben lokal")
@@ -352,11 +400,11 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
             ? QStringLiteral("USB-Datenbestand verfügbar")
             : QStringLiteral("Noch kein lokaler Datenbestand"));
         ui->btnSync->setText(downloadOk
-            ? QStringLiteral("Serverdaten laden")
+            ? QStringLiteral("Jetzt abgleichen")
             : QStringLiteral("Erneut prüfen"));
         ui->btnSync->setProperty("serverReachable", downloadOk);
         ui->btnSync->setToolTip(downloadOk
-            ? QStringLiteral("Lädt nach Bestätigung Serverdaten und sichert den bisherigen USB-Stand.")
+            ? QStringLiteral("Startet den sicheren bidirektionalen Abgleich. Änderungen werden auch automatisch synchronisiert.")
             : networkError);
         ui->btnSync->setEnabled(true);
         return;
