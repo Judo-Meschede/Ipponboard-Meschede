@@ -572,7 +572,10 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   if(process.env.IPPONBOARD_USB_OFFLINE==='1'||PORT!==3011)
    return json(res,{error:'USB-Synchronisierung nur auf dem Testserver freigegeben'},403);
   try{
-   const body=await readBody(req,25e6);
+   usbSyncHub.authorize(req.headers['x-usb-sync-id'],req.headers['x-usb-sync-token']);
+   // Decode UTF-8 after collecting complete buffers. Buffer boundaries must
+   // never split German names into replacement characters.
+   const body=JSON.parse((await readRawBody(req,25e6)).toString('utf8'));
    const result=usbSyncHub.exchange(req.headers['x-usb-sync-id'],
       req.headers['x-usb-sync-token'],body);
    if(!result.ok)return json(res,{ok:false,conflicts:result.conflicts,
