@@ -14,6 +14,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QJsonParseError>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -243,7 +244,7 @@ void SplashScreen::on_btnSync_clicked()
         QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
         timer.start(8500);
-        loop.exec();
+        if (!reply->isFinished()) loop.exec();
         const bool finished = reply->isFinished();
         const QByteArray response = finished ? reply->readAll() : QByteArray();
         if (!finished) reply->abort();
