@@ -33,16 +33,28 @@
 
 namespace
 {
-bool OfflineUsbProfile()
+enum class UsbProfile { None, Offline, Online };
+
+UsbProfile CurrentUsbProfile()
 {
-    // All three exported USB profiles use local administration and local data.
-    // A profile's optional synchronization permission never enables automatic requests.
-    const QString file = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
-    return QFile::exists(file);
+    const QString filePath = QDir(QCoreApplication::applicationDirPath())
+        .absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
+    QFile file(filePath);
+    if (!file.exists()) return UsbProfile::None;
+    // Fail closed: missing, malformed or unknown profiles must never contact the server.
+    if (!file.open(QIODevice::ReadOnly)) return UsbProfile::Offline;
+    QJsonParseError error;
+    const QJsonDocument parsed = QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error != QJsonParseError::NoError || !parsed.isObject())
+        return UsbProfile::Offline;
+    const QJsonObject profile = parsed.object();
+    return profile.value(QStringLiteral("mode")).toString() == QStringLiteral("full") &&
+           profile.value(QStringLiteral("serverSyncAllowed")).toBool(false)
+        ? UsbProfile::Online : UsbProfile::Offline;
 }
 
 #ifdef _WIN32
-bool FetchSnapshotWindows(QByteArray& payload, QString& error)
+bool FetchSnapshotWindows(QByteArray& payload, QString& error, bool connectivityOnly)
 {
     payload.clear();
     error.clear();
@@ -66,7 +78,8 @@ bool FetchSnapshotWindows(QByteArray& payload, QString& error)
         return false;
     }
 
-    HINTERNET request = WinHttpOpenRequest(connect, L"GET", L"/api/sync/snapshot",
+    HINTERNET request = WinHttpOpenRequest(connect, L"GET",
+                                           connectivityOnly ? L"/api/health" : L"/api/sync/snapshot",
                                            nullptr, WINHTTP_NO_REFERER,
                                            WINHTTP_DEFAULT_ACCEPT_TYPES,
                                            WINHTTP_FLAG_SECURE);
@@ -202,14 +215,14 @@ void SplashScreen::on_commandLinkButton_startSingleVersion_pressed(){ accept(); 
 void SplashScreen::on_commandLinkButton_startTeamVersion_pressed(){ done(QDialog::Accepted + 1); }
 void SplashScreen::on_commandLinkButton_admin_pressed()
 {
-    if (OfflineUsbProfile())
+    if (CurrentUsbProfile() != UsbProfile::None)
     {
         QDesktopServices::openUrl(QUrl(QStringLiteral("http://127.0.0.1:43181/verwaltung")));
         return;
     }
     QDesktopServices::openUrl(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/verwaltung")));
 }
-void SplashScreen::on_btnSync_clicked(){ SyncMasterDataCache(); }
+void SplashScreen::on_btnSync_clicked(){ SyncMasterDataCache(true); }
 
 void SplashScreen::resizeEvent(QResizeEvent* event)
 {
@@ -248,9 +261,10 @@ void SplashScreen::ApplyReferenceGeometry()
     f = ui->btnSync->font(); f.setPixelSize(qRound(13 * fontScale)); ui->btnSync->setFont(f);
 }
 
-void SplashScreen::SyncMasterDataCache()
+void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
 {
-    if (OfflineUsbProfile())
+    const UsbProfile profile = CurrentUsbProfile();
+    if (profile == UsbProfile::Offline)
     {
         ui->btnSync->setEnabled(false);
         ui->btnSync->setText(QStringLiteral("Offline-Version"));
@@ -260,8 +274,12 @@ void SplashScreen::SyncMasterDataCache()
         return;
     }
 
+    // Variante 3 may use the Meschede test server whenever it is reachable.
+    // At startup we ONLY probe connectivity: no implicit replacement of USB data.
+    // Downloading a server snapshot remains an explicit user action.
+    const bool connectivityOnly = profile == UsbProfile::Online && !explicitlyRequested;
     ui->btnSync->setEnabled(false);
-    ui->btnSync->setText(QStringLiteral("Aktualisiere..."));
+    ui->btnSync->setText(QStringLiteral("Prüfe Server..."));
     ui->label_serverStatus->setStyleSheet(QStringLiteral("color:#f4b83f;font-weight:700;font-size:14px;"));
     ui->label_serverStatus->setText(QStringLiteral("Server wird geprüft ..."));
     QCoreApplication::processEvents();
@@ -281,10 +299,12 @@ void SplashScreen::SyncMasterDataCache()
     bool downloadOk = false;
 
 #ifdef _WIN32
-    downloadOk = FetchSnapshotWindows(payload, networkError);
+    downloadOk = FetchSnapshotWindows(payload, networkError, connectivityOnly);
 #else
     QNetworkAccessManager manager;
-    QNetworkRequest request(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/api/sync/snapshot")));
+    QNetworkRequest request(QUrl(connectivityOnly
+        ? QStringLiteral("https://test-liga.paul-meschede.de/api/health")
+        : QStringLiteral("https://test-liga.paul-meschede.de/api/sync/snapshot")));
     QNetworkReply* reply = manager.get(request);
     QEventLoop loop;
     QTimer timer;
@@ -308,6 +328,72 @@ void SplashScreen::SyncMasterDataCache()
     }
     reply->deleteLater();
 #endif
+
+
+    if (connectivityOnly)
+    {
+        ui->label_serverStatus->setStyleSheet(downloadOk
+            ? QStringLiteral("color:#39df69;font-weight:700;font-size:14px;")
+            : QStringLiteral("color:#f4b83f;font-weight:700;font-size:14px;"));
+        ui->label_serverStatus->setText(downloadOk
+            ? QStringLiteral("Server verbunden")
+            : QStringLiteral("Offline – lokaler Datenbestand"));
+        ui->label_lastUpdate->setText(downloadOk
+            ? QStringLiteral("Online – Daten bleiben lokal")
+            : QStringLiteral("Server nicht erreichbar"));
+        ui->label_cacheStatus->setText(QFile::exists(cacheFile)
+            ? QStringLiteral("USB-Datenbestand verfügbar")
+            : QStringLiteral("Noch kein lokaler Datenbestand"));
+        ui->btnSync->setText(downloadOk
+            ? QStringLiteral("Serverdaten laden")
+            : QStringLiteral("Verbindung erneut prüfen"));
+        ui->btnSync->setToolTip(downloadOk
+            ? QStringLiteral("Lädt nach Bestätigung Serverdaten und sichert den bisherigen USB-Stand.")
+            : networkError);
+        ui->btnSync->setEnabled(true);
+        return;
+    }
+
+    // Never silently overwrite a locally edited full USB dataset.
+    // A manual download creates a recoverable backup before replacing the file.
+    if (profile == UsbProfile::Online && downloadOk)
+    {
+        QJsonParseError parseError;
+        const QJsonDocument downloaded = QJsonDocument::fromJson(payload, &parseError);
+        if (parseError.error != QJsonParseError::NoError ||
+            !downloaded.isObject() ||
+            !downloaded.object().value(QStringLiteral("masterdata")).isObject() ||
+            !downloaded.object().value(QStringLiteral("masterdata")).toObject()
+                  .value(QStringLiteral("clubs")).isArray())
+        {
+            downloadOk = false;
+            networkError = QStringLiteral("Ungültiger Datenbestand vom Server.");
+        }
+        else if (QMessageBox::question(this, QStringLiteral("Serverdaten übernehmen"),
+             QStringLiteral("Die Serverdaten ersetzen den lokalen USB-Datenstand. "
+                            "Der bisherige Stand wird zuvor auf dem USB-Stick gesichert. "
+                            "Serverdaten jetzt übernehmen?"),
+             QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+        {
+            ui->label_serverStatus->setText(QStringLiteral("Server verbunden"));
+            ui->label_lastUpdate->setText(QStringLiteral("Lokale Daten unverändert"));
+            ui->btnSync->setText(QStringLiteral("Serverdaten laden"));
+            ui->btnSync->setEnabled(true);
+            return;
+        }
+        else if (QFile::exists(cacheFile))
+        {
+            const QString backupDir = QDir(dataPath).filePath(QStringLiteral("sicherungen"));
+            const QString backupName = QStringLiteral("masterdata-vor-abgleich-%1.json")
+                .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-hhmmss-zzz")));
+            if (!QDir().mkpath(backupDir) ||
+                !QFile::copy(cacheFile, QDir(backupDir).filePath(backupName)))
+            {
+                downloadOk = false;
+                networkError = QStringLiteral("Lokale Sicherheitskopie fehlgeschlagen – Serverdaten nicht übernommen.");
+            }
+        }
+    }
 
     bool updated = false;
     if (downloadOk) {
@@ -345,6 +431,8 @@ void SplashScreen::SyncMasterDataCache()
         if (downloadOk) ui->label_lastUpdate->setText(QStringLiteral("Letzte Aktualisierung: -"));
     }
 
-    ui->btnSync->setText(updated ? QStringLiteral("Daten aktuell") : QStringLiteral("Erneut versuchen"));
+    ui->btnSync->setText(profile == UsbProfile::Online
+        ? (updated ? QStringLiteral("Serverdaten erneut laden") : QStringLiteral("Erneut versuchen"))
+        : (updated ? QStringLiteral("Daten aktuell") : QStringLiteral("Erneut versuchen")));
     ui->btnSync->setEnabled(true);
 }
