@@ -70,7 +70,7 @@ Copy-Item (Join-Path $desktop 'base\TournamentModes.ini') (Join-Path $app 'Tourn
 # Embed the complete web administration and its Node dependencies. The USB server only binds to localhost.
 $localServer = Join-Path $package 'local-server'
 New-Item -ItemType Directory -Force -Path $localServer | Out-Null
-Copy-Item (Join-Path $source 'server\server.js'),(Join-Path $source 'server\usb-export.js'),(Join-Path $source 'server\usb-sync-core.js'),(Join-Path $source 'server\usb-sync-service.js'),(Join-Path $source 'server\package.json') $localServer
+Copy-Item (Join-Path $source 'server\server.js'),(Join-Path $source 'server\usb-export.js'),(Join-Path $source 'server\usb-sync-core.js'),(Join-Path $source 'server\usb-sync-service.js'),(Join-Path $source 'server\legacy-competition-migration.js'),(Join-Path $source 'server\package.json') $localServer
 Copy-Item (Join-Path $source 'server\public') (Join-Path $localServer 'public') -Recurse
 Remove-Item (Join-Path $localServer 'public\data') -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $localServer 'public\downloads') -Recurse -Force -ErrorAction SilentlyContinue
@@ -97,7 +97,7 @@ if (!(Test-Path $nodePath) -or !(Test-Path $nodeNpm)) { throw 'Node-Laufzeit unv
 # The USB image is only packaged after all conflict and offline isolation tests pass.
 & $nodePath --check (Join-Path $source 'server\server.js'); Check 'Server JavaScript-Syntax'
 & $nodePath --check (Join-Path $source 'server\usb-sync-service.js'); Check 'USB-Sync JavaScript-Syntax'
-& $nodePath --test (Join-Path $source 'server\test-usb-sync-core.js') (Join-Path $source 'server\test-usb-sync-service.js')
+& $nodePath --test (Join-Path $source 'server\test-usb-sync-core.js') (Join-Path $source 'server\test-usb-sync-service.js') (Join-Path $source 'server\test-legacy-competition-migration.js')
 Check 'USB-Synchronisierung: Offline, Online, Kollisionen, Wiederholung'
 
 $runtime = Join-Path $package 'runtime'
