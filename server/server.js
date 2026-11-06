@@ -559,6 +559,13 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  // not merely successful connection to its own local database.
  if(u.pathname==='/api/usb-sync/status'&&req.method==='GET')
   return json(res,localUsbSync?{local:true,...localUsbSync.getStatus()}:{local:false,enabled:false});
+ if(u.pathname==='/api/usb-sync/now'&&req.method==='POST'){
+  if(!localUsbSync||!localUsbSync.getStatus().enabled)
+   return json(res,{error:'Nur die vollständige USB-Version darf synchronisieren'},403);
+  await localUsbSync.sync();
+  const status=localUsbSync.getStatus();
+  return json(res,{ok:status.connected&&!status.conflicts.length&&!status.error,...status});
+ }
 
  // USB V3 masterdata must never be accepted by the productive server.
  if(u.pathname==='/api/usb-sync'&&req.method==='POST'){
