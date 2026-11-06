@@ -7,6 +7,9 @@ on:
       - 'server/test-usb-sync-*.js'
       - 'server/server.js'
       - 'server/usb-export.js'
+      - 'server/legacy-competition-migration.js'
+      - 'server/test-legacy-competition-migration.js'
+      - 'desktop/base/MainWindowTeam.cpp'
       - 'server/public/verwaltung.js'
       - '.github/workflows/usb-sync-tests.yml'
   workflow_dispatch:
@@ -24,6 +27,7 @@ jobs:
           node --check server/usb-export.js
           node --check server/usb-sync-core.js
           node --check server/usb-sync-service.js
+          node --check server/legacy-competition-migration.js
           node --check server/public/verwaltung.js
       - name: Masterdata sync unit tests
-        run: node --test server/test-usb-sync-core.js server/test-usb-sync-service.js
+        run: node --test server/test-usb-sync-core.js server/test-usb-sync-service.js server/test-legacy-competition-migration.js
