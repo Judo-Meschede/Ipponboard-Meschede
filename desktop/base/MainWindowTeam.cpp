@@ -79,6 +79,11 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonParseError>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QEventLoop>
+
 #include <algorithm>
 
 
@@ -150,6 +155,51 @@ namespace
 		QJsonParseError error;
 		const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
 		return error.error == QJsonParseError::NoError ? doc : QJsonDocument();
+	}
+
+	// A USB scoreboard and its browser administration must use the same writer.
+	// The loopback server saves data/masterdata.json atomically and starts V3 sync.
+	// The desktop never writes a separate shadow list of USB competition days.
+	bool save_usb_competition_day(const QJsonObject& day, QJsonObject& saved, QString& error)
+	{
+		QNetworkAccessManager network;
+		QNetworkRequest request(QUrl(QStringLiteral("http://127.0.0.1:43181/api/masterdata/competitionDays")));
+		request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json; charset=utf-8"));
+		QNetworkReply* reply = network.post(request, QJsonDocument(day).toJson(QJsonDocument::Compact));
+		QEventLoop loop;
+		QTimer timeout;
+		timeout.setSingleShot(true);
+		QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+		QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+		timeout.start(6000);
+		if (!reply->isFinished())
+			loop.exec();
+		const bool completed = reply->isFinished();
+		if (!completed)
+			reply->abort();
+		const QNetworkReply::NetworkError networkError = reply->error();
+		const QByteArray payload = completed ? reply->readAll() : QByteArray();
+		reply->deleteLater();
+		if (!completed)
+		{
+			error = QStringLiteral("Der lokale Verwaltungsserver antwortet nicht.");
+			return false;
+		}
+		const QJsonDocument response = QJsonDocument::fromJson(payload);
+		const QJsonObject body = response.isObject() ? response.object() : QJsonObject();
+		if (networkError != QNetworkReply::NoError || !body.value(QStringLiteral("ok")).toBool(false))
+		{
+			error = body.value(QStringLiteral("error")).toString(
+				QStringLiteral("Speichern in der lokalen Datenbank fehlgeschlagen."));
+			return false;
+		}
+		saved = body.value(QStringLiteral("item")).toObject();
+		if (saved.value(QStringLiteral("id")).toString() != day.value(QStringLiteral("id")).toString())
+		{
+			error = QStringLiteral("Der Verwaltungsserver hat den Kampftag nicht bestätigt.");
+			return false;
+		}
+		return true;
 	}
 
 	QString recovery_api_path(const QString& competitionDayId, const QString& matId)
@@ -2352,13 +2402,34 @@ void MainWindowTeam::on_actionNew_triggered()
 	day.insert(QStringLiteral("status"), QStringLiteral("planned"));
 	day.insert(QStringLiteral("syncStatus"), QStringLiteral("pending"));
 
-	const QString directory = QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments"));
-	if (!QDir().mkpath(directory) ||
-		!write_json_atomic(QDir(directory).filePath(id + QStringLiteral(".json")), QJsonDocument(day)))
+	// V1, V2 and V3 use the same local masterdata as the browser administration.
+	// V3's local server synchronizes that database when the online link is available.
+	const bool usbMode = QFile::exists(QDir(QCoreApplication::applicationDirPath())
+		.absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
+	if (usbMode)
 	{
-		QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
-			tr("Kampftag konnte nicht auf dem USB-Datenträger gespeichert werden."));
-		return;
+		QJsonObject saved;
+		QString error;
+		if (!save_usb_competition_day(day, saved, error))
+		{
+			QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
+				tr("Der Kampftag konnte nicht in der gemeinsamen lokalen Datenbank gespeichert werden: %1")
+					.arg(error));
+			return;
+		}
+		day = saved;
+	}
+	else
+	{
+		// Retain the existing non-USB desktop save behaviour.
+		const QString directory = QDir(runtime_data_dir()).filePath(QStringLiteral("offline-tournaments"));
+		if (!QDir().mkpath(directory) ||
+			!write_json_atomic(QDir(directory).filePath(id + QStringLiteral(".json")), QJsonDocument(day)))
+		{
+			QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
+				tr("Kampftag konnte nicht gespeichert werden."));
+			return;
+		}
 	}
 	m_masterCompetitionDays.append(day);
 	if (!ApplyCompetitionDay_(day, QStringLiteral("mat-1"), QStringLiteral("Tatami 1"), false, false))
