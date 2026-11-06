@@ -60,7 +60,8 @@ const required = [
  'runtime/node.exe',
  'local-server/server.js',
  'local-server/usb-sync-core.js',
- 'local-server/usb-sync-service.js'
+ 'local-server/usb-sync-service.js',
+ 'local-server/legacy-competition-migration.js'
 ];
 for (const filename of required)
  assert.ok(zip.getEntry(filename), 'Missing export entry: '+filename);
