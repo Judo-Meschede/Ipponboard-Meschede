@@ -83,6 +83,14 @@ async function refreshUsbSyncStatus(){
    s.lastSuccess?'Stammdaten synchronisiert':'Abgleich wird vorbereitet';
   detail.textContent=s.lastSuccess?'Letzter Abgleich: '+new Date(s.lastSuccess).toLocaleString('de-DE'):
    s.error?'Letzter Fehler: '+String(s.error).slice(0,85):'';
+  // Refresh the displayed lists after a background pull, but never discard
+  // unsaved form input, search text or a pending JSON import.
+  const focused=document.activeElement?.tagName||'';
+  const inModal=$('#multiModal')&&!$('#multiModal').classList.contains('hidden');
+  if(s.masterRevision!=null&&Number.isFinite(Number(data.revision))&&
+     Number(s.masterRevision)!==Number(data.revision)&&selectedId===null&&
+     currentTab!=='importExport'&&!inModal&&
+     !['INPUT','SELECT','TEXTAREA'].includes(focused))load().catch(()=>{});
  }catch(e){if(localSyncSurface===true)$('#sideSyncStatus').textContent='Abgleichstatus nicht verfügbar'}
 }
 async function load(){const j=await api('/api/masterdata');data=j.masterdata||{};for(const k of ['clubs','teams','fighters','competitionDays','individualTournaments','weightClasses','tournamentModes','ruleSets'])if(!Array.isArray(data[k]))data[k]=[];modes=j.modes||{};$('#sideRevision').textContent='Version '+(j.version||'–');$('#sideUpdated').textContent='Stammdaten zuletzt geändert: '+(data.updatedAt&&!isNaN(new Date(data.updatedAt).getTime())?new Date(data.updatedAt).toLocaleString('de-DE'):'unbekannt');render();$('#jsonPreview').value=JSON.stringify({masterdata:data},null,2);refreshUsbSyncStatus()}
