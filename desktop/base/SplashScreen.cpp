@@ -223,7 +223,13 @@ void SplashScreen::on_commandLinkButton_admin_pressed()
     }
     QDesktopServices::openUrl(QUrl(QStringLiteral("https://test-liga.paul-meschede.de/verwaltung")));
 }
-void SplashScreen::on_btnSync_clicked(){ SyncMasterDataCache(true); }
+void SplashScreen::on_btnSync_clicked()
+{
+    // If offline, retry the connection first; only a confirmed online state
+    // permits the user to request the protected manual data download.
+    const bool usbFull = CurrentUsbProfile() == UsbProfile::Online;
+    SyncMasterDataCache(!usbFull || ui->btnSync->property("serverReachable").toBool());
+}
 
 void SplashScreen::resizeEvent(QResizeEvent* event)
 {
@@ -249,7 +255,7 @@ void SplashScreen::ApplyReferenceGeometry()
     apply(ui->btnAbout, 1397, 0, 139, 70);
     apply(ui->label_serverStatus, 148, 800, 260, 24);
     apply(ui->label_lastUpdate, 148, 826, 280, 22);
-    apply(ui->btnSync, 551, 850, 184, 34);
+    apply(ui->btnSync, 540, 831, 212, 42);
     apply(ui->label_cacheStatus, 898, 800, 230, 24);
     apply(ui->label_info, 1260, 800, 230, 24);
 
@@ -268,7 +274,7 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
     if (profile == UsbProfile::Offline)
     {
         ui->btnSync->setEnabled(false);
-        ui->btnSync->setText(QStringLiteral("Offline-Version"));
+        ui->btnSync->setText(QStringLiteral("Offlinebetrieb"));
         ui->label_serverStatus->setText(QStringLiteral("Offline-Betrieb"));
         ui->label_lastUpdate->setText(QStringLiteral("Nur lokale Daten"));
         ui->label_cacheStatus->setText(QStringLiteral("USB-Datenbestand"));
@@ -347,7 +353,8 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
             : QStringLiteral("Noch kein lokaler Datenbestand"));
         ui->btnSync->setText(downloadOk
             ? QStringLiteral("Serverdaten laden")
-            : QStringLiteral("Verbindung erneut prüfen"));
+            : QStringLiteral("Erneut prüfen"));
+        ui->btnSync->setProperty("serverReachable", downloadOk);
         ui->btnSync->setToolTip(downloadOk
             ? QStringLiteral("Lädt nach Bestätigung Serverdaten und sichert den bisherigen USB-Stand.")
             : networkError);
@@ -432,8 +439,9 @@ void SplashScreen::SyncMasterDataCache(bool explicitlyRequested)
         if (downloadOk) ui->label_lastUpdate->setText(QStringLiteral("Letzte Aktualisierung: -"));
     }
 
+    ui->btnSync->setProperty("serverReachable", downloadOk);
     ui->btnSync->setText(profile == UsbProfile::Online
-        ? (updated ? QStringLiteral("Serverdaten erneut laden") : QStringLiteral("Erneut versuchen"))
-        : (updated ? QStringLiteral("Daten aktuell") : QStringLiteral("Erneut versuchen")));
+        ? (downloadOk ? QStringLiteral("Serverdaten laden") : QStringLiteral("Erneut prüfen"))
+        : (updated ? QStringLiteral("Daten aktuell") : QStringLiteral("Erneut prüfen")));
     ui->btnSync->setEnabled(true);
 }
