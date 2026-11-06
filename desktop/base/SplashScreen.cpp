@@ -14,6 +14,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 #include <QMouseEvent>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
