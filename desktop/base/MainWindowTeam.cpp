@@ -2408,6 +2408,9 @@ void MainWindowTeam::on_actionNew_triggered()
 		.absoluteFilePath(QStringLiteral("../data/usb-profile.json")));
 	if (usbMode)
 	{
+		// Pending synchronization is tracked by the V3 sync service, not by
+		// a stale per-day flag that could never become current.
+		day.remove(QStringLiteral("syncStatus"));
 		QJsonObject saved;
 		QString error;
 		if (!save_usb_competition_day(day, saved, error))
