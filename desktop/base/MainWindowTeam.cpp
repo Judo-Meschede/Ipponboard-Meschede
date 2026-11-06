@@ -164,15 +164,19 @@ namespace
 		QByteArray& response, DWORD& status)
 	{
 
-		// A gifted or event-scoped USB copy must never contact the Meschede server.
+		// Enforce USB network isolation: 1 and 2 are permanently offline.
+		// Malformed or unknown USB profiles fail closed, never open.
 		const QString profileFile = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../data/usb-profile.json"));
-		const QJsonObject profile = read_json_document(profileFile).object();
-		if (profile.contains(QStringLiteral("serverSyncAllowed")) &&
-			!profile.value(QStringLiteral("serverSyncAllowed")).toBool())
+		if (QFile::exists(profileFile))
 		{
-			response.clear();
-			status = 0;
-			return false;
+			const QJsonObject profile = read_json_document(profileFile).object();
+			if (profile.value(QStringLiteral("mode")).toString() != QStringLiteral("full") ||
+				!profile.value(QStringLiteral("serverSyncAllowed")).toBool(false))
+			{
+				response.clear();
+				status = 0;
+				return false;
+			}
 		}
 
 		response.clear();
