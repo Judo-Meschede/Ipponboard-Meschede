@@ -58,7 +58,9 @@ const required = [
  'data/masterdata.json',
  'data/usb-profile.json',
  'runtime/node.exe',
- 'local-server/server.js'
+ 'local-server/server.js',
+ 'local-server/usb-sync-core.js',
+ 'local-server/usb-sync-service.js'
 ];
 for (const filename of required)
  assert.ok(zip.getEntry(filename), 'Missing export entry: '+filename);
