@@ -26,12 +26,27 @@ const master = {
  ruleSets:[{id:'test-rules',name:'TEST'}]
 };
 const exportVariant = (mode, selected={}) => {
- const buffer = createUsbZip({master, mode, selected, templatePath:path.resolve(templatePath)});
+ const credential={id:'00000000-0000-4000-8000-000000000001',token:'f'.repeat(64),
+  server:'https://test-liga.paul-meschede.de'};
+ const buffer = createUsbZip({master, mode, selected, templatePath:path.resolve(templatePath),
+  ...(mode==='full'?{syncCredentials:credential}:{})});
  const zip = new AdmZip(buffer);
  const profile = JSON.parse(zip.getEntry('data/usb-profile.json').getData().toString('utf8'));
  const data = JSON.parse(zip.getEntry('data/masterdata.json').getData().toString('utf8'));
  assert.equal(profile.mode,mode);
  assert.equal(profile.serverSyncAllowed,mode==='full');
+ if(mode==='full'){
+  assert.equal(profile.sync.id,credential.id);
+  assert.equal(profile.sync.server,credential.server);
+  assert.ok(zip.getEntry('data/usb-sync-state.json'));
+  const state=JSON.parse(zip.getEntry('data/usb-sync-state.json').getData().toString('utf8'));
+  assert.equal(state.clientId,credential.id);
+  assert.equal(state.baseline.clubs.length,1);
+ }else{
+  assert.ok(!profile.sync);
+  assert.ok(!zip.getEntry('data/usb-sync-state.json'));
+  assert.ok(!buffer.toString('latin1').includes(credential.token));
+ }
  assert.ok(zip.getEntry('build-manifest.json'));
  return {buffer,zip,profile,data};
 };
