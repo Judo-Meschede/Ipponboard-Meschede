@@ -96,7 +96,7 @@ function createUsbZip({master,mode,selected,templatePath}){
   if(!zip.getEntry(requiredFile))
    throw new Error('USB-Vorlage unvollständig: '+requiredFile+'. Bitte neue Windows-Vorlage hochladen.');
  const data=snapshot(master,mode,selected||{});
- zip.addFile('data/masterdata.json',Buffer.from(JSON.stringify({version:'0.2.60',masterdata:data},null,2),'utf8'));
+ zip.addFile('data/masterdata.json',Buffer.from(JSON.stringify({version:'0.2.61',masterdata:data},null,2),'utf8'));
  zip.addFile('data/usb-profile.json',Buffer.from(JSON.stringify({mode,serverSyncAllowed:mode==='full',createdAt:new Date().toISOString()},null,2),'utf8'));
  return zip.toBuffer();
 }
