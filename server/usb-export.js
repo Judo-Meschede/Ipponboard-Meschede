@@ -46,7 +46,7 @@ function snapshot(master,kind,requested){
  base.ageClassFightTimeDefaults=structuredClone(master.ageClassFightTimeDefaults||{});
  return base;
 }
-function createUsbZip({master,mode,selected,templatePath}){
+function createUsbZip({master,mode,selected,templatePath,syncCredentials,baselineSnapshot}){
  if(!['gift','selected','full'].includes(mode))throw new Error('Unbekannter USB-Modus');
  if(!fs.existsSync(templatePath))throw new Error('USB-Vorlage auf dem Server fehlt');
  const template=new AdmZip(templatePath);
@@ -95,9 +95,20 @@ function createUsbZip({master,mode,selected,templatePath}){
  for(const requiredFile of required)
   if(!zip.getEntry(requiredFile))
    throw new Error('USB-Vorlage unvollständig: '+requiredFile+'. Bitte neue Windows-Vorlage hochladen.');
- const data=snapshot(master,mode,selected||{});
+ const data=baselineSnapshot||snapshot(master,mode,selected||{});
+ if(mode==='full'){
+  if(!syncCredentials||!/^[0-9a-f-]{36}$/.test(syncCredentials.id||'')||
+   !/^[0-9a-f]{64}$/.test(syncCredentials.token||'')||
+   syncCredentials.server!=='https://test-liga.paul-meschede.de')
+   throw new Error('Variante 3 benötigt eine gültige Synchronisierungskopplung');
+  zip.addFile('data/usb-sync-state.json',
+   Buffer.from(JSON.stringify({
+    schema:'ipponboard-usb-sync-1',clientId:syncCredentials.id,
+    baseline:data,lastSuccess:null
+   },null,2),'utf8'));
+ }
  zip.addFile('data/masterdata.json',Buffer.from(JSON.stringify({version:'0.2.62',masterdata:data},null,2),'utf8'));
- zip.addFile('data/usb-profile.json',Buffer.from(JSON.stringify({mode,serverSyncAllowed:mode==='full',createdAt:new Date().toISOString()},null,2),'utf8'));
+ zip.addFile('data/usb-profile.json',Buffer.from(JSON.stringify({mode,serverSyncAllowed:mode==='full',createdAt:new Date().toISOString(),...(mode==='full'?{sync:syncCredentials}:{})},null,2),'utf8'));
  return zip.toBuffer();
 }
-module.exports={createUsbZip};
+module.exports={createUsbZip,snapshot};
