@@ -1,12 +1,15 @@
 'use strict';
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const ExcelJS=require('exceljs');
-const {createUsbZip}=require('./usb-export');
+const {createUsbZip,snapshot}=require('./usb-export');
+const {Hub,Client,validateCredentials}=require('./usb-sync-service');
 const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROOT=path.join(__dirname,'public');
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
 const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'masterdata.json');
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
+const USB_SYNC_REGISTRY=path.join(DATA_DIR,'usb-sync-clients.json');
+let localUsbSync=null;
 const APP_VERSION='0.2.62-preview';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
@@ -49,8 +52,20 @@ function refreshUsbMaster(){
  ensureMasterCollections();
 }
 function saveState(){try{atomicWrite(STATE_FILE,state)}catch(e){console.error('State save failed',e)}}
-function saveMaster(action){const previous={revision:master.revision,updatedAt:master.updatedAt,lastAction:master.lastAction};master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master)}catch(e){Object.assign(master,previous);console.error('Masterdata save failed',e);throw new Error('Stammdaten konnten nicht gespeichert werden: '+e.message)}}
+function saveMaster(action){const previous={revision:master.revision,updatedAt:master.updatedAt,lastAction:master.lastAction};master.revision=Number(master.revision||0)+1;master.updatedAt=new Date().toISOString();master.lastAction=action;try{atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master);if(localUsbSync)localUsbSync.schedule()}catch(e){Object.assign(master,previous);console.error('Masterdata save failed',e);throw new Error('Stammdaten konnten nicht gespeichert werden: '+e.message)}}
 function saveRecoveryStore(){recoveryStore.revision=Number(recoveryStore.revision||0)+1;recoveryStore.updatedAt=new Date().toISOString();try{atomicWrite(RECOVERY_FILE,recoveryStore)}catch(e){console.error('Recovery save failed',e)}}
+// Masterdata synchronization is separate from the competition result recovery queue.
+// Production service (port 3010) is deliberately excluded from this test pairing.
+const usbSyncHub=new Hub(USB_SYNC_REGISTRY,()=>master,(merged,action)=>{
+ const oldMaster=master;
+ master=merged;
+ try{saveMaster(action)}catch(e){master=oldMaster;throw e}
+});
+if(process.env.IPPONBOARD_USB_OFFLINE==='1'){
+ const profile=readJson(path.join(DATA_DIR,'usb-profile.json'),()=>({}));
+ localUsbSync=new Client({dataDir:DATA_DIR,profile});
+}
+
 function competitionToDay(raw){
  const matches=Array.isArray(raw&&raw.matches)?raw.matches:[];
  const teamIds=[...new Set([...(Array.isArray(raw&&raw.teamIds)?raw.teamIds:[]),...matches.flatMap(m=>[m&&m.homeTeamId,m&&m.guestTeamId])].map(String).filter(Boolean))];
@@ -142,7 +157,7 @@ const ctype=f=>({'.html':'text/html; charset=utf-8','.css':'text/css; charset=ut
 function sendFile(res,f){fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':ctype(f),'Cache-Control':'no-store'});res.end(d)})}
 function json(res,obj,code=200){res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(obj))}
 function redirect(res,location){res.writeHead(302,{'Location':location,'Cache-Control':'no-store'});res.end()}
-function readBody(req){return new Promise((resolve,reject)=>{let s='';req.on('data',d=>{s+=d;if(s.length>8e6){reject(new Error('body too large'));req.destroy()}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}});req.on('error',reject)})}
+function readBody(req,limit=8e6){return new Promise((resolve,reject)=>{let s='';req.on('data',d=>{s+=d;if(s.length>limit){reject(new Error('body too large'));req.destroy()}});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}});req.on('error',reject)})}
 function readRawBody(req,limit=20e6){return new Promise((resolve,reject)=>{const chunks=[];let size=0;req.on('data',d=>{size+=d.length;if(size>limit){reject(new Error('file too large'));req.destroy();return}chunks.push(d)});req.on('end',()=>resolve(Buffer.concat(chunks)));req.on('error',reject)})}
 function sendBuffer(res,buffer,filename){res.writeHead(200,{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+filename+'"','Cache-Control':'no-store'});res.end(buffer)}
 function touch(a){state.revision++;state.lastAction=a;state.updatedAt=new Date().toISOString();saveState();broadcast()}
@@ -539,6 +554,25 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
  if(process.env.IPPONBOARD_USB_OFFLINE==='1'&&u.pathname.startsWith('/api/')){
   try{refreshUsbMaster()}catch(e){return json(res,{error:'USB-Datenbank konnte nicht gelesen werden: '+e.message},500)}
  }
+
+ // The local USB server is always on 127.0.0.1; status reports genuine remote sync,
+ // not merely successful connection to its own local database.
+ if(u.pathname==='/api/usb-sync/status'&&req.method==='GET')
+  return json(res,localUsbSync?{local:true,...localUsbSync.getStatus()}:{local:false,enabled:false});
+
+ // USB V3 masterdata must never be accepted by the productive server.
+ if(u.pathname==='/api/usb-sync'&&req.method==='POST'){
+  if(process.env.IPPONBOARD_USB_OFFLINE==='1'||PORT!==3011)
+   return json(res,{error:'USB-Synchronisierung nur auf dem Testserver freigegeben'},403);
+  try{
+   const body=await readBody(req,25e6);
+   const result=usbSyncHub.exchange(req.headers['x-usb-sync-id'],
+      req.headers['x-usb-sync-token'],body);
+   if(!result.ok)return json(res,{ok:false,conflicts:result.conflicts,
+      error:'Gleichzeitige Änderungen: keine Datensätze überschrieben'},409);
+   return json(res,result);
+  }catch(e){return json(res,{error:e.message||'USB-Synchronisierung fehlgeschlagen'},e.status||500)}
+ }
  if(u.pathname==='/api/health')return json(res,{ok:true,name:'Ipponboard-Meschede',version:APP_VERSION,revision:state.revision,masterRevision:master.revision,masterUpdatedAt:master.updatedAt});
  if(u.pathname==='/api/state'&&req.method==='GET')return json(res,{state,modes});
  if(u.pathname==='/api/masterdata'&&req.method==='GET')return json(res,{version:APP_VERSION,masterdata:master,modes});
@@ -563,7 +597,14 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      return json(res,{error:'Unbekannte Turniere oder Kampftage'},400);
    }
    const templatePath=process.env.IPPONBOARD_USB_TEMPLATE||path.join(DATA_DIR,'usb-template.zip');
-   const buffer=createUsbZip({master,mode,selected:requested,templatePath});
+   // Only the full variant receives a unique revocable device credential.
+   // Creating a USB export never changes the productive installation.
+   if(mode==='full'&&PORT!==3011)return json(res,{error:'USB-V3-Kopplung nur auf dem Testserver freigegeben'},403);
+   const baseline=mode==='full'?snapshot(master,'full',requested):null;
+   const pairing=mode==='full'?usbSyncHub.issue():null;
+   const buffer=createUsbZip({master,mode,selected:requested,templatePath,
+      ...(pairing?{syncCredentials:pairing,baselineSnapshot:baseline}:{})});
+   if(pairing)usbSyncHub.register(pairing,baseline);
    const filename='Ipponboard-Meschede_USB_'+({gift:'Vereinsneutral',selected:'Auswahl',full:'Vollstaendig'}[mode])+'.zip';
    res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="'+filename+'"','Content-Length':buffer.length,'Cache-Control':'no-store'});
    return res.end(buffer);
@@ -692,4 +733,4 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
 server.on('upgrade',(req,sock)=>{if(req.url!=='/ws'){sock.destroy();return}const k=req.headers['sec-websocket-key'];if(!k){sock.destroy();return}sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+wsAccept(k)+'\r\n\r\n');sockets.add(sock);sock.write(frame({type:'state',state}));sock.on('close',()=>sockets.delete(sock));sock.on('error',()=>sockets.delete(sock))});
 setInterval(()=>{const now=Date.now(),d=now-lastTick;lastTick=now;const f=currentFight();let ch=false;if(f.running&&f.timeMs>0){f.timeMs=Math.max(0,f.timeMs-d);if(!f.timeMs)f.running=false;ch=true}if(f.hold.active){f.hold.timeMs+=d;ch=true}if(ch)broadcast()},100);
 fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);if(!fs.existsSync(RECOVERY_FILE))atomicWrite(RECOVERY_FILE,recoveryStore);
-server.listen(PORT,HOST,()=>{const a=server.address();const port=a&&typeof a==='object'?a.port:PORT;console.log(`Ipponboard-Meschede ${APP_VERSION} ${process.env.IPPONBOARD_DESKTOP?'Desktop':'Web'} ${HOST}:${port}`);if(process.send)process.send({type:'listening',port})});
+server.listen(PORT,HOST,()=>{const a=server.address();const port=a&&typeof a==='object'?a.port:PORT;console.log(`Ipponboard-Meschede ${APP_VERSION} ${process.env.IPPONBOARD_DESKTOP?'Desktop':'Web'} ${HOST}:${port}`);if(localUsbSync)localUsbSync.start();if(process.send)process.send({type:'listening',port})});
