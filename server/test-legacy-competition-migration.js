@@ -12,7 +12,7 @@ function fixture(t){
  const folder=path.join(root,'offline-tournaments');
  fs.mkdirSync(folder);
  const master={competitionDays:[]};let saved=0;
- const add=day=>{saved++;master.competitionDays.push({...day});return {...day}};
+ const add=(type,day)=>{assert.equal(type,'competitionDays');saved++;master.competitionDays.push({...day});return {...day}};
  const legacy=(id,data={})=>{
   const obj={id,name:'Test-Kampftag',teamIds:['team-a','team-b'],matCount:1,...data};
   fs.writeFileSync(path.join(folder,id+'.json'),JSON.stringify(obj));
