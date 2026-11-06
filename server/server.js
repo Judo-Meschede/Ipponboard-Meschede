@@ -10,7 +10,7 @@ const MASTER_FILE=process.env.IPPONBOARD_MASTER_FILE||path.join(DATA_DIR,'master
 const RECOVERY_FILE=process.env.IPPONBOARD_RECOVERY_FILE||path.join(DATA_DIR,'competition-recovery.json');
 const USB_SYNC_REGISTRY=path.join(DATA_DIR,'usb-sync-clients.json');
 let localUsbSync=null;
-const APP_VERSION='0.2.62-preview';
+const APP_VERSION='0.2.63-preview';
 const modes={
  'BL-M':{title:'1. Judo Bundesliga (Männer)',weights:['-60kg','-66kg','-73kg','-81kg','-90kg','-100kg','+100kg'],rounds:2,fightSeconds:240},
  'BL-F':{title:'1. Judo Bundesliga (Frauen)',weights:['-48kg','-52kg','-57kg','-63kg','-70kg','-78kg','+78kg'],rounds:2,fightSeconds:240},
