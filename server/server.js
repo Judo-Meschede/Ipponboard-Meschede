@@ -3,6 +3,7 @@ const http=require('http'),fs=require('fs'),path=require('path'),crypto=require(
 const ExcelJS=require('exceljs');
 const {createUsbZip,snapshot}=require('./usb-export');
 const {Hub,Client,validateCredentials}=require('./usb-sync-service');
+const {migrateLegacyCompetitionDays}=require('./legacy-competition-migration');
 const PORT=Number(process.env.PORT||3011),HOST=process.env.HOST||'127.0.0.1',ROOT=path.join(__dirname,'public');
 const DATA_DIR=process.env.IPPONBOARD_DATA_DIR||path.join(__dirname,'data');
 const STATE_FILE=process.env.IPPONBOARD_STATE_FILE||path.join(DATA_DIR,'competition-state.json');
@@ -748,4 +749,10 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
 server.on('upgrade',(req,sock)=>{if(req.url!=='/ws'){sock.destroy();return}const k=req.headers['sec-websocket-key'];if(!k){sock.destroy();return}sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+wsAccept(k)+'\r\n\r\n');sockets.add(sock);sock.write(frame({type:'state',state}));sock.on('close',()=>sockets.delete(sock));sock.on('error',()=>sockets.delete(sock))});
 setInterval(()=>{const now=Date.now(),d=now-lastTick;lastTick=now;const f=currentFight();let ch=false;if(f.running&&f.timeMs>0){f.timeMs=Math.max(0,f.timeMs-d);if(!f.timeMs)f.running=false;ch=true}if(f.hold.active){f.hold.timeMs+=d;ch=true}if(ch)broadcast()},100);
 fs.mkdirSync(DATA_DIR,{recursive:true});if(!fs.existsSync(MASTER_FILE))atomicWrite(MASTER_FILE,process.env.IPPONBOARD_USB_OFFLINE==='1'?{version:APP_VERSION,masterdata:master}:master);if(!fs.existsSync(STATE_FILE))atomicWrite(STATE_FILE,state);if(!fs.existsSync(RECOVERY_FILE))atomicWrite(RECOVERY_FILE,recoveryStore);
+// One-time migration from former desktop-only storage; never executed on central servers.
+if(process.env.IPPONBOARD_USB_OFFLINE==='1'){
+ const recovered=migrateLegacyCompetitionDays({dataDir:DATA_DIR,getMaster:()=>master,saveRecord});
+ if(recovered.imported||recovered.previouslyPresent||recovered.failed)
+  console.log('USB-Kampftage übernommen:',recovered);
+}
 server.listen(PORT,HOST,()=>{const a=server.address();const port=a&&typeof a==='object'?a.port:PORT;console.log(`Ipponboard-Meschede ${APP_VERSION} ${process.env.IPPONBOARD_DESKTOP?'Desktop':'Web'} ${HOST}:${port}`);if(localUsbSync)localUsbSync.start();if(process.send)process.send({type:'listening',port})});
