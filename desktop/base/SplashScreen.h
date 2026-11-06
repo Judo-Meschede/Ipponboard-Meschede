@@ -20,7 +20,7 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 private:
     Ui::SplashScreen* ui;
-    void SyncMasterDataCache();
+    void SyncMasterDataCache(bool explicitlyRequested = false);
     void MakeCardChildrenMouseTransparent(QWidget* card);
     void ApplyReferenceGeometry();
 private slots:
