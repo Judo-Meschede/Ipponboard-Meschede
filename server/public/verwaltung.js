@@ -61,7 +61,31 @@ const columns={
  ruleSets:[['name','Regelwerk'],['status','Status'],['maxShidoCount','Shido'],['osaekomiYukoSeconds','Yuko-Zeit'],['osaekomiWazaariSeconds','Waza-ari-Zeit'],['osaekomiIpponSeconds','Ippon-Zeit']]
 };
 async function api(url,opts){const r=await fetch(url,opts);const j=await r.json();if(!r.ok)throw new Error(j.error||r.statusText);return j}
-async function load(){const j=await api('/api/masterdata');data=j.masterdata||{};for(const k of ['clubs','teams','fighters','competitionDays','individualTournaments','weightClasses','tournamentModes','ruleSets'])if(!Array.isArray(data[k]))data[k]=[];modes=j.modes||{};$('#sideRevision').textContent='Version '+(j.version||'–');$('#sideUpdated').textContent='Stammdaten zuletzt geändert: '+(data.updatedAt&&!isNaN(new Date(data.updatedAt).getTime())?new Date(data.updatedAt).toLocaleString('de-DE'):'unbekannt');render();$('#jsonPreview').value=JSON.stringify({masterdata:data},null,2)}
+let localSyncSurface=null;
+async function refreshUsbSyncStatus(){
+ try{
+  const s=await api('/api/usb-sync/status');
+  localSyncSurface=!!s.local;
+  const top=$('#sideOnline'),status=$('#sideSyncStatus'),detail=$('#sideSyncDetail');
+  if(!localSyncSurface){top.textContent='Server verbunden';top.className='ok';status.textContent='';detail.textContent='';return}
+  if(!s.enabled){
+   top.textContent='Offline – nur lokale Daten';top.className='muted';
+   status.textContent='Kein Serverabgleich (USB V1/V2)';detail.textContent='';return;
+  }
+  if(s.conflicts&&s.conflicts.length){
+   top.textContent='Synchronisationskonflikt';top.className='warn';
+   status.textContent=s.conflicts.length+' Konflikt(e), keine Überschreibung';
+   detail.textContent=s.conflicts.slice(0,3).map(x=>x.collection+' / '+x.id).join(', ');return;
+  }
+  top.textContent=s.connected?'Server verbunden':'Server nicht erreichbar';
+  top.className=s.connected?'ok':'muted';
+  status.textContent=s.pending?'Lokale Änderungen warten auf Abgleich':
+   s.lastSuccess?'Stammdaten synchronisiert':'Abgleich wird vorbereitet';
+  detail.textContent=s.lastSuccess?'Letzter Abgleich: '+new Date(s.lastSuccess).toLocaleString('de-DE'):
+   s.error?'Letzter Fehler: '+String(s.error).slice(0,85):'';
+ }catch(e){if(localSyncSurface===true)$('#sideSyncStatus').textContent='Abgleichstatus nicht verfügbar'}
+}
+async function load(){const j=await api('/api/masterdata');data=j.masterdata||{};for(const k of ['clubs','teams','fighters','competitionDays','individualTournaments','weightClasses','tournamentModes','ruleSets'])if(!Array.isArray(data[k]))data[k]=[];modes=j.modes||{};$('#sideRevision').textContent='Version '+(j.version||'–');$('#sideUpdated').textContent='Stammdaten zuletzt geändert: '+(data.updatedAt&&!isNaN(new Date(data.updatedAt).getTime())?new Date(data.updatedAt).toLocaleString('de-DE'):'unbekannt');render();$('#jsonPreview').value=JSON.stringify({masterdata:data},null,2);refreshUsbSyncStatus()}
 function setTab(tab){currentTab=tab;selectedId=null;$$('.tabbtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const imp=tab==='importExport';$('#crudView').classList.toggle('hidden',imp);$('#importView').classList.toggle('hidden',!imp);if(!imp)render()}
 function displayValue(row,key){if(key==='clubId')return clubName(row.clubId);if(key==='hostClubId')return clubName(row.hostClubId);if(key==='tournamentModeId')return tournamentModeName(row.tournamentModeId);if(key==='teams')return (row.teamIds||[]).map(teamName).join(', ')||'–';if(key==='ageClasses')return (row.ageClasses||[]).join(', ')||'–';if(key==='genders')return (row.genders||[]).map(x=>x==='w'?'w':'m').join(' / ')||'–';if(key==='weightMode')return row.weightMode==='weight-near'?'gewichtsnah':'offizielle GK';if(key==='registrations')return `${(row.registrations||[]).length} Meldungen`;if(key==='fightTimeInSeconds')return `${Number(row[key]||0)/60} min`;if(key==='weightsAreDoubled')return row[key]?'Ja':'Nein';if(key==='roster')return `${(row.fighterIds||[]).length} Kämpfer`;if(key==='logo')return row.logo?`<img class="logo-thumb" src="${esc(row.logo)}" alt="">`:'–';if(key==='status')return `<span class="status-dot" style="background:${row.status==='inactive'?'#777':'#36d66b'}"></span>${esc(row.status||'active')}`;return esc(row[key]??'')}
 function render(){
@@ -384,6 +408,7 @@ $('#newBtn').onclick=()=>{selectedId=null;showForm(currentTab==='tournamentModes
 }:{status:'active'})};$('#closeDetail').onclick=()=>{selectedId=null;document.querySelector('.workgrid')?.classList.remove('tournament-dialog-open');render()};$('#search').oninput=render;$('#syncBtn').onclick=async()=>{await load();toast('Daten neu geladen')};
 $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({masterdata:data},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ipponboard-Meschede_Stammdaten.json';a.click();URL.revokeObjectURL(a.href)};$('#copyBtn').onclick=async()=>{await navigator.clipboard.writeText($('#jsonPreview').value);toast('In Zwischenablage kopiert')};$('#importFile').onchange=async e=>{const f=e.target.files[0];if(f)$('#jsonPreview').value=await f.text()};$('#applyImportBtn').onclick=async()=>{try{const x=JSON.parse($('#jsonPreview').value);await api('/api/masterdata/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(x)});toast('Importiert');await load();setTab('clubs')}catch(e){toast('Importfehler: '+e.message)}};
 load().catch(e=>{console.error(e);$('#sideOnline').textContent='Serverfehler';$('#sideOnline').className='warn';toast('Daten konnten nicht geladen werden')});
+setInterval(()=>{if(localSyncSurface!==false)refreshUsbSyncStatus()},5000);
 
 async function exportXlsx(type){
  try{
