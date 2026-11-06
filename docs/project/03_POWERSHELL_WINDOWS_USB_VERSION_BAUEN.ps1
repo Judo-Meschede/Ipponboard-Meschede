@@ -94,6 +94,12 @@ if (!(Test-Path (Join-Path $nodeCache 'node.exe'))) {
 $nodePath = Join-Path $nodeCache 'node.exe'
 $nodeNpm = Join-Path $nodeCache 'node_modules\npm\bin\npm-cli.js'
 if (!(Test-Path $nodePath) -or !(Test-Path $nodeNpm)) { throw 'Node-Laufzeit unvollständig.' }
+# The USB image is only packaged after all conflict and offline isolation tests pass.
+& $nodePath --check (Join-Path $source 'server\server.js'); Check 'Server JavaScript-Syntax'
+& $nodePath --check (Join-Path $source 'server\usb-sync-service.js'); Check 'USB-Sync JavaScript-Syntax'
+& $nodePath --test (Join-Path $source 'server\test-usb-sync-core.js') (Join-Path $source 'server\test-usb-sync-service.js')
+Check 'USB-Synchronisierung: Offline, Online, Kollisionen, Wiederholung'
+
 $runtime = Join-Path $package 'runtime'
 New-Item -ItemType Directory -Force -Path $runtime | Out-Null
 Copy-Item $nodePath $runtime
