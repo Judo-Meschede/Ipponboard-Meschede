@@ -88,7 +88,7 @@ test('conflict never overwrites central data or local data',async t=>{
 test('retry after lost response replays without duplicate writes',async t=>{
  const s=setup(t);
  s.edit(r=>r.fighters.push({id:'new-f',firstName:'Bob'}));
- const first={baseline:s.local(),local:s.local()};
+ const first={baseline:JSON.parse(fs.readFileSync(s.client.stateFile,'utf8')).baseline,local:s.local()};
  const out=s.hub.exchange(s.pairing.id,s.pairing.token,first);
  assert.equal(out.ok,true);assert.equal(s.writes(),1);
  await s.client.sync();
