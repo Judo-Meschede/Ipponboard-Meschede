@@ -62,6 +62,9 @@ class Hub{
   if(merged.applied>0)this.saveMerged(merged.merged,'USB V3 Synchronisierung ('+id+')');
   const latest=copy(this.getMaster());
   const response={ok:true,masterdata:latest,applied:merged.applied,serverRevision:latest.revision};
+  // A no-op heartbeat must not rewrite the pairing registry every five seconds.
+  if(merged.applied===0&&digest(latest)===registered.baselineHash)
+   return response;
   clients[id]={...registered,previousBaselineHash:registered.baselineHash,
    previousResponse:response,baselineHash:digest(latest),lastSync:now()};
   write(this.file,clients);
