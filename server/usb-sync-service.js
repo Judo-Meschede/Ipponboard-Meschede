@@ -40,7 +40,7 @@ class Hub{
    issuedAt:now(),lastSync:null};
   write(this.file,clients);
  }
- exchange(id,token,body){
+ authorize(id,token){
   if(typeof id!=='string'||typeof token!=='string'||id.length>70||token.length>100)
    throw error('USB-Gerät nicht autorisiert',403);
   const clients=fs.existsSync(this.file)?read(this.file):{};
@@ -49,6 +49,11 @@ class Hub{
    !/^[0-9a-f]{64}$/.test(registered.secretHash)||
    !crypto.timingSafeEqual(Buffer.from(registered.secretHash,'hex'),actual))
    throw error('USB-Gerät nicht autorisiert',403);
+  return registered;
+ }
+ exchange(id,token,body){
+  this.authorize(id,token);
+  const clients=read(this.file),registered=clients[id];
   if(!body||!body.baseline||!body.local)throw error('USB-Daten fehlen',400);
   validate(body.baseline);validate(body.local);
   const incomingHash=digest(body.baseline);
