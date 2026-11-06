@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs');
 const crypto=require('crypto');
-const EXPECTED_TEMPLATE_VERSION='0.2.62-preview';
+const EXPECTED_TEMPLATE_VERSION='0.2.63-preview';
 const path=require('path');
 const AdmZip=require('adm-zip');
 
