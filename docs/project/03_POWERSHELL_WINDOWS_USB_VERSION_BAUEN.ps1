@@ -70,7 +70,7 @@ Copy-Item (Join-Path $desktop 'base\TournamentModes.ini') (Join-Path $app 'Tourn
 # Embed the complete web administration and its Node dependencies. The USB server only binds to localhost.
 $localServer = Join-Path $package 'local-server'
 New-Item -ItemType Directory -Force -Path $localServer | Out-Null
-Copy-Item (Join-Path $source 'server\server.js'),(Join-Path $source 'server\usb-export.js'),(Join-Path $source 'server\package.json') $localServer
+Copy-Item (Join-Path $source 'server\server.js'),(Join-Path $source 'server\usb-export.js'),(Join-Path $source 'server\usb-sync-core.js'),(Join-Path $source 'server\usb-sync-service.js'),(Join-Path $source 'server\package.json') $localServer
 Copy-Item (Join-Path $source 'server\public') (Join-Path $localServer 'public') -Recurse
 Remove-Item (Join-Path $localServer 'public\data') -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $localServer 'public\downloads') -Recurse -Force -ErrorAction SilentlyContinue
