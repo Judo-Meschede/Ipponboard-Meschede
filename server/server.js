@@ -260,7 +260,12 @@ function cleanRecord(type,r){
  }
  return out;
 }
-function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);if(name==='individualTournaments'){migrateIndividualTournamentModel();for(const [age,sec] of Object.entries(item.ageClassFightTimes||{})){const n=Number(sec);if(Number.isFinite(n)&&n>0)master.ageClassFightTimeDefaults[String(age).trim().toLocaleLowerCase('de-DE')]=Math.round(n)}}saveMaster(`${name} gespeichert`);return item}
+function saveRecord(type,record){const name=collectionName(type);if(!name)throw new Error('invalid collection');const item=cleanRecord(name,record),arr=master[name];const idx=arr.findIndex(x=>x.id===item.id);
+ // Prevent a web form opened before a remote sync from overwriting new data.
+ if(idx>=0&&localUsbSync&&localUsbSync.getStatus().enabled&&arr[idx].updatedAt&&
+    String((record&&record.updatedAt)||'')!==String(arr[idx].updatedAt))
+  throw new Error('Datensatz wurde zwischenzeitlich synchronisiert oder geändert. Bitte erst neu laden.');
+ if(idx>=0)arr[idx]={...arr[idx],...item};else arr.push(item);if(name==='individualTournaments'){migrateIndividualTournamentModel();for(const [age,sec] of Object.entries(item.ageClassFightTimes||{})){const n=Number(sec);if(Number.isFinite(n)&&n>0)master.ageClassFightTimeDefaults[String(age).trim().toLocaleLowerCase('de-DE')]=Math.round(n)}}saveMaster(`${name} gespeichert`);return item}
 function deleteRecoveryForCompetitionDay(id){
  let changed=false;
  for(const [key,entry] of Object.entries(recoveryStore.entries||{})){
